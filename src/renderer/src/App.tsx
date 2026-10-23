@@ -147,7 +147,14 @@ export function App() {
               {playing ? '❚❚' : '▶'}
             </button>
             <span className="text-sm">{formatTime(time)}</span>
-            <Timeline duration={duration} time={time} clips={clips} pendingStart={pendingStart} onSeek={seekTo} />
+            <Timeline
+              duration={duration}
+              time={time}
+              clips={clips}
+              pendingStart={pendingStart}
+              onSeek={seekTo}
+              onClipChange={(clip) => dispatch({ type: 'replace', clip })}
+            />
             <span className="text-sm text-zinc-500">{formatTime(duration)}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">

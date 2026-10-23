@@ -8,6 +8,7 @@ export type ClipsAction =
   | { type: 'remove'; id: string }
   | { type: 'setStart'; id: string; time: number }
   | { type: 'setEnd'; id: string; time: number }
+  | { type: 'replace'; clip: Clip }
   | { type: 'reset' }
 
 export const initialClipsState: ClipsState = { clips: [], pendingStart: null }
@@ -39,6 +40,8 @@ export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState
       return updateClip(state, action.id, (clip) => ({ ...clip, start: action.time }))
     case 'setEnd':
       return updateClip(state, action.id, (clip) => ({ ...clip, end: action.time }))
+    case 'replace':
+      return updateClip(state, action.clip.id, () => action.clip)
     case 'reset':
       return initialClipsState
   }

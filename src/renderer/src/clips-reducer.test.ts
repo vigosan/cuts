@@ -58,4 +58,11 @@ describe('clipsReducer', () => {
     const added = run(initialClipsState, { type: 'markStart', time: 10 }, { type: 'markEnd', time: 80 }, { type: 'markStart', time: 90 })
     expect(clipsReducer(added, { type: 'reset' })).toEqual(initialClipsState)
   })
+
+  it('replaces a clip with its dragged version', () => {
+    const added = run(initialClipsState, { type: 'markStart', time: 10 }, { type: 'markEnd', time: 80 })
+    const id = added.clips[0].id
+    const state = clipsReducer(added, { type: 'replace', clip: { id, start: 40, end: 99 } })
+    expect(state.clips[0]).toEqual({ id, start: 40, end: 99 })
+  })
 })
