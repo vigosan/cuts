@@ -6,6 +6,7 @@ import { ClipList } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
+import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
 
@@ -22,6 +23,12 @@ export function App() {
   const [fade, setFade] = useState(true)
   const [format, setFormat] = useState<OutputFormat>('original')
   const [exportState, setExportState] = useState<ExportState>({ status: 'idle' })
+  const [zoom, setZoom] = useState<Zoom>(null)
+  const [viewStart, setViewStart] = useState(0)
+
+  const currentViewStart = nextViewStart(viewStart, time, duration, zoom)
+  if (currentViewStart !== viewStart) setViewStart(currentViewStart)
+  const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
   const now = () => videoRef.current?.currentTime ?? 0
   const seekTo = (t: number) => {
@@ -43,6 +50,7 @@ export function App() {
     setDuration(0)
     setBaseName(defaultBaseName(path))
     setExportState({ status: 'idle' })
+    setViewStart(0)
     dispatch({ type: 'reset' })
   }
 
@@ -149,6 +157,8 @@ export function App() {
             <span className="text-sm">{formatTime(time)}</span>
             <Timeline
               duration={duration}
+              viewStart={currentViewStart}
+              viewSpan={viewSpan}
               time={time}
               clips={clips}
               pendingStart={pendingStart}
@@ -169,6 +179,25 @@ export function App() {
                 trozo en curso desde {formatTime(pendingStart)}
               </span>
             )}
+            <div className="ml-auto flex items-center gap-1">
+              {zoom !== null && (
+                <span className="mr-2 tabular-nums text-zinc-500">
+                  <span data-testid="view-start">{formatTime(currentViewStart)}</span> –{' '}
+                  <span data-testid="view-end">{formatTime(currentViewStart + viewSpan)}</span>
+                </span>
+              )}
+              <span className="mr-1 text-zinc-500">Zoom</span>
+              {ZOOM_LEVELS.map((level) => (
+                <button
+                  key={level.label}
+                  data-testid={`zoom-${level.span ?? 'all'}`}
+                  className={`rounded px-2 py-1 ${zoom === level.span ? 'bg-zinc-600 text-white' : 'bg-zinc-800 hover:bg-zinc-700'}`}
+                  onClick={() => setZoom(level.span)}
+                >
+                  {level.label}
+                </button>
+              ))}
+            </div>
           </div>
           <ClipList
             clips={clips}
