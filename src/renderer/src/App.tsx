@@ -165,6 +165,7 @@ export function App() {
           </div>
           <ClipList
             clips={clips}
+            time={time}
             onPlay={playClip}
             onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
             onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}

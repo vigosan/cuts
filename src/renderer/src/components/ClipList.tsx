@@ -2,15 +2,16 @@ import { clipDuration, formatDuration, formatTime, isOverLimit, MAX_CLIP_SECONDS
 
 type Props = {
   clips: Clip[]
+  time: number
   onPlay: (clip: Clip) => void
   onSetStart: (clip: Clip) => void
   onSetEnd: (clip: Clip) => void
   onDelete: (clip: Clip) => void
 }
 
-const button = 'rounded px-2 py-1 text-sm text-zinc-300 hover:bg-zinc-700'
+const button = 'rounded px-2 py-1 text-sm text-zinc-300 tabular-nums hover:bg-zinc-700 disabled:opacity-30 disabled:hover:bg-transparent'
 
-export function ClipList({ clips, onPlay, onSetStart, onSetEnd, onDelete }: Props) {
+export function ClipList({ clips, time, onPlay, onSetStart, onSetEnd, onDelete }: Props) {
   if (clips.length === 0) {
     return <p className="text-sm text-zinc-500">Marca el inicio (I) y el final (O) de cada trozo mientras escuchas.</p>
   }
@@ -48,11 +49,21 @@ export function ClipList({ clips, onPlay, onSetStart, onSetEnd, onDelete }: Prop
                 <button data-testid={`clip-play-${n}`} className={button} title="Escuchar" onClick={() => onPlay(clip)}>
                   ▶
                 </button>
-                <button data-testid={`clip-set-start-${n}`} className={button} title="Inicio aquí" onClick={() => onSetStart(clip)}>
-                  [ aquí
+                <button
+                  data-testid={`clip-set-start-${n}`}
+                  className={button}
+                  disabled={time >= clip.end}
+                  onClick={() => onSetStart(clip)}
+                >
+                  Inicio = {formatTime(time)}
                 </button>
-                <button data-testid={`clip-set-end-${n}`} className={button} title="Fin aquí" onClick={() => onSetEnd(clip)}>
-                  aquí ]
+                <button
+                  data-testid={`clip-set-end-${n}`}
+                  className={button}
+                  disabled={time <= clip.start}
+                  onClick={() => onSetEnd(clip)}
+                >
+                  Fin = {formatTime(time)}
                 </button>
                 <button data-testid={`clip-delete-${n}`} className={button} title="Borrar" onClick={() => onDelete(clip)}>
                   ✕

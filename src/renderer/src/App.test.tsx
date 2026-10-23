@@ -156,4 +156,28 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('0:40')
     expect(screen.queryByTestId('clip-row-2')).not.toBeInTheDocument()
   })
+
+  it('labels the per-clip adjust buttons with the playhead time they will apply', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 383, 419)
+    seek(video, 473)
+    expect(screen.getByTestId('clip-set-end-1')).toHaveTextContent('Fin = 00:07:53')
+    await userEvent.click(screen.getByTestId('clip-set-end-1'))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:07:53')
+  })
+
+  it('disables an adjustment that would put the start after the end, instead of silently ignoring the click', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 383, 419)
+    seek(video, 473)
+    expect(screen.getByTestId('clip-set-start-1')).toHaveTextContent('Inicio = 00:07:53')
+    expect(screen.getByTestId('clip-set-start-1')).toBeDisabled()
+    seek(video, 390)
+    expect(screen.getByTestId('clip-set-start-1')).toBeEnabled()
+    expect(screen.getByTestId('clip-set-end-1')).toBeEnabled()
+    seek(video, 300)
+    expect(screen.getByTestId('clip-set-end-1')).toBeDisabled()
+  })
 })
