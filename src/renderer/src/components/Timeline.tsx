@@ -2,6 +2,8 @@ import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { isOverLimit, type Clip } from '@shared/clips'
 import { dragClip, type DragMode } from '../drag-clip'
 
+const DRAG_THRESHOLD_PX = 3
+
 type Props = {
   duration: number
   viewStart: number
@@ -22,14 +24,18 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, pendingSt
     e.preventDefault()
     const bar = e.currentTarget.closest('[data-testid=timeline]')!.getBoundingClientRect()
     const originX = e.clientX
+    let moved = false
     const onMove = (move: PointerEvent) => {
+      if (!moved && Math.abs(move.clientX - originX) < DRAG_THRESHOLD_PX) return
+      moved = true
       const next = dragClip(clip, mode, ((move.clientX - originX) / bar.width) * viewSpan, duration)
       onClipChange(next)
       onSeek(mode === 'end' ? next.end : next.start)
     }
-    const onUp = () => {
+    const onUp = (up: PointerEvent) => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      if (!moved) onSeek(viewStart + ((up.clientX - bar.left) / bar.width) * viewSpan)
       justDragged.current = true
       setTimeout(() => {
         justDragged.current = false

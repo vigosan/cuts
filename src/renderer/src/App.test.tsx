@@ -237,4 +237,17 @@ describe('App', () => {
     fireEvent.click(timeline, { clientX: 2000 })
     expect(video.currentTime).toBe(2000)
   })
+
+  it('seeks when clicking inside a clip without dragging, so the whole bar works for navigating', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 1000, 1050)
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(screen.getByTestId('clip-block-1'), { clientX: 1020 })
+    fireEvent.pointerUp(window, { clientX: 1020 })
+    expect(video.currentTime).toBe(1020)
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:16:40')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:17:30')
+  })
 })
