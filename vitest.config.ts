@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@shared': resolve('src/shared') } },
   test: {
-    environment: 'node',
+    environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     testTimeout: 30000
   }
