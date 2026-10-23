@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { defaultBaseName, formatTime, isOverLimit, type Clip } from '@shared/clips'
+import { defaultBaseName, formatTime, type Clip } from '@shared/clips'
 import type { OutputFormat } from '@shared/formats'
 import { mediaUrl } from '@shared/media-url'
 import { ClipList } from './components/ClipList'
@@ -89,7 +89,7 @@ export function App() {
   }
 
   const canExport =
-    clips.length > 0 && !clips.some(isOverLimit) && folder !== null && baseName.trim() !== ''
+    clips.length > 0 && folder !== null && baseName.trim() !== ''
 
   return (
     <div

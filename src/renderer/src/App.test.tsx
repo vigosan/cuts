@@ -65,15 +65,13 @@ describe('App', () => {
     expect(row).not.toHaveAttribute('data-over-limit', 'true')
   })
 
-  it('flags a clip over 59 s and blocks export so Instagram never rejects an upload', async () => {
+  it('warns about clips over 59 s but still exports them, because a regular post can be longer than a carousel clip', async () => {
     render(<App />)
     const video = await loadVideo()
     await userEvent.click(screen.getByTestId('choose-folder'))
-    await markClip(video, 10, 70)
+    await markClip(video, 10, 120)
     expect(screen.getByTestId('clip-row-1')).toHaveAttribute('data-over-limit', 'true')
-    expect(screen.getByTestId('export')).toBeDisabled()
-    await userEvent.click(screen.getByTestId('clip-delete-1'))
-    await markClip(video, 10, 69)
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('no vale para carrusel')
     expect(screen.getByTestId('export')).toBeEnabled()
   })
 

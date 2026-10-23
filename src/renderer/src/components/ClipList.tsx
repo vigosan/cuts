@@ -43,7 +43,7 @@ export function ClipList({ clips, time, onPlay, onSetStart, onSetEnd, onDelete }
               <td>{formatTime(clip.end)}</td>
               <td>
                 {formatDuration(clipDuration(clip))}
-                {over && ` · pasa de ${MAX_CLIP_SECONDS} s`}
+                {over && ` · más de ${MAX_CLIP_SECONDS} s, no vale para carrusel`}
               </td>
               <td className="text-right">
                 <button data-testid={`clip-play-${n}`} className={button} title="Escuchar" onClick={() => onPlay(clip)}>
