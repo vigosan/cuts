@@ -1,0 +1,11 @@
+appId: com.vicent.carouselcutter
+productName: Carousel Cutter
+directories:
+  output: dist
+files:
+  - out/**
+  - package.json
+mac:
+  target: dir
+  category: public.app-category.video
+  identity: null
