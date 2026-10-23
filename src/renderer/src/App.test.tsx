@@ -118,4 +118,27 @@ describe('App', () => {
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(await screen.findByTestId('export-error')).toHaveTextContent('No se encontró ffmpeg')
   })
+
+  it('keeps space as play/pause after clicking the fade checkbox, so shortcuts never silently change export settings', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    const play = vi.fn(async () => {})
+    Object.assign(video, { play })
+    await userEvent.click(screen.getByTestId('fade'))
+    await userEvent.click(screen.getByTestId('fade'))
+    await userEvent.keyboard(' ')
+    expect(screen.getByTestId('fade')).toBeChecked()
+    expect(play).toHaveBeenCalled()
+  })
+
+  it('asks before an accidental drop replaces the video and its marked clips', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 10, 20)
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'clip.mp4')] } })
+    expect(confirm).toHaveBeenCalled()
+    expect(screen.getByTestId('clip-row-1')).toBeInTheDocument()
+    confirm.mockRestore()
+  })
 })

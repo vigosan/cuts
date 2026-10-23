@@ -63,4 +63,9 @@ describe('exportClips', () => {
     expect(result).toEqual({ ok: false, error: 'Falló el trozo 1: Invalid data found' })
     expect(run).toHaveBeenCalledTimes(1)
   })
+
+  it('turns slashes in a date-like name into dashes instead of writing into a missing subfolder', async () => {
+    const result = await exportClips({ ...request, baseName: 'sesion 22/10' }, deps())
+    expect(result).toEqual({ ok: true, files: ['/Movies/Instagram/sesion 22-10-1.mp4', '/Movies/Instagram/sesion 22-10-2.mp4'] })
+  })
 })

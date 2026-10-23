@@ -15,7 +15,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
   const { ffmpeg } = deps
   if (!ffmpeg) return { ok: false, error: 'No se encontró ffmpeg. Instálalo con: brew install ffmpeg' }
 
-  const names = request.clips.map((_, index) => outputFileName(request.baseName.trim(), index))
+  const names = request.clips.map((_, index) => outputFileName(request.baseName.trim().replaceAll('/', '-'), index))
   const files = names.map((name) => join(request.folder, name))
   const existing = names.filter((_, index) => deps.exists(files[index]))
   if (existing.length > 0 && !(await deps.confirmOverwrite(existing))) {

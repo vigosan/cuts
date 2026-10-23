@@ -49,7 +49,7 @@ export function App() {
   useEffect(() => {
     if (!videoPath) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return
+      if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
       const actions: Record<string, () => void> = {
         i: markStart,
         o: markEnd,
@@ -99,7 +99,9 @@ export function App() {
       onDrop={(e) => {
         e.preventDefault()
         const file = e.dataTransfer.files[0]
-        if (file) load(window.api.pathForFile(file))
+        if (!file) return
+        if (clips.length > 0 && !window.confirm('¿Abrir otro vídeo? Se perderán los trozos marcados.')) return
+        load(window.api.pathForFile(file))
       }}
     >
       {!videoPath ? (
