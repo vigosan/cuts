@@ -35,3 +35,18 @@ export function waveformColumns(
   }
   return result
 }
+
+export type Range = { start: number; end: number }
+
+export function uncoveredRanges(clips: Range[], viewStart: number, viewEnd: number): Range[] {
+  if (clips.length === 0) return []
+  const ranges: Range[] = []
+  let cursor = viewStart
+  for (const clip of [...clips].sort((a, b) => a.start - b.start)) {
+    if (clip.end <= cursor || clip.start >= viewEnd) continue
+    if (clip.start > cursor) ranges.push({ start: cursor, end: clip.start })
+    cursor = Math.max(cursor, clip.end)
+  }
+  if (cursor < viewEnd) ranges.push({ start: cursor, end: viewEnd })
+  return ranges
+}

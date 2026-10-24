@@ -2,20 +2,17 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import type { Clip } from '@shared/clips'
 import type { ClipFade } from '@shared/fades'
 import { dragClip, type DragMode } from '../drag-clip'
-import { filmstripTiles, waveformColumns } from '../filmstrip'
+import { filmstripTiles, uncoveredRanges, waveformColumns } from '../filmstrip'
 import { t } from '../i18n'
 import { useThumbnails, useWaveform } from '../useVideoPreview'
 
 const DRAG_THRESHOLD_PX = 3
 const TILE_WIDTH_PX = 96
+const ROOMY_CLIP_PX = 28
 const PEAKS_PER_SECOND = 50
 
-function fadeMask(fadeIn: boolean, fadeOut: boolean, rampPercent: number): string | undefined {
-  if (!fadeIn && !fadeOut) return undefined
-  const ramp = `max(6px, ${rampPercent}%)`
-  const start = fadeIn ? `transparent, black ${ramp}` : 'black, black'
-  const end = fadeOut ? `black calc(100% - ${ramp}), transparent` : 'black, black'
-  return `linear-gradient(to right, ${start}, ${end})`
+function fadeRamp(seconds: number, clipLength: number): string {
+  return `max(6px, ${(seconds / clipLength) * 100}%)`
 }
 
 type Props = {
@@ -33,13 +30,29 @@ type Props = {
   onClipChange: (clip: Clip) => void
 }
 
-export function Timeline({ videoPath, duration, viewStart, viewSpan, time, clips, fades, selectedId, onSelect, pendingStart, onSeek, onClipChange }: Props) {
+export function Timeline({
+  videoPath,
+  duration,
+  viewStart,
+  viewSpan,
+  time,
+  clips,
+  fades,
+  selectedId,
+  onSelect,
+  pendingStart,
+  onSeek,
+  onClipChange
+}: Props) {
   const justDragged = useRef(false)
   const barRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [width, setWidth] = useState(0)
   const tiles = filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration)
-  const frames = useThumbnails(videoPath, tiles.map((tile) => tile.time))
+  const frames = useThumbnails(
+    videoPath,
+    tiles.map((tile) => tile.time)
+  )
   const peaks = useWaveform(videoPath)
 
   useEffect(() => {
@@ -125,50 +138,69 @@ export function Timeline({ videoPath, duration, viewStart, viewSpan, time, clips
         data-testid="waveform"
         className="pointer-events-none absolute inset-x-0 bottom-0 h-8 w-full text-ink-3"
       />
-      {clips.map((clip, index) => (
+      {uncoveredRanges(clips, viewStart, viewStart + viewSpan).map((range) => (
         <div
-          key={clip.id}
-          data-testid={`clip-block-${index + 1}`}
-          data-fade-in={fades[index].videoFade !== 'none' && index > 0}
-          data-fade-out={fades[index].videoFade !== 'none'}
-          aria-selected={clip.id === selectedId}
-          className={`group absolute inset-y-1 min-w-3 cursor-grab rounded-md border-2 shadow-[0_0_0_1px_rgb(0_0_0/0.45)] active:cursor-grabbing ${clip.id === selectedId ? 'z-10 border-white' : selectedId ? 'border-white/45' : 'border-white/80'}`}
-          style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => startDrag(e, clip, 'move')}
-        >
-          <span
-            className={`pointer-events-none absolute inset-0 rounded-[4px] transition-colors ${clip.id === selectedId ? 'bg-white/30' : 'bg-white/10 group-hover:bg-white/20'}`}
-            style={{
-              maskImage: fadeMask(
-                fades[index].videoFade !== 'none' && index > 0,
-                fades[index].videoFade !== 'none',
-                (fades[index].fadeSeconds / (clip.end - clip.start)) * 100
-              )
-            }}
-          />
-          <span className="pointer-events-none absolute top-1 left-1 rounded bg-black/60 px-1 text-[10px] leading-4 font-semibold text-white tabular-nums">
-            {index + 1}
-          </span>
-          <div
-            data-testid={`clip-handle-start-${index + 1}`}
-            className="absolute inset-y-0 -left-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:left-1 after:w-0.5 after:rounded-full after:bg-transparent group-hover:after:bg-white"
-            onPointerDown={(e) => startDrag(e, clip, 'start')}
-          />
-          <div
-            data-testid={`clip-handle-end-${index + 1}`}
-            className="absolute inset-y-0 -right-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:right-1 after:w-0.5 after:rounded-full after:bg-transparent group-hover:after:bg-white"
-            onPointerDown={(e) => startDrag(e, clip, 'end')}
-          />
-        </div>
+          key={range.start}
+          className="pointer-events-none absolute inset-y-0 bg-black/40"
+          style={{ left: pct(range.start - viewStart), width: pct(range.end - range.start) }}
+        />
       ))}
+      {clips.map((clip, index) => {
+        const fade = fades[index]
+        const selected = clip.id === selectedId
+        const roomy = ((clip.end - clip.start) / viewSpan) * width >= ROOMY_CLIP_PX
+        const fadeColor = fade.videoFade === 'white' ? 'from-white/80' : 'from-black/80'
+        const handle = `absolute inset-y-0 w-3 cursor-ew-resize after:absolute after:inset-y-3 after:w-1 after:rounded-full after:bg-white after:shadow-[0_0_0_1px_rgb(0_0_0/0.4)] ${!roomy ? 'after:hidden' : selected ? '' : 'after:opacity-0 group-hover:after:opacity-100'}`
+        return (
+          <div
+            key={clip.id}
+            data-testid={`clip-block-${index + 1}`}
+            data-fade-in={fades[index].videoFade !== 'none' && index > 0}
+            data-fade-out={fades[index].videoFade !== 'none'}
+            aria-selected={clip.id === selectedId}
+            className={`group absolute inset-y-0.5 min-w-3 cursor-grab rounded-md shadow-[0_0_0_1px_rgb(0_0_0/0.5)] active:cursor-grabbing ${selected ? 'z-10 border-[3px] border-white' : 'border-2 border-white/70 hover:border-white'}`}
+            style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => startDrag(e, clip, 'move')}
+          >
+            {roomy && fade.videoFade !== 'none' && index > 0 && (
+              <span
+                className={`pointer-events-none absolute inset-y-0 left-0 rounded-l-[4px] bg-gradient-to-r ${fadeColor} to-transparent`}
+                style={{ width: fadeRamp(fade.fadeSeconds, clip.end - clip.start) }}
+              />
+            )}
+            {roomy && fade.videoFade !== 'none' && (
+              <span
+                className={`pointer-events-none absolute inset-y-0 right-0 rounded-r-[4px] bg-gradient-to-l ${fadeColor} to-transparent`}
+                style={{ width: fadeRamp(fade.fadeSeconds, clip.end - clip.start) }}
+              />
+            )}
+            <span className="pointer-events-none absolute top-1 left-1 rounded bg-black/60 px-1 text-[10px] leading-4 font-semibold text-white tabular-nums">
+              {index + 1}
+            </span>
+            <div
+              data-testid={`clip-handle-start-${index + 1}`}
+              className={`${handle} -left-1.5 after:left-1`}
+              onPointerDown={(e) => startDrag(e, clip, 'start')}
+            />
+            <div
+              data-testid={`clip-handle-end-${index + 1}`}
+              className={`${handle} -right-1.5 after:right-1`}
+              onPointerDown={(e) => startDrag(e, clip, 'end')}
+            />
+          </div>
+        )
+      })}
       {pendingStart !== null && (
         <div
           className="pointer-events-none absolute inset-y-1.5 rounded-md border border-dashed border-accent bg-accent-soft"
           style={{ left: pct(pendingStart - viewStart), width: pct(Math.max(0, time - pendingStart)) }}
         />
       )}
-      <div className="pointer-events-none absolute inset-y-0 z-20 w-0.5 -translate-x-1/2 rounded-full bg-red-500" style={{ left: pct(time - viewStart) }} />
+      <div
+        className="pointer-events-none absolute inset-y-0 z-20 w-0.5 -translate-x-1/2 rounded-full bg-red-500"
+        style={{ left: pct(time - viewStart) }}
+      />
     </div>
   )
 }

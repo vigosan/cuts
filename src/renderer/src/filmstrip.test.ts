@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filmstripTiles, waveformColumns } from './filmstrip'
+import { filmstripTiles, uncoveredRanges, waveformColumns } from './filmstrip'
 
 describe('filmstripTiles', () => {
   it('fills the visible width with frames taken at the middle of each tile', () => {
@@ -38,5 +38,28 @@ describe('waveformColumns', () => {
 
   it('shows silence past the end of the audio', () => {
     expect(Array.from(waveformColumns(new Float32Array([0.5]), 1, 0, 4, 2))).toEqual([expect.closeTo(0.5), 0])
+  })
+})
+
+describe('uncoveredRanges', () => {
+  const clip = (start: number, end: number) => ({ id: `${start}`, start, end })
+
+  it('returns the stretches of the visible range outside every clip, which the timeline dims', () => {
+    expect(uncoveredRanges([clip(20, 30), clip(50, 60)], 0, 100)).toEqual([
+      { start: 0, end: 20 },
+      { start: 30, end: 50 },
+      { start: 60, end: 100 }
+    ])
+  })
+
+  it('merges overlapping clips and ignores clips outside the view', () => {
+    expect(uncoveredRanges([clip(40, 70), clip(10, 50), clip(200, 210)], 0, 100)).toEqual([
+      { start: 0, end: 10 },
+      { start: 70, end: 100 }
+    ])
+  })
+
+  it('dims nothing while there are no clips, so a fresh video is shown at full brightness', () => {
+    expect(uncoveredRanges([], 0, 100)).toEqual([])
   })
 })
