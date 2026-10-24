@@ -298,9 +298,7 @@ export function App() {
             {clips.length > 0 && (
               <FadeControls
                 fade={selectedClip ? fadeOf(selectedClip) : defaultFade}
-                selectedNumber={selectedClip ? selectedIndex + 1 : null}
                 onChange={changeFade}
-                onClearSelection={() => setSelectedId(null)}
               />
             )}
             <ExportPanel
