@@ -6,17 +6,24 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFfmpegArgs, findFfmpeg } from './ffmpeg-args'
 import { runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 
-const ffmpeg = findFfmpeg(existsSync)!
+const ffmpeg = findFfmpeg(existsSync, join(__dirname, '../../resources/ffmpeg/ffmpeg'))!
 const dir = mkdtempSync(join(tmpdir(), 'carousel-cutter-'))
 const input = join(dir, 'session with spaces.mov')
 
 function probe(file: string) {
-  const out = execFileSync(ffmpeg.replace(/ffmpeg$/, 'ffprobe'), [
-    '-v', 'error', '-select_streams', 'v:0',
-    '-show_entries', 'stream=width,height:format=duration', '-of', 'json', file
-  ])
-  const json = JSON.parse(out.toString())
-  return { width: json.streams[0].width, height: json.streams[0].height, duration: Number(json.format.duration) }
+  let info = ''
+  try {
+    execFileSync(ffmpeg, ['-hide_banner', '-i', file], { stdio: 'pipe' })
+  } catch (error) {
+    info = String((error as { stderr: Buffer }).stderr)
+  }
+  const [, hours, minutes, seconds] = /Duration: (\d+):(\d+):([\d.]+)/.exec(info)!
+  const [, width, height] = /Video: .*?, (\d+)x(\d+)/.exec(info)!
+  return {
+    width: Number(width),
+    height: Number(height),
+    duration: Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds)
+  }
 }
 
 describe('runFfmpeg with real ffmpeg', () => {
@@ -24,7 +31,7 @@ describe('runFfmpeg with real ffmpeg', () => {
     execFileSync(ffmpeg, [
       '-y', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=30:duration=4',
       '-f', 'lavfi', '-i', 'sine=frequency=440:duration=4',
-      '-c:v', 'libx264', '-c:a', 'aac', '-shortest', input
+      '-c:v', 'h264_videotoolbox', '-c:a', 'aac', '-shortest', input
     ], { stdio: 'ignore' })
   })
 

@@ -56,7 +56,7 @@ app.whenReady().then(() => {
   ipcMain.handle('export-clips', (event, request: ExportRequest) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     return exportClips(request, {
-      ffmpeg: findFfmpeg(existsSync),
+      ffmpeg: findFfmpeg(existsSync, join(process.resourcesPath, '..', 'MacOS', 'ffmpeg')),
       exists: existsSync,
       ensureDir: async (path) => {
         await mkdir(path, { recursive: true })

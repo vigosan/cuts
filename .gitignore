@@ -4,3 +4,5 @@ dist/
 .superpowers/
 *.log
 test-output/
+vendor/
+resources/ffmpeg/

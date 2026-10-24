@@ -5,6 +5,14 @@ directories:
 files:
   - out/**
   - package.json
+extraFiles:
+  - from: resources/ffmpeg/ffmpeg
+    to: MacOS/ffmpeg
+extraResources:
+  - from: resources/ffmpeg/LICENSE-FFmpeg.txt
+    to: LICENSE-FFmpeg.txt
+  - from: resources/ffmpeg/BUILD-FFmpeg.txt
+    to: BUILD-FFmpeg.txt
 mac:
   target: dir
   category: public.app-category.video

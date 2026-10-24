@@ -1,4 +1,4 @@
-.PHONY: install dev test typecheck build app
+.PHONY: install dev test typecheck build app ffmpeg
 
 install:
 	npm install
@@ -7,7 +7,7 @@ install:
 dev:
 	npm run dev
 
-test:
+test: ffmpeg
 	npm test
 
 typecheck:
@@ -16,7 +16,12 @@ typecheck:
 build:
 	npm run build
 
-app:
+ffmpeg: resources/ffmpeg/ffmpeg
+
+resources/ffmpeg/ffmpeg:
+	./scripts/build-ffmpeg.sh
+
+app: ffmpeg
 	npm run app
 	rm -rf "/Applications/Carousel Cutter.app"
 	cp -R "dist/mac-arm64/Carousel Cutter.app" /Applications/

@@ -108,6 +108,11 @@ describe('parseProgressSeconds', () => {
 })
 
 describe('findFfmpeg', () => {
+  it('prefers the ffmpeg bundled inside the app, which is the only one a sandboxed app may run', () => {
+    const bundled = '/Applications/Carousel Cutter.app/Contents/MacOS/ffmpeg'
+    expect(findFfmpeg(() => true, bundled)).toBe(bundled)
+  })
+
   it('finds Homebrew ffmpeg even when the Dock gives the app no PATH', () => {
     expect(findFfmpeg((p) => p === '/opt/homebrew/bin/ffmpeg')).toBe('/opt/homebrew/bin/ffmpeg')
     expect(findFfmpeg((p) => p === '/usr/local/bin/ffmpeg')).toBe('/usr/local/bin/ffmpeg')
