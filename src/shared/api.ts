@@ -19,7 +19,7 @@ export type ExportProgress = { index: number; ratio: number }
 export type Api = {
   pathForFile(file: File): string
   openVideo(): Promise<string | null>
-  chooseFolder(): Promise<string | null>
+  chooseFolder(current: string | null): Promise<string | null>
   moviesDir(): Promise<string>
   exportClips(request: ExportRequest): Promise<ExportResult>
   onExportProgress(callback: (progress: ExportProgress) => void): () => void

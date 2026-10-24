@@ -4,7 +4,7 @@ import type { Api, ExportProgress } from '../shared/api'
 const api: Api = {
   pathForFile: (file) => webUtils.getPathForFile(file),
   openVideo: () => ipcRenderer.invoke('open-video'),
-  chooseFolder: () => ipcRenderer.invoke('choose-folder'),
+  chooseFolder: (current) => ipcRenderer.invoke('choose-folder', current),
   moviesDir: () => ipcRenderer.invoke('movies-dir'),
   exportClips: (request) => ipcRenderer.invoke('export-clips', request),
   onExportProgress: (callback) => {

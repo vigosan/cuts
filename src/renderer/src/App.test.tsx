@@ -364,4 +364,13 @@ describe('App', () => {
     expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
     expect(screen.getByTestId('mark-start')).toHaveAttribute('title', 'Mark start (I)')
   })
+
+  it('opens the folder picker at the current destination instead of wherever macOS last was', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await screen.findByText('Movies/Cuts')
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    expect(api.chooseFolder).toHaveBeenCalledWith('/Users/vicent/Movies/Cuts')
+  })
 })

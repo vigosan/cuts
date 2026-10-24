@@ -310,7 +310,7 @@ export function App() {
               state={exportState}
               onBaseName={setBaseName}
               onChooseFolder={async () => {
-                const chosen = await window.api.chooseFolder()
+                const chosen = await window.api.chooseFolder(folder)
                 if (chosen) setFolder(chosen)
               }}
               onFormat={setFormat}
