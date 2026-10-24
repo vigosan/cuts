@@ -7,7 +7,7 @@ files:
   - package.json
 extraFiles:
   - from: resources/ffmpeg/ffmpeg
-    to: MacOS/ffmpeg
+    to: Helpers/ffmpeg
 extraResources:
   - from: resources/ffmpeg/LICENSE-FFmpeg.txt
     to: LICENSE-FFmpeg.txt
@@ -16,7 +16,7 @@ extraResources:
 mac:
   target: dir
   icon: build/icon.icns
-  x64ArchFiles: Contents/MacOS/ffmpeg
+  x64ArchFiles: Contents/Helpers/ffmpeg
   category: public.app-category.video
   electronLanguages:
     - en

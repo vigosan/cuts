@@ -110,7 +110,7 @@ describe('parseProgressSeconds', () => {
 
 describe('findFfmpeg', () => {
   it('prefers the ffmpeg bundled inside the app, which is the only one a sandboxed app may run', () => {
-    const bundled = '/Applications/Cuts.app/Contents/MacOS/ffmpeg'
+    const bundled = '/Applications/Cuts.app/Contents/Helpers/ffmpeg'
     expect(findFfmpeg(() => true, bundled)).toBe(bundled)
   })
 
@@ -120,7 +120,7 @@ describe('findFfmpeg', () => {
   })
 
   it('only uses the bundled ffmpeg in the Mac App Store build, where nothing outside the app may run', () => {
-    expect(findFfmpeg((p) => p === '/opt/homebrew/bin/ffmpeg', '/App/Contents/MacOS/ffmpeg', false)).toBeNull()
+    expect(findFfmpeg((p) => p === '/opt/homebrew/bin/ffmpeg', '/App/Contents/Helpers/ffmpeg', false)).toBeNull()
   })
 
   it('reports missing ffmpeg instead of failing mid-export', () => {

@@ -102,7 +102,7 @@ app.whenReady().then(() => {
     })
   })
 
-  const bundledFfmpeg = () => findFfmpeg(existsSync, join(process.resourcesPath, '..', 'MacOS', 'ffmpeg'), !process.mas)
+  const bundledFfmpeg = () => findFfmpeg(existsSync, join(process.resourcesPath, '..', 'Helpers', 'ffmpeg'), !process.mas)
 
   ipcMain.handle('thumbnail', async (_event, path: string, time: number) => {
     const jpeg = await captureFfmpeg(bundledFfmpeg()!, thumbnailArgs(path, time, THUMBNAIL_HEIGHT))

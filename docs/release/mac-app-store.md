@@ -11,7 +11,7 @@ Estado a 2026-10-24. Cuts (antes "Carousel Cutter") es una app Electron 45 + Rea
 | `./scripts/sandbox-local.sh` | `dist-sandbox/mas-universal/Cuts.app` con la build MAS de Electron, firmada ad hoc con sandbox y Team ID ficticio `LOCALTEST` | **Solo pruebas locales del sandbox**. No sirve para subir |
 | `APPLE_TEAM_ID=XXXXXXXXXX make mas` | `dist/mas-universal/*.pkg` firmado para la Mac App Store | Envío. Necesita certificados y perfil (ver tareas) |
 
-El paquete es autocontenido: no depende de Homebrew ni de instaladores externos. FFmpeg va en `Contents/MacOS/ffmpeg`, su licencia y detalles de compilación en `Contents/Resources/LICENSE-FFmpeg.txt` y `BUILD-FFmpeg.txt`.
+El paquete es autocontenido: no depende de Homebrew ni de instaladores externos. FFmpeg va en `Contents/Helpers/ffmpeg`, su licencia y detalles de compilación en `Contents/Resources/LICENSE-FFmpeg.txt` y `BUILD-FFmpeg.txt`.
 
 ## Sandbox y permisos
 
@@ -55,7 +55,7 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 ### A verificar con la build firmada por Apple
 
 1. Elegir un vídeo **fuera** de Películas con el diálogo y arrastrarlo desde Finder, y exportar a una carpeta elegida fuera de Películas. ffmpeg solo hereda el sandbox, así que debe recibir el acceso que macOS concede a la app en ese momento.
-2. Que App Store Connect acepte el ejecutable `Contents/MacOS/ffmpeg`, firmado con identificador `ffmpeg` y sin Info.plist propio. Lo dirá Transporter al subir.
+2. Que App Store Connect acepte el ejecutable `Contents/Helpers/ffmpeg`, firmado con identificador `ffmpeg` y sin Info.plist propio. Lo dirá Transporter al subir.
 3. Con el sistema en un idioma no soportado (por ejemplo francés con español como segundo), que el menú y la ventana salgan en el mismo idioma.
 
 ## Fuentes oficiales consultadas

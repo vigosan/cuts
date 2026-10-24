@@ -19,7 +19,7 @@ sed "s/APPLE_TEAM_ID/LOCALTEST/" build/entitlements.mas.template.plist \
 
 find "$APP/Contents/Frameworks" \( -name "*.dylib" -o -name "*.so" \) -exec codesign -f -s - --entitlements "$INHERIT" {} \;
 for item in "$APP"/Contents/Frameworks/*.framework "$APP"/Contents/Frameworks/*.app \
-  "$APP"/Contents/Library/LoginItems/*.app "$APP/Contents/MacOS/ffmpeg"; do
+  "$APP"/Contents/Library/LoginItems/*.app "$APP/Contents/Helpers/ffmpeg"; do
   codesign -f -s - --entitlements "$INHERIT" "$item"
 done
 codesign -f -s - --entitlements "$PARENT" "$APP"
