@@ -8,6 +8,7 @@ export type ExportDeps = {
   ffmpeg: string | null
   exists: (path: string) => boolean
   ensureDir: (path: string) => Promise<void>
+  cancelled: () => boolean
   remove: (path: string) => Promise<void>
   confirmOverwrite: (names: string[]) => Promise<boolean>
   run: (ffmpeg: string, args: string[], onSeconds: (seconds: number) => void) => Promise<void>
@@ -38,6 +39,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
       await deps.run(ffmpeg, args, (seconds) => deps.onProgress({ index, ratio: Math.min(1, seconds / length) }))
     } catch (error) {
       await deps.remove(files[index]).catch(() => {})
+      if (deps.cancelled()) return { ok: false, error: t.exportCancelled }
       return { ok: false, error: t.clipFailed(index + 1, (error as Error).message) }
     }
     deps.onProgress({ index, ratio: 1 })

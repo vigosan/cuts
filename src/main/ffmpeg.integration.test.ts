@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFfmpegArgs, findFfmpeg } from './ffmpeg-args'
-import { captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
+import { cancelFfmpeg, captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { peaksFromSamples, thumbnailArgs, waveformArgs, PEAKS_PER_SECOND } from './preview'
 
 const ffmpeg = findFfmpeg(existsSync, join(__dirname, '../../resources/ffmpeg/ffmpeg'))!
@@ -72,6 +72,21 @@ describe('runFfmpeg with real ffmpeg', () => {
     const peaks = peaksFromSamples(new Int16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2))
     expect(peaks.length).toBeGreaterThan(4 * PEAKS_PER_SECOND - 5)
     expect(Math.max(...peaks)).toBeGreaterThan(0.1)
+  })
+
+  it('cancels the running export, removes its half-written clip and still allows exporting again', async () => {
+    const output = join(dir, 'cancelled.mp4')
+    const args = ['-y', '-re', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=30:duration=60', '-progress', 'pipe:1', output]
+    let started: () => void
+    const running = new Promise<void>((resolve) => (started = resolve))
+    const exporting = runFfmpeg(ffmpeg, args, () => started())
+    await running
+    cancelFfmpeg()
+    await expect(exporting).rejects.toThrow()
+    expect(existsSync(output)).toBe(false)
+    const again = join(dir, 'after-cancel.mp4')
+    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output: again, start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, format: 'original' }), () => {})
+    expect(existsSync(again)).toBe(true)
   })
 
   it('stops running exports when the app quits and removes the half-written clip, so nothing broken is left behind', async () => {

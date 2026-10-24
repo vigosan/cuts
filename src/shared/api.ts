@@ -24,6 +24,7 @@ export type Api = {
   exportClips(request: ExportRequest): Promise<ExportResult>
   onExportProgress(callback: (progress: ExportProgress) => void): () => void
   reveal(path: string): void
+  cancelExport(): void
   onMenuOpenVideo(callback: () => void): () => void
   thumbnail(path: string, time: number): Promise<string>
   waveform(path: string): Promise<Float32Array>

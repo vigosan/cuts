@@ -20,6 +20,7 @@ type Props = {
   onFormat: (value: OutputFormat) => void
   onExport: () => void
   onReveal: (path: string) => void
+  onCancel: () => void
 }
 
 const field =
@@ -85,8 +86,17 @@ export function ExportPanel(p: Props) {
       </button>
 
       {running && (
-        <div data-testid="export-progress" className="h-1.5 overflow-hidden rounded-full bg-sunken">
-          <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${overall * 100}%` }} />
+        <div className="flex items-center gap-3">
+          <div data-testid="export-progress" className="h-1.5 flex-1 overflow-hidden rounded-full bg-sunken">
+            <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${overall * 100}%` }} />
+          </div>
+          <button
+            data-testid="export-cancel"
+            className="rounded-md px-2 py-0.5 text-xs text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+            onClick={p.onCancel}
+          >
+            {t.cancelExport}
+          </button>
         </div>
       )}
       {p.state.status === 'idle' && p.baseName && p.clipCount > 0 && p.folder && (

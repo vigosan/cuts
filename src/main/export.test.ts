@@ -21,6 +21,7 @@ function deps(overrides: Partial<ExportDeps> = {}): ExportDeps {
     ffmpeg: '/opt/homebrew/bin/ffmpeg',
     exists: () => false,
     ensureDir: vi.fn(async () => {}),
+    cancelled: () => false,
     remove: vi.fn(async () => {}),
     t,
     confirmOverwrite: vi.fn(async () => true),
@@ -124,5 +125,16 @@ describe('exportClips', () => {
     const remove = vi.fn(async () => Promise.reject(new Error('EPERM')))
     const result = await exportClips(request, deps({ run, remove }))
     expect(result).toEqual({ ok: false, error: t.clipFailed(1, 'No space left on device') })
+  })
+
+  it('reports a cancelled export as cancelled and never starts the next clip', async () => {
+    let cancelled = false
+    const run = vi.fn(async () => {
+      cancelled = true
+      throw new Error('killed')
+    })
+    const result = await exportClips(request, deps({ run, cancelled: () => cancelled }))
+    expect(result).toEqual({ ok: false, error: t.exportCancelled })
+    expect(run).toHaveBeenCalledTimes(1)
   })
 })

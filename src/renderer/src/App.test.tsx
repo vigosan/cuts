@@ -16,6 +16,7 @@ function makeApi(): Api {
     exportClips: vi.fn(async () => ({ ok: true as const, files: ['/Users/vicent/Movies/Instagram/x-1.mp4'] })),
     onExportProgress: vi.fn(() => () => {}),
     reveal: vi.fn(),
+    cancelExport: vi.fn(),
     thumbnail: vi.fn(async (_path: string, time: number) => `data:image/jpeg;base64,${time}`),
     waveform: vi.fn(async () => new Float32Array(4880 * 50).fill(0.5)),
     onMenuOpenVideo: vi.fn((callback: () => void) => {
@@ -459,5 +460,15 @@ describe('App', () => {
     render(<App />)
     await loadVideo()
     expect(screen.getByTestId('export')).toHaveTextContent(/^Export$/)
+  })
+
+  it('cancels a running export from the export panel', async () => {
+    vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('export'))
+    await userEvent.click(await screen.findByTestId('export-cancel'))
+    expect(api.cancelExport).toHaveBeenCalled()
   })
 })

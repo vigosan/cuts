@@ -6,13 +6,17 @@ const running = new Map<ChildProcess, string>()
 let stopping = false
 const capturing = new Set<ChildProcess>()
 
-export function stopAllFfmpeg(): void {
-  stopping = true
-  for (const child of capturing) child.kill('SIGKILL')
+export function cancelFfmpeg(): void {
   for (const [child, output] of running) {
     child.kill('SIGKILL')
     rmSync(output, { force: true })
   }
+}
+
+export function stopAllFfmpeg(): void {
+  stopping = true
+  for (const child of capturing) child.kill('SIGKILL')
+  cancelFfmpeg()
 }
 
 export function runFfmpeg(ffmpeg: string, args: string[], onSeconds: (seconds: number) => void): Promise<void> {

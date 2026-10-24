@@ -319,6 +319,7 @@ export function App() {
               onFormat={setFormat}
               onExport={runExport}
               onReveal={window.api.reveal}
+              onCancel={window.api.cancelExport}
             />
           </aside>
         </main>

@@ -6,7 +6,7 @@ import type { ExportRequest } from '../shared/api'
 import { messagesFor, resolveLocale } from '../shared/i18n'
 import { exportClips } from './export'
 import { findFfmpeg } from './ffmpeg-args'
-import { captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
+import { cancelFfmpeg, captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { existingAncestor } from './paths'
@@ -68,11 +68,19 @@ app.whenReady().then(() => {
     return result.canceled ? null : result.filePaths[0]
   })
 
+  let cancelled = false
+  ipcMain.on('cancel-export', () => {
+    cancelled = true
+    cancelFfmpeg()
+  })
+
   ipcMain.handle('export-clips', (event, request: ExportRequest) => {
+    cancelled = false
     const win = BrowserWindow.fromWebContents(event.sender)!
     return exportClips(request, {
       ffmpeg: bundledFfmpeg(),
       exists: existsSync,
+      cancelled: () => cancelled,
       ensureDir: async (path) => {
         await mkdir(path, { recursive: true })
       },
