@@ -6,12 +6,15 @@ import type { ExportRequest } from '../shared/api'
 import { messagesFor, resolveLocale } from '../shared/i18n'
 import { exportClips } from './export'
 import { findFfmpeg } from './ffmpeg-args'
-import { runFfmpeg, stopAllFfmpeg } from './ffmpeg'
+import { captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { existingAncestor } from './paths'
+import { peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
 
 registerMediaScheme()
+
+const THUMBNAIL_HEIGHT = 96
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -68,7 +71,7 @@ app.whenReady().then(() => {
   ipcMain.handle('export-clips', (event, request: ExportRequest) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     return exportClips(request, {
-      ffmpeg: findFfmpeg(existsSync, join(process.resourcesPath, '..', 'MacOS', 'ffmpeg'), !process.mas),
+      ffmpeg: bundledFfmpeg(),
       exists: existsSync,
       ensureDir: async (path) => {
         await mkdir(path, { recursive: true })
@@ -89,6 +92,19 @@ app.whenReady().then(() => {
         return response === 0
       }
     })
+  })
+
+  const bundledFfmpeg = () => findFfmpeg(existsSync, join(process.resourcesPath, '..', 'MacOS', 'ffmpeg'), !process.mas)
+
+  ipcMain.handle('thumbnail', async (_event, path: string, time: number) => {
+    const jpeg = await captureFfmpeg(bundledFfmpeg()!, thumbnailArgs(path, time, THUMBNAIL_HEIGHT))
+    return `data:image/jpeg;base64,${jpeg.toString('base64')}`
+  })
+
+  ipcMain.handle('waveform', async (_event, path: string) => {
+    const raw = await captureFfmpeg(bundledFfmpeg()!, waveformArgs(path))
+    const even = raw.byteLength - (raw.byteLength % 2)
+    return peaksFromSamples(new Int16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + even)))
   })
 
   ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')).catch(() => app.getPath('videos')))

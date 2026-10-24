@@ -262,6 +262,7 @@ export function App() {
               </div>
 
               <Timeline
+                videoPath={videoPath}
                 duration={duration}
                 viewStart={currentViewStart}
                 viewSpan={viewSpan}

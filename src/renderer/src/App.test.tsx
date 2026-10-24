@@ -16,6 +16,8 @@ function makeApi(): Api {
     exportClips: vi.fn(async () => ({ ok: true as const, files: ['/Users/vicent/Movies/Instagram/x-1.mp4'] })),
     onExportProgress: vi.fn(() => () => {}),
     reveal: vi.fn(),
+    thumbnail: vi.fn(async (_path: string, time: number) => `data:image/jpeg;base64,${time}`),
+    waveform: vi.fn(async () => new Float32Array(4880 * 50).fill(0.5)),
     onMenuOpenVideo: vi.fn((callback: () => void) => {
       menuOpenVideo = callback
       return () => {}
@@ -432,5 +434,24 @@ describe('App', () => {
     await markClip(video, 100, 150)
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(await screen.findByTestId('export-error')).toHaveTextContent('IPC failed')
+  })
+
+  it('shows frames of the video along the timeline, like the filmstrip in Final Cut', async () => {
+    render(<App />)
+    await loadVideo()
+    const frames = await screen.findAllByTestId('filmstrip-frame')
+    expect(frames.length).toBeGreaterThan(5)
+    expect(frames[0].getAttribute('src')).toMatch(/^data:image\/jpeg;base64,/)
+    expect(api.thumbnail).toHaveBeenCalledWith(VIDEO, expect.any(Number))
+  })
+
+  it('reads the waveform once per video, since decoding a whole session takes a few seconds', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    expect(screen.getByTestId('waveform')).toBeInTheDocument()
+    expect(api.waveform).toHaveBeenCalledTimes(1)
+    expect(api.waveform).toHaveBeenCalledWith(VIDEO)
   })
 })

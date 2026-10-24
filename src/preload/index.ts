@@ -13,6 +13,8 @@ const api: Api = {
     return () => ipcRenderer.removeListener('export-progress', listener)
   },
   reveal: (path) => ipcRenderer.send('reveal', path),
+  thumbnail: (path, time) => ipcRenderer.invoke('thumbnail', path, time),
+  waveform: (path) => ipcRenderer.invoke('waveform', path),
   onMenuOpenVideo: (callback) => {
     const listener = () => callback()
     ipcRenderer.on('menu-open-video', listener)
