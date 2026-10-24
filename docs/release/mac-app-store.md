@@ -30,7 +30,7 @@ No se pide ningún permiso con diálogo del sistema: no hay cámara, micrófono,
 
 No hace falta acceso persistente (marcadores de seguridad): la app no guarda proyectos ni recuerda carpetas entre sesiones. La carpeta por defecto está en Películas, cubierta por su entitlement.
 
-### Resultado de las pruebas en sandbox (build MAS de Electron, firma ad hoc, 2026-10-24)
+### Resultado de las pruebas en sandbox (build MAS universal de Electron, firma ad hoc, 2026-10-24)
 
 | Prueba | Resultado |
 |---|---|
@@ -42,7 +42,8 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 | Escribir fuera de Películas sin elegir la carpeta | ❌ bloqueado; la app muestra "No se pudo crear la carpeta de destino: EPERM…" (esperado) |
 | Carpeta por defecto | ✅ `/Users/<usuario>/Movies/Cuts` (se resuelve el enlace del contenedor) |
 | Flujo completo por la interfaz: soltar vídeo, marcar, exportar | ✅ "1 clip exported" |
-| Salir durante una exportación | ✅ no queda ni la app ni ffmpeg en ejecución (2.4.5(iii)). Desde el commit posterior, también se borra el clip a medias; esto está cubierto por una prueba de integración, no repetido dentro del sandbox |
+| Salir durante una exportación | ✅ no queda ni la app ni ffmpeg en ejecución (2.4.5(iii)), y el clip a medias se borra |
+| Build universal ejecutada como x86_64 (Rosetta) dentro del sandbox | ✅ exporta desde la interfaz |
 
 **No probado (requiere interacción real o certificados):**
 - Elegir vídeo y carpeta con el diálogo nativo dentro del sandbox. El diálogo se abrió y se comprobó fuera del sandbox.
