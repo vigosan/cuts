@@ -203,7 +203,7 @@ export function App() {
             </div>
 
             <div className="flex flex-col gap-2 rounded-2xl bg-surface p-3">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
                 <button
                   data-testid="play"
                   className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-canvas transition-opacity hover:opacity-85"
@@ -212,10 +212,26 @@ export function App() {
                 >
                   {playing ? <PauseIcon /> : <PlayIcon className="ml-0.5 size-4" />}
                 </button>
-                <span className="text-sm tabular-nums">
+                <span className="mx-1 text-sm tabular-nums">
                   {formatTime(time)}
                   <span className="text-ink-3"> / {formatTime(duration)}</span>
                 </span>
+                <MarkButton testId="mark-start" shortcut="I" title="Marcar inicio" onClick={markStart}>
+                  Inicio
+                </MarkButton>
+                <MarkButton testId="mark-end" shortcut="O" title="Marcar fin" onClick={markEnd}>
+                  Fin
+                </MarkButton>
+                {pendingStart !== null && (
+                  <span
+                    data-testid="pending"
+                    title={`Clip en curso desde ${formatTime(pendingStart)}`}
+                    className="flex items-center gap-1.5 text-sm tabular-nums text-accent"
+                  >
+                    <span className="size-1.5 rounded-full bg-accent" />
+                    {formatTime(pendingStart)} →
+                  </span>
+                )}
                 <div className="ml-auto flex items-center gap-2">
                   {zoom !== null && (
                     <span className="hidden text-xs tabular-nums text-ink-3 sm:inline">
@@ -229,7 +245,7 @@ export function App() {
                         key={level.label}
                         data-testid={`zoom-${level.span ?? 'all'}`}
                         aria-pressed={zoom === level.span}
-                        className={`rounded-md px-2 py-1 transition-colors ${zoom === level.span ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
+                        className={`rounded-md px-1.5 py-1 transition-colors ${zoom === level.span ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
                         onClick={() => setZoom(level.span)}
                       >
                         {level.label}
@@ -251,20 +267,6 @@ export function App() {
                 onClipChange={(clip) => dispatch({ type: 'replace', clip })}
               />
 
-              <div className="flex flex-wrap items-center gap-2">
-                <MarkButton testId="mark-start" shortcut="I" onClick={markStart}>
-                  Marcar inicio
-                </MarkButton>
-                <MarkButton testId="mark-end" shortcut="O" onClick={markEnd}>
-                  Marcar fin
-                </MarkButton>
-                {pendingStart !== null && (
-                  <span data-testid="pending" className="flex items-center gap-1.5 text-sm text-accent">
-                    <span className="size-1.5 rounded-full bg-accent" />
-                    Clip en curso desde {formatTime(pendingStart)}
-                  </span>
-                )}
-              </div>
             </div>
           </section>
 
@@ -318,12 +320,24 @@ export function App() {
   )
 }
 
-function MarkButton({ testId, shortcut, onClick, children }: { testId: string; shortcut: string; onClick: () => void; children: string }) {
+function MarkButton({
+  testId,
+  shortcut,
+  title,
+  onClick,
+  children
+}: {
+  testId: string
+  shortcut: string
+  title: string
+  onClick: () => void
+  children: string
+}) {
   return (
     <button
       data-testid={testId}
-      className="flex h-8 items-center gap-2 rounded-lg bg-sunken px-3 text-sm font-medium transition-colors hover:bg-accent-soft hover:text-accent"
-      title={`${children} (${shortcut})`}
+      className="flex h-8 items-center gap-1.5 rounded-lg bg-sunken px-2.5 text-sm font-medium transition-colors hover:bg-accent-soft hover:text-accent"
+      title={`${title} (${shortcut})`}
       onClick={onClick}
     >
       {children}
