@@ -95,6 +95,11 @@ function english(locale: Locale) {
     menuMinimize: 'Minimize',
     menuZoom: 'Zoom',
     menuClose: 'Close Window',
+    menuHelp: 'Help',
+    menuPrivacy: 'Privacy Policy',
+    menuSupport: 'Cuts Support',
+    privacyUrl: 'https://cuts.vicent.io/privacy',
+    supportUrl: 'https://cuts.vicent.io/support',
     aboutCredits:
       'Uses FFmpeg (ffmpeg.org), licensed under the GNU LGPL v2.1. The license and build details are included in the app bundle.'
   }
@@ -179,6 +184,11 @@ function spanish(locale: Locale): Messages {
     menuMinimize: 'Minimizar',
     menuZoom: 'Zoom',
     menuClose: 'Cerrar ventana',
+    menuHelp: 'Ayuda',
+    menuPrivacy: 'Política de privacidad',
+    menuSupport: 'Soporte de Cuts',
+    privacyUrl: 'https://cuts.vicent.io/es/privacidad',
+    supportUrl: 'https://cuts.vicent.io/es/soporte',
     aboutCredits:
       'Usa FFmpeg (ffmpeg.org), con licencia GNU LGPL v2.1. La licencia y los detalles de compilación se incluyen en el paquete de la app.'
   }

@@ -43,7 +43,7 @@ app.whenReady().then(() => {
     win.focus()
     win.webContents.send('menu-open-video')
   }
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name, { openVideo })))
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name, { openVideo, openUrl: (url) => void shell.openExternal(url) })))
   app.setAboutPanelOptions({ credits: t.aboutCredits })
   handleMediaProtocol()
 

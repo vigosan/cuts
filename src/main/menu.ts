@@ -5,7 +5,7 @@ export type MenuEntry = Omit<MenuItemConstructorOptions, 'submenu'> & { submenu?
 
 const separator: MenuEntry = { type: 'separator' }
 
-export type MenuActions = { openVideo: () => void }
+export type MenuActions = { openVideo: () => void; openUrl: (url: string) => void }
 
 export function menuTemplate(t: Messages, appName: string, actions: MenuActions): MenuEntry[] {
   return [
@@ -46,6 +46,14 @@ export function menuTemplate(t: Messages, appName: string, actions: MenuActions)
         { role: 'zoom', label: t.menuZoom },
         separator,
         { role: 'close', label: t.menuClose }
+      ]
+    },
+    {
+      role: 'help',
+      label: t.menuHelp,
+      submenu: [
+        { label: t.menuPrivacy, click: () => actions.openUrl(t.privacyUrl) },
+        { label: t.menuSupport, click: () => actions.openUrl(t.supportUrl) }
       ]
     }
   ]
