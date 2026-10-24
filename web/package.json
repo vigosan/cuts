@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/fetch-ffmpeg-source.mjs",
+    "prebuild": "node scripts/verify-ffmpeg-source.mjs",
     "build": "next build",
     "start": "next start",
     "test": "vitest run"
