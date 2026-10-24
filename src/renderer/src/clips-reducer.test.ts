@@ -65,4 +65,18 @@ describe('clipsReducer', () => {
     const state = clipsReducer(added, { type: 'replace', clip: { id, start: 40, end: 99 } })
     expect(state.clips[0]).toEqual({ id, start: 40, end: 99 })
   })
+
+  it('reorders clips, because the list order is the carousel order and decides the cover', () => {
+    const added = run(
+      initialClipsState,
+      { type: 'markStart', time: 10 },
+      { type: 'markEnd', time: 20 },
+      { type: 'markStart', time: 30 },
+      { type: 'markEnd', time: 40 },
+      { type: 'markStart', time: 50 },
+      { type: 'markEnd', time: 60 }
+    )
+    expect(clipsReducer(added, { type: 'reorder', from: 2, to: 0 }).clips.map((c) => c.start)).toEqual([50, 10, 30])
+    expect(clipsReducer(added, { type: 'reorder', from: 0, to: 2 }).clips.map((c) => c.start)).toEqual([30, 50, 10])
+  })
 })

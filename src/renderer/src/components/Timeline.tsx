@@ -65,6 +65,9 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, pendingSt
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => startDrag(e, clip, 'move')}
         >
+          <span className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden text-[10px] font-semibold text-white tabular-nums">
+            {index + 1}
+          </span>
           <div
             data-testid={`clip-handle-start-${index + 1}`}
             className="absolute inset-y-0 -left-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:left-1 after:w-0.5 after:rounded-full after:bg-white/0 group-hover:after:bg-white/90"

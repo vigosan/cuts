@@ -254,7 +254,7 @@ export function App() {
 
           <aside className="flex shrink-0 flex-col overflow-hidden rounded-2xl bg-surface lg:w-[23rem]">
             <div className="flex items-baseline justify-between px-4 pt-4 pb-1">
-              <h2 className="text-sm font-semibold">Clips</h2>
+              <h2 className="text-sm font-semibold">Carrusel</h2>
               {clips.length > 0 && <span className="text-xs text-ink-3">{clips.length}</span>}
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -265,6 +265,7 @@ export function App() {
                 onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
                 onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}
                 onDelete={(clip) => dispatch({ type: 'remove', id: clip.id })}
+                onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
               />
             </div>
             <ExportPanel

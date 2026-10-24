@@ -43,3 +43,16 @@ export function FilmIcon({ className = 'size-8' }: IconProps) {
     </svg>
   )
 }
+
+export function GripIcon({ className = 'size-3.5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={`${base} ${className}`}>
+      <circle cx="6" cy="4" r="1.2" />
+      <circle cx="10" cy="4" r="1.2" />
+      <circle cx="6" cy="8" r="1.2" />
+      <circle cx="10" cy="8" r="1.2" />
+      <circle cx="6" cy="12" r="1.2" />
+      <circle cx="10" cy="12" r="1.2" />
+    </svg>
+  )
+}
