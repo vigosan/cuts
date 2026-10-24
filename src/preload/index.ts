@@ -5,6 +5,7 @@ const api: Api = {
   pathForFile: (file) => webUtils.getPathForFile(file),
   openVideo: () => ipcRenderer.invoke('open-video'),
   chooseFolder: () => ipcRenderer.invoke('choose-folder'),
+  moviesDir: () => ipcRenderer.invoke('movies-dir'),
   exportClips: (request) => ipcRenderer.invoke('export-clips', request),
   onExportProgress: (callback) => {
     const listener = (_event: IpcRendererEvent, progress: ExportProgress) => callback(progress)

@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from 'electron'
 import type { ExportRequest } from '../shared/api'
@@ -53,6 +54,9 @@ app.whenReady().then(() => {
     return exportClips(request, {
       ffmpeg: findFfmpeg(existsSync),
       exists: existsSync,
+      ensureDir: async (path) => {
+        await mkdir(path, { recursive: true })
+      },
       run: runFfmpeg,
       onProgress: (progress) => event.sender.send('export-progress', progress),
       confirmOverwrite: async (names) => {
@@ -68,6 +72,8 @@ app.whenReady().then(() => {
       }
     })
   })
+
+  ipcMain.handle('movies-dir', () => app.getPath('videos'))
 
   ipcMain.on('reveal', (_event, path: string) => shell.showItemInFolder(path))
 

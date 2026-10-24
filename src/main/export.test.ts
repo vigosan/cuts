@@ -17,6 +17,7 @@ function deps(overrides: Partial<ExportDeps> = {}): ExportDeps {
   return {
     ffmpeg: '/opt/homebrew/bin/ffmpeg',
     exists: () => false,
+    ensureDir: vi.fn(async () => {}),
     confirmOverwrite: vi.fn(async () => true),
     run: vi.fn(async (_ffmpeg: string, _args: string[], onSeconds: (s: number) => void) => onSeconds(25)),
     onProgress: vi.fn(),
@@ -87,5 +88,11 @@ describe('exportClips', () => {
     expect(first).toContain('-af')
     expect(second[second.indexOf('-vf') + 1]).toContain('color=white')
     expect(second).not.toContain('-af')
+  })
+
+  it('creates the destination folder first, because the default per-video folder does not exist yet', async () => {
+    const d = deps()
+    await exportClips(request, d)
+    expect(d.ensureDir).toHaveBeenCalledWith('/Movies/Instagram')
   })
 })

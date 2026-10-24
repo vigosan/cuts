@@ -11,6 +11,7 @@ function makeApi(): Api {
     pathForFile: vi.fn(() => VIDEO),
     openVideo: vi.fn(async () => VIDEO),
     chooseFolder: vi.fn(async () => '/Users/vicent/Movies/Instagram'),
+    moviesDir: vi.fn(async () => '/Users/vicent/Movies'),
     exportClips: vi.fn(async () => ({ ok: true as const, files: ['/Users/vicent/Movies/Instagram/x-1.mp4'] })),
     onExportProgress: vi.fn(() => () => {}),
     reveal: vi.fn()
@@ -341,5 +342,16 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:06:59')
     await userEvent.click(screen.getByTestId('clip-set-end-1'))
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:07:53')
+  })
+
+  it('exports to Movies/Carousel Cutter/<video name> by default, so no folder has to be chosen', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    expect(await screen.findByTestId('choose-folder')).toHaveTextContent('2026-10-22 22-33-13')
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(api.exportClips).toHaveBeenCalledWith(
+      expect.objectContaining({ folder: '/Users/vicent/Movies/Carousel Cutter/2026-10-22 22-33-13' })
+    )
   })
 })

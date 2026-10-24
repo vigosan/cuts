@@ -12,6 +12,7 @@ import { clipsReducer, initialClipsState } from './clips-reducer'
 import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
+const APP_FOLDER = 'Carousel Cutter'
 const REPLACE_MESSAGE = '¿Abrir otro vídeo? Se perderán los clips marcados.'
 
 export function App() {
@@ -67,6 +68,8 @@ export function App() {
     setTime(0)
     setDuration(0)
     setBaseName(defaultBaseName(path))
+    setFolder(null)
+    void window.api.moviesDir().then((dir) => setFolder(`${dir}/${APP_FOLDER}/${defaultBaseName(path)}`))
     setExportState({ status: 'idle' })
     setViewStart(0)
     setFades({})

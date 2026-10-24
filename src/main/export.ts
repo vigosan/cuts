@@ -6,6 +6,7 @@ import { buildFfmpegArgs } from './ffmpeg-args'
 export type ExportDeps = {
   ffmpeg: string | null
   exists: (path: string) => boolean
+  ensureDir: (path: string) => Promise<void>
   confirmOverwrite: (names: string[]) => Promise<boolean>
   run: (ffmpeg: string, args: string[], onSeconds: (seconds: number) => void) => Promise<void>
   onProgress: (progress: ExportProgress) => void
@@ -15,6 +16,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
   const { ffmpeg } = deps
   if (!ffmpeg) return { ok: false, error: 'No se encontró ffmpeg. Instálalo con: brew install ffmpeg' }
 
+  await deps.ensureDir(request.folder)
   const names = request.clips.map((_, index) => outputFileName(request.baseName.trim().replaceAll('/', '-'), index))
   const files = names.map((name) => join(request.folder, name))
   const existing = names.filter((_, index) => deps.exists(files[index]))

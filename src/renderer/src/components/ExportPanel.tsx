@@ -89,9 +89,6 @@ export function ExportPanel(p: Props) {
           <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${overall * 100}%` }} />
         </div>
       )}
-      {p.state.status === 'idle' && p.clipCount > 0 && !p.folder && (
-        <p className="text-center text-xs text-ink-2">Elige una carpeta para poder exportar</p>
-      )}
       {p.state.status === 'idle' && p.baseName && p.clipCount > 0 && p.folder && (
         <p className="truncate text-center text-xs text-ink-3" title={`${p.folder}/${p.baseName}-1.mp4`}>
           {p.baseName}-1.mp4
