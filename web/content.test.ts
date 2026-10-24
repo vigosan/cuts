@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { content, LANGS } from "./content";
+import { content, LANGS, SCREENSHOTS } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -24,5 +24,11 @@ describe("site content", () => {
   it("keeps the public URLs that the app menu and App Store Connect point to", () => {
     expect(content.en.routes.privacy).toBe("/privacy");
     expect(content.en.routes.support).toBe("/support");
+  });
+
+  it("has every screenshot the home page shows, in both languages", () => {
+    for (const lang of LANGS) {
+      for (const name of SCREENSHOTS) expect(existsSync(`public/screenshots/${lang}-${name}.png`), `${lang}-${name}`).toBe(true);
+    }
   });
 });

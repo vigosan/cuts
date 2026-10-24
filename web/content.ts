@@ -4,6 +4,7 @@ export type Lang = (typeof LANGS)[number];
 export const SITE_URL = "https://cuts.vicent.io";
 export const CONTACT = "hello@vicent.io";
 export const UPDATED = "2026-10-24";
+export const SCREENSHOTS = ["overview", "timeline", "zoom"] as const;
 
 export const content = {
   en: {
@@ -36,6 +37,10 @@ export const content = {
       privacy: "Everything happens on your Mac. No account, no uploads, no tracking.",
       screenshotAlt: "Cuts with a long video, six clips marked and one selected",
       zoomAlt: "The timeline zoomed to two minutes, with video frames, the waveform and a selected clip",
+      timelineTitle: "A timeline like a video editor",
+      timelineText:
+        "Frames and the waveform show where every moment is. The clip you select stays clear, with edges you can drag and its fades drawn at each end.",
+      timelineAlt: "Close-up of the timeline: video frames, audio waveform and a selected clip with its edges",
     },
     privacy: {
       title: "Privacy policy",
@@ -108,6 +113,10 @@ export const content = {
       privacy: "Todo ocurre en tu Mac. Sin cuentas, sin subidas, sin rastreo.",
       screenshotAlt: "Cuts con un vídeo largo, seis clips marcados y uno seleccionado",
       zoomAlt: "La línea de tiempo con zoom de dos minutos, con fotogramas, forma de onda y un clip seleccionado",
+      timelineTitle: "Una línea de tiempo como la de un editor de vídeo",
+      timelineText:
+        "Los fotogramas y la forma de onda te enseñan dónde está cada momento. El clip que seleccionas se ve limpio, con bordes que puedes arrastrar y sus fundidos dibujados en cada extremo.",
+      timelineAlt: "Detalle de la línea de tiempo: fotogramas, forma de onda y un clip seleccionado con sus bordes",
     },
     privacy: {
       title: "Política de privacidad",
