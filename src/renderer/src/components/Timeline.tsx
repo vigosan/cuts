@@ -48,7 +48,8 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, pendingSt
   return (
     <div
       data-testid="timeline"
-      className="relative h-8 flex-1 cursor-pointer touch-none select-none overflow-hidden rounded bg-zinc-800"
+      title="Clic para ir a un punto · arrastra un clip o sus bordes para ajustarlo · ← → saltan 5 s"
+      className="relative h-11 w-full cursor-pointer touch-none select-none overflow-hidden rounded-lg bg-sunken"
       onClick={(e) => {
         if (justDragged.current) return
         const rect = e.currentTarget.getBoundingClientRect()
@@ -59,30 +60,30 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, pendingSt
         <div
           key={clip.id}
           data-testid={`clip-block-${index + 1}`}
-          className={`group absolute inset-y-0 min-w-3 cursor-grab rounded-sm active:cursor-grabbing ${isOverLimit(clip) ? 'bg-red-500' : 'bg-blue-500'}`}
+          className={`group absolute inset-y-1.5 min-w-3 cursor-grab rounded-md transition-colors active:cursor-grabbing ${isOverLimit(clip) ? 'bg-warn/75 hover:bg-warn' : 'bg-accent/70 hover:bg-accent'}`}
           style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => startDrag(e, clip, 'move')}
         >
           <div
             data-testid={`clip-handle-start-${index + 1}`}
-            className="absolute inset-y-0 -left-1 w-2 cursor-ew-resize rounded-l-sm group-hover:bg-white/60"
+            className="absolute inset-y-0 -left-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:left-1 after:w-0.5 after:rounded-full after:bg-white/0 group-hover:after:bg-white/90"
             onPointerDown={(e) => startDrag(e, clip, 'start')}
           />
           <div
             data-testid={`clip-handle-end-${index + 1}`}
-            className="absolute inset-y-0 -right-1 w-2 cursor-ew-resize rounded-r-sm group-hover:bg-white/60"
+            className="absolute inset-y-0 -right-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:right-1 after:w-0.5 after:rounded-full after:bg-white/0 group-hover:after:bg-white/90"
             onPointerDown={(e) => startDrag(e, clip, 'end')}
           />
         </div>
       ))}
       {pendingStart !== null && (
         <div
-          className="pointer-events-none absolute inset-y-0 bg-blue-500/30"
+          className="pointer-events-none absolute inset-y-1.5 rounded-md border border-dashed border-accent bg-accent-soft"
           style={{ left: pct(pendingStart - viewStart), width: pct(Math.max(0, time - pendingStart)) }}
         />
       )}
-      <div className="pointer-events-none absolute -inset-y-1 w-0.5 bg-white" style={{ left: pct(time - viewStart) }} />
+      <div className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 rounded-full bg-ink" style={{ left: pct(time - viewStart) }} />
     </div>
   )
 }

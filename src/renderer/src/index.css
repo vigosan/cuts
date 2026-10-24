@@ -1,6 +1,62 @@
 @import 'tailwindcss';
 
 :root {
-  color-scheme: dark;
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color-scheme: light dark;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+
+  --canvas: #f3f3f5;
+  --surface: #ffffff;
+  --sunken: #e9e9ed;
+  --line: rgb(0 0 0 / 0.07);
+  --ink: #1c1c1f;
+  --ink-2: #66666d;
+  --ink-3: #9b9ba2;
+  --accent: #2f66f5;
+  --accent-hover: #2457dd;
+  --accent-soft: rgb(47 102 245 / 0.12);
+  --warn: #c2541a;
+  --warn-soft: rgb(194 84 26 / 0.12);
+  --ok: #23824a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #1b1b1e;
+    --surface: #252528;
+    --sunken: #313135;
+    --line: rgb(255 255 255 / 0.08);
+    --ink: #f1f1f3;
+    --ink-2: #a6a6ad;
+    --ink-3: #74747b;
+    --accent: #5285ff;
+    --accent-hover: #6a96ff;
+    --accent-soft: rgb(82 133 255 / 0.18);
+    --warn: #ff9257;
+    --warn-soft: rgb(255 146 87 / 0.16);
+    --ok: #4cc27b;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

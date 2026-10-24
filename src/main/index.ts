@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from 'electron'
 import type { ExportRequest } from '../shared/api'
 import { exportClips } from './export'
 import { findFfmpeg } from './ffmpeg-args'
@@ -15,8 +15,9 @@ function createWindow(): BrowserWindow {
     height: 860,
     minWidth: 760,
     minHeight: 600,
-    backgroundColor: '#09090b',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1b1b1e' : '#f3f3f5',
     title: 'Carousel Cutter',
+    titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

@@ -4,11 +4,13 @@ import type { OutputFormat } from '@shared/formats'
 import { mediaUrl } from '@shared/media-url'
 import { ClipList } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
+import { FilmIcon, PauseIcon, PlayIcon } from './components/icons'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
 import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
+const REPLACE_MESSAGE = '¿Abrir otro vídeo? Se perderán los clips marcados.'
 
 export function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -96,137 +98,199 @@ export function App() {
     void videoRef.current?.play()
   }
 
+  const openVideo = async () => {
+    if (clips.length > 0 && !window.confirm(REPLACE_MESSAGE)) return
+    const path = await window.api.openVideo()
+    if (path) load(path)
+  }
+
   const canExport =
     clips.length > 0 && folder !== null && baseName.trim() !== ''
+
+  const fileName = videoPath?.split('/').pop()
 
   return (
     <div
       data-testid="app"
-      className="flex min-h-screen flex-col gap-4 bg-zinc-950 p-5 text-zinc-100"
+      className="flex h-screen flex-col bg-canvas text-ink"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault()
         const file = e.dataTransfer.files[0]
         if (!file) return
-        if (clips.length > 0 && !window.confirm('¿Abrir otro vídeo? Se perderán los trozos marcados.')) return
+        if (clips.length > 0 && !window.confirm(REPLACE_MESSAGE)) return
         load(window.api.pathForFile(file))
       }}
     >
-      {!videoPath ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-zinc-700 text-zinc-400">
-          <p className="text-lg">Arrastra aquí el vídeo de la sesión</p>
+      <header className="flex h-11 shrink-0 items-center justify-center gap-3 px-24 text-sm [-webkit-app-region:drag]">
+        <span className="truncate font-medium text-ink-2" title={videoPath ?? undefined}>
+          {fileName ?? 'Carousel Cutter'}
+        </span>
+        {videoPath && (
           <button
-            data-testid="open-video"
-            className="rounded bg-zinc-800 px-4 py-2 text-sm hover:bg-zinc-700"
-            onClick={async () => {
-              const path = await window.api.openVideo()
-              if (path) load(path)
-            }}
+            className="shrink-0 rounded-md px-2 py-0.5 text-xs text-ink-3 transition-colors [-webkit-app-region:no-drag] hover:bg-sunken hover:text-ink"
+            onClick={openVideo}
           >
-            o elige un archivo…
+            Abrir otro…
           </button>
-        </div>
-      ) : (
-        <>
-          <p className="truncate text-sm text-zinc-400">{videoPath}</p>
-          <video
-            ref={videoRef}
-            data-testid="video"
-            src={mediaUrl(videoPath)}
-            className="max-h-[50vh] w-full rounded-lg bg-black"
-            onClick={togglePlay}
-            onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
-            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-            onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-            onError={() => setVideoError(true)}
-          />
-          {videoError && (
-            <p data-testid="video-error" className="text-sm text-red-400">
-              No se puede reproducir este vídeo.
-            </p>
-          )}
-          <div className="flex items-center gap-3 tabular-nums">
-            <button
-              data-testid="play"
-              className="w-10 rounded bg-zinc-800 py-1 hover:bg-zinc-700"
-              onClick={togglePlay}
-            >
-              {playing ? '❚❚' : '▶'}
-            </button>
-            <span className="text-sm">{formatTime(time)}</span>
-            <Timeline
-              duration={duration}
-              viewStart={currentViewStart}
-              viewSpan={viewSpan}
-              time={time}
-              clips={clips}
-              pendingStart={pendingStart}
-              onSeek={seekTo}
-              onClipChange={(clip) => dispatch({ type: 'replace', clip })}
-            />
-            <span className="text-sm text-zinc-500">{formatTime(duration)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <button data-testid="mark-start" className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700" onClick={markStart}>
-              [ Marcar inicio (I)
-            </button>
-            <button data-testid="mark-end" className="rounded bg-zinc-800 px-3 py-1.5 hover:bg-zinc-700" onClick={markEnd}>
-              Marcar fin (O) ]
-            </button>
-            {pendingStart !== null && (
-              <span data-testid="pending" className="text-zinc-400">
-                trozo en curso desde {formatTime(pendingStart)}
-              </span>
-            )}
-            <div className="ml-auto flex items-center gap-1">
-              {zoom !== null && (
-                <span className="mr-2 tabular-nums text-zinc-500">
-                  <span data-testid="view-start">{formatTime(currentViewStart)}</span> –{' '}
-                  <span data-testid="view-end">{formatTime(currentViewStart + viewSpan)}</span>
-                </span>
-              )}
-              <span className="mr-1 text-zinc-500">Zoom</span>
-              {ZOOM_LEVELS.map((level) => (
-                <button
-                  key={level.label}
-                  data-testid={`zoom-${level.span ?? 'all'}`}
-                  className={`rounded px-2 py-1 ${zoom === level.span ? 'bg-zinc-600 text-white' : 'bg-zinc-800 hover:bg-zinc-700'}`}
-                  onClick={() => setZoom(level.span)}
-                >
-                  {level.label}
-                </button>
-              ))}
+        )}
+      </header>
+
+      {!videoPath ? (
+        <main className="flex flex-1 items-center justify-center p-8">
+          <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-3xl border border-dashed border-ink-3/40 bg-surface px-8 py-14 text-center">
+            <FilmIcon className="size-10 text-ink-3" />
+            <div className="flex flex-col gap-1">
+              <p className="text-lg font-medium">Arrastra aquí el vídeo de la sesión</p>
+              <p className="text-sm text-ink-2">Marcarás los mejores momentos y los exportarás como clips.</p>
             </div>
+            <button
+              data-testid="open-video"
+              className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+              onClick={openVideo}
+            >
+              Elegir vídeo…
+            </button>
           </div>
-          <ClipList
-            clips={clips}
-            time={time}
-            onPlay={playClip}
-            onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
-            onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}
-            onDelete={(clip) => dispatch({ type: 'remove', id: clip.id })}
-          />
-          <ExportPanel
-            clipCount={clips.length}
-            canExport={canExport}
-            baseName={baseName}
-            folder={folder}
-            fade={fade}
-            format={format}
-            state={exportState}
-            onBaseName={setBaseName}
-            onChooseFolder={async () => {
-              const chosen = await window.api.chooseFolder()
-              if (chosen) setFolder(chosen)
-            }}
-            onFade={setFade}
-            onFormat={setFormat}
-            onExport={runExport}
-            onReveal={window.api.reveal}
-          />
-        </>
+        </main>
+      ) : (
+        <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-5 lg:flex-row lg:overflow-hidden">
+          <section className="flex min-w-0 flex-col gap-3 lg:flex-1">
+            <div className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-2xl bg-black lg:min-h-0 lg:flex-1">
+              <video
+                ref={videoRef}
+                data-testid="video"
+                src={mediaUrl(videoPath)}
+                className="max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none"
+                onClick={togglePlay}
+                onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
+                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
+                onError={() => setVideoError(true)}
+              />
+              {videoError && (
+                <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">
+                  No se puede reproducir este vídeo.
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 rounded-2xl bg-surface p-3">
+              <div className="flex items-center gap-3">
+                <button
+                  data-testid="play"
+                  className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-canvas transition-opacity hover:opacity-85"
+                  title={playing ? 'Pausar (espacio)' : 'Reproducir (espacio)'}
+                  onClick={togglePlay}
+                >
+                  {playing ? <PauseIcon /> : <PlayIcon className="ml-0.5 size-4" />}
+                </button>
+                <span className="text-sm tabular-nums">
+                  {formatTime(time)}
+                  <span className="text-ink-3"> / {formatTime(duration)}</span>
+                </span>
+                <div className="ml-auto flex items-center gap-2">
+                  {zoom !== null && (
+                    <span className="hidden text-xs tabular-nums text-ink-3 sm:inline">
+                      <span data-testid="view-start">{formatTime(currentViewStart)}</span> –{' '}
+                      <span data-testid="view-end">{formatTime(currentViewStart + viewSpan)}</span>
+                    </span>
+                  )}
+                  <div className="flex rounded-lg bg-sunken p-0.5 text-xs" role="group" aria-label="Zoom de la línea de tiempo">
+                    {ZOOM_LEVELS.map((level) => (
+                      <button
+                        key={level.label}
+                        data-testid={`zoom-${level.span ?? 'all'}`}
+                        aria-pressed={zoom === level.span}
+                        className={`rounded-md px-2 py-1 transition-colors ${zoom === level.span ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
+                        onClick={() => setZoom(level.span)}
+                      >
+                        {level.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <Timeline
+                duration={duration}
+                viewStart={currentViewStart}
+                viewSpan={viewSpan}
+                time={time}
+                clips={clips}
+                pendingStart={pendingStart}
+                onSeek={seekTo}
+                onClipChange={(clip) => dispatch({ type: 'replace', clip })}
+              />
+
+              <div className="flex flex-wrap items-center gap-2">
+                <MarkButton testId="mark-start" shortcut="I" onClick={markStart}>
+                  Marcar inicio
+                </MarkButton>
+                <MarkButton testId="mark-end" shortcut="O" onClick={markEnd}>
+                  Marcar fin
+                </MarkButton>
+                {pendingStart !== null && (
+                  <span data-testid="pending" className="flex items-center gap-1.5 text-sm text-accent">
+                    <span className="size-1.5 rounded-full bg-accent" />
+                    Clip en curso desde {formatTime(pendingStart)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <aside className="flex shrink-0 flex-col overflow-hidden rounded-2xl bg-surface lg:w-[23rem]">
+            <div className="flex items-baseline justify-between px-4 pt-4 pb-1">
+              <h2 className="text-sm font-semibold">Clips</h2>
+              {clips.length > 0 && <span className="text-xs text-ink-3">{clips.length}</span>}
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+              <ClipList
+                clips={clips}
+                time={time}
+                onPlay={playClip}
+                onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
+                onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}
+                onDelete={(clip) => dispatch({ type: 'remove', id: clip.id })}
+              />
+            </div>
+            <ExportPanel
+              clipCount={clips.length}
+              canExport={canExport}
+              baseName={baseName}
+              folder={folder}
+              fade={fade}
+              format={format}
+              state={exportState}
+              onBaseName={setBaseName}
+              onChooseFolder={async () => {
+                const chosen = await window.api.chooseFolder()
+                if (chosen) setFolder(chosen)
+              }}
+              onFade={setFade}
+              onFormat={setFormat}
+              onExport={runExport}
+              onReveal={window.api.reveal}
+            />
+          </aside>
+        </main>
       )}
     </div>
+  )
+}
+
+function MarkButton({ testId, shortcut, onClick, children }: { testId: string; shortcut: string; onClick: () => void; children: string }) {
+  return (
+    <button
+      data-testid={testId}
+      className="flex h-8 items-center gap-2 rounded-lg bg-sunken px-3 text-sm font-medium transition-colors hover:bg-accent-soft hover:text-accent"
+      title={`${children} (${shortcut})`}
+      onClick={onClick}
+    >
+      {children}
+      <kbd className="rounded bg-surface px-1.5 font-sans text-[11px] text-ink-3">{shortcut}</kbd>
+    </button>
   )
 }
