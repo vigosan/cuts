@@ -37,6 +37,7 @@ function createWindow(): BrowserWindow {
 app.whenReady().then(() => {
   const t = messagesFor(resolveLocale(app.getPreferredSystemLanguages()))
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name)))
+  app.setAboutPanelOptions({ credits: t.aboutCredits })
   handleMediaProtocol()
 
   ipcMain.handle('open-video', async (event) => {

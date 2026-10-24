@@ -93,7 +93,9 @@ function english(locale: Locale) {
     menuWindow: 'Window',
     menuMinimize: 'Minimize',
     menuZoom: 'Zoom',
-    menuClose: 'Close Window'
+    menuClose: 'Close Window',
+    aboutCredits:
+      'Uses FFmpeg (ffmpeg.org), licensed under the GNU LGPL v2.1. The license and build details are included in the app bundle.'
   }
 }
 
@@ -174,7 +176,9 @@ function spanish(locale: Locale): Messages {
     menuWindow: 'Ventana',
     menuMinimize: 'Minimizar',
     menuZoom: 'Zoom',
-    menuClose: 'Cerrar ventana'
+    menuClose: 'Cerrar ventana',
+    aboutCredits:
+      'Usa FFmpeg (ffmpeg.org), con licencia GNU LGPL v2.1. La licencia y los detalles de compilación se incluyen en el paquete de la app.'
   }
 }
 
