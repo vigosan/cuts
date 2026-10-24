@@ -24,4 +24,5 @@ export type Api = {
   exportClips(request: ExportRequest): Promise<ExportResult>
   onExportProgress(callback: (progress: ExportProgress) => void): () => void
   reveal(path: string): void
+  onMenuOpenVideo(callback: () => void): () => void
 }

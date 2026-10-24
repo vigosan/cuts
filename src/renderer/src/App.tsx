@@ -135,6 +135,8 @@ export function App() {
     if (path) load(path)
   }
 
+  useEffect(() => window.api.onMenuOpenVideo(() => void openVideo()))
+
   const canExport =
     clips.length > 0 && folder !== null && baseName.trim() !== ''
 
@@ -153,18 +155,10 @@ export function App() {
         load(window.api.pathForFile(file))
       }}
     >
-      <header className="flex h-11 shrink-0 items-center justify-center gap-3 px-24 text-sm [-webkit-app-region:drag]">
+      <header className="flex h-11 shrink-0 items-center justify-center px-24 text-sm [-webkit-app-region:drag]">
         <span className="truncate font-medium text-ink-2" title={videoPath ?? undefined}>
           {fileName ?? 'Cuts'}
         </span>
-        {videoPath && (
-          <button
-            className="shrink-0 rounded-md px-2 py-0.5 text-xs text-ink-3 transition-colors [-webkit-app-region:no-drag] hover:bg-sunken hover:text-ink"
-            onClick={openVideo}
-          >
-            {t.openAnother}
-          </button>
-        )}
       </header>
 
       {!videoPath ? (

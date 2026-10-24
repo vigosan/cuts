@@ -15,11 +15,16 @@ function makeApi(): Api {
     moviesDir: vi.fn(async () => '/Users/vicent/Movies'),
     exportClips: vi.fn(async () => ({ ok: true as const, files: ['/Users/vicent/Movies/Instagram/x-1.mp4'] })),
     onExportProgress: vi.fn(() => () => {}),
-    reveal: vi.fn()
+    reveal: vi.fn(),
+    onMenuOpenVideo: vi.fn((callback: () => void) => {
+      menuOpenVideo = callback
+      return () => {}
+    })
   }
 }
 
 let api: Api
+let menuOpenVideo: () => void
 
 beforeEach(() => {
   api = makeApi()
@@ -395,5 +400,13 @@ describe('App', () => {
     fireEvent.pointerUp(window, { clientX: 120 })
     expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-selected', 'true')
     expect(video.currentTime).toBe(120)
+  })
+
+  it('opens another video from the File menu, so the title bar stays clean', async () => {
+    render(<App />)
+    await loadVideo()
+    vi.mocked(api.openVideo).mockClear()
+    await act(async () => menuOpenVideo())
+    expect(api.openVideo).toHaveBeenCalled()
   })
 })

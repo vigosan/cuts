@@ -36,7 +36,8 @@ function createWindow(): BrowserWindow {
 
 app.whenReady().then(() => {
   const t = messagesFor(resolveLocale(app.getPreferredSystemLanguages()))
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name)))
+  const openVideo = () => BrowserWindow.getFocusedWindow()?.webContents.send('menu-open-video')
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name, { openVideo })))
   app.setAboutPanelOptions({ credits: t.aboutCredits })
   handleMediaProtocol()
 

@@ -12,7 +12,12 @@ const api: Api = {
     ipcRenderer.on('export-progress', listener)
     return () => ipcRenderer.removeListener('export-progress', listener)
   },
-  reveal: (path) => ipcRenderer.send('reveal', path)
+  reveal: (path) => ipcRenderer.send('reveal', path),
+  onMenuOpenVideo: (callback) => {
+    const listener = () => callback()
+    ipcRenderer.on('menu-open-video', listener)
+    return () => ipcRenderer.removeListener('menu-open-video', listener)
+  }
 }
 
 contextBridge.exposeInMainWorld('api', api)

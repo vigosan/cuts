@@ -59,7 +59,7 @@ Pendiente. App Store Connect pide capturas de Mac en 16:10. Comprobar los tamañ
 
 > Cuts cuts a long video into short clips and exports them to a folder. No account, network access or special hardware is needed. Any video file on the Mac works, for example a screen recording made with Screenshot (Shift-Command-5).
 >
-> 1. Open a video: drag a video file onto the window, or click "Choose video…".
+> 1. Open a video: drag a video file onto the window, click "Choose video…", or use File › Open Video… (Command-O).
 > 2. Play it with the play button or the Space bar.
 > 3. Mark a clip: click "Start" (or press I) at the beginning and "End" (or press O) at the end. The clip appears in the Carousel list on the right. Repeat for more clips.
 > 4. Optional: drag a clip or its edges on the timeline, change the zoom, reorder clips by dragging rows, or select a clip to change its fades.

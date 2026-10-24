@@ -20,7 +20,6 @@ const decimal = (locale: Locale, n: number) => new Intl.NumberFormat(locale, { m
 
 function english(locale: Locale) {
   return {
-    openAnother: 'Open another…',
     replaceVideoConfirm: 'Open another video? Your marked clips will be lost.',
     dropTitle: 'Drop your session video here',
     dropSubtitle: 'Mark the best moments and export them as clips.',
@@ -83,6 +82,8 @@ function english(locale: Locale) {
     menuHideOthers: 'Hide Others',
     menuShowAll: 'Show All',
     menuQuit: (app: string) => `Quit ${app}`,
+    menuFile: 'File',
+    menuOpenVideo: 'Open Video…',
     menuEdit: 'Edit',
     menuUndo: 'Undo',
     menuRedo: 'Redo',
@@ -103,7 +104,6 @@ export type Messages = ReturnType<typeof english>
 
 function spanish(locale: Locale): Messages {
   return {
-    openAnother: 'Abrir otro…',
     replaceVideoConfirm: '¿Abrir otro vídeo? Se perderán los clips marcados.',
     dropTitle: 'Arrastra aquí el vídeo de la sesión',
     dropSubtitle: 'Marca los mejores momentos y expórtalos como clips.',
@@ -166,6 +166,8 @@ function spanish(locale: Locale): Messages {
     menuHideOthers: 'Ocultar otros',
     menuShowAll: 'Mostrar todo',
     menuQuit: (app) => `Salir de ${app}`,
+    menuFile: 'Archivo',
+    menuOpenVideo: 'Abrir vídeo…',
     menuEdit: 'Edición',
     menuUndo: 'Deshacer',
     menuRedo: 'Rehacer',
