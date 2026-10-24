@@ -6,7 +6,8 @@
 
 | Campo | Propuesta | Estado |
 |---|---|---|
-| Nombre | Cuts | Comprobar disponibilidad al crear la app |
+| Nombre (en) | Cuts – Video Clips | "Cuts" a secas ya está ocupado en la App Store (comprobado al crear la app, 2026-10-24). La app sigue llamándose Cuts en el Mac |
+| Nombre (es) | Cuts – Clips de vídeo | Localización del nombre en la ficha en español |
 | Subtítulo (en) | Cut your best moments into clips | Borrador |
 | Subtítulo (es) | Corta tus mejores momentos en clips | Borrador |
 | Categoría principal | Photo & Video | Decide el propietario |
