@@ -18,7 +18,6 @@ mac:
   icon: build/icon.icns
   x64ArchFiles: Contents/MacOS/ffmpeg
   category: public.app-category.video
-  identity: null
   electronLanguages:
     - en
     - en_FEMININE

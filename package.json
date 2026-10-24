@@ -9,7 +9,7 @@
     "build": "electron-vite build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "app": "electron-vite build && electron-builder --mac --universal"
+    "app": "electron-vite build && electron-builder --mac --universal -c.mac.identity=null"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
