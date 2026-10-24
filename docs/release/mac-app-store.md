@@ -44,6 +44,8 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 | Flujo completo por la interfaz: soltar vídeo, marcar, exportar | ✅ "1 clip exported" |
 | Salir durante una exportación | ✅ no queda ni la app ni ffmpeg en ejecución (2.4.5(iii)), y el clip a medias se borra |
 | Build universal ejecutada como x86_64 (Rosetta) dentro del sandbox | ✅ exporta desde la interfaz |
+| Fotogramas y forma de onda de la línea de tiempo dentro del sandbox | ✅ 7 fotogramas en la vista completa y 244.043 picos de onda para 1h21m |
+| Cancelar una exportación (fuera del sandbox) | ✅ para ffmpeg, borra el clip a medias y permite exportar de nuevo |
 
 **No probado (requiere interacción real o certificados):**
 - Elegir vídeo y carpeta con el diálogo nativo dentro del sandbox. El diálogo se abrió y se comprobó fuera del sandbox.
@@ -68,7 +70,7 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 ## Riesgos pendientes
 
 - **Licencia de FFmpeg.** El binario incluido es LGPL v2.1 (sin `--enable-gpl` ni `--enable-nonfree`, verificado con `ffmpeg -L`). Es un ejecutable aparte que la app lanza, no una biblioteca enlazada. Aun así, la compatibilidad de la LGPL con las condiciones de la App Store es una cuestión legal, no técnica: **conviene revisión legal**. La checklist de FFmpeg pide publicar el código fuente exacto junto a la descarga; ver tareas.
-- **Rendimiento en Intel.** La app es universal. La parte x86_64 de FFmpeg se compila sin las optimizaciones en ensamblador (`--disable-x86asm`) porque no hay `nasm` instalado: en Mac Intel la decodificación es algo más lenta, aunque la codificación sigue en hardware (VideoToolbox). Se comprobó una exportación real ejecutando la app como x86_64 con Rosetta. Para recuperar el rendimiento, instala `nasm` y quita esa opción.
+- **Intel.** La app es universal. FFmpeg x86_64 se compila con sus optimizaciones en ensamblador gracias a `nasm`, que `scripts/build-ffmpeg.sh` compila desde su código en `vendor/nasm` (no se instala en el sistema ni va dentro de la app). Exportar 10 s con recorte y fundido tarda 2,3 s en x86_64 (Rosetta) frente a 2,1 s en arm64.
 - **Login helper.** La build MAS de Electron incluye `Contents/Library/LoginItems/Cuts Login Helper.app`. La app no lo usa ni se abre al iniciar sesión. Si el equipo de revisión pregunta, esa es la explicación.
 - **Tamaño.** La app universal ocupa unos 519 MB instalada, por Electron por duplicado más FFmpeg.
 - **Cifrado para exportación.** Electron incluye BoringSSL, aunque la app no hace conexiones de red. La respuesta a "uses non-exempt encryption" debe darla el propietario.
