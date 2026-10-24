@@ -72,4 +72,13 @@ describe('runFfmpeg with real ffmpeg', () => {
     await expect(exporting).rejects.toThrow()
     expect(existsSync(output)).toBe(false)
   })
+
+  it('refuses to start new cuts once the app is quitting, so the next clip of a running export never begins', async () => {
+    stopAllFfmpeg()
+    const output = join(dir, 'after-quit.mp4')
+    await expect(
+      runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, format: 'original' }), () => {})
+    ).rejects.toThrow()
+    expect(existsSync(output)).toBe(false)
+  })
 })

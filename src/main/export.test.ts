@@ -116,4 +116,13 @@ describe('exportClips', () => {
     await exportClips(request, d)
     expect(d.remove).toHaveBeenCalledWith('/Movies/Instagram/sesion-1.mp4')
   })
+
+  it('still reports the failed clip when the half-written file cannot be deleted', async () => {
+    const run = vi.fn(async () => {
+      throw new Error('No space left on device')
+    })
+    const remove = vi.fn(async () => Promise.reject(new Error('EPERM')))
+    const result = await exportClips(request, deps({ run, remove }))
+    expect(result).toEqual({ ok: false, error: t.clipFailed(1, 'No space left on device') })
+  })
 })

@@ -37,7 +37,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
     try {
       await deps.run(ffmpeg, args, (seconds) => deps.onProgress({ index, ratio: Math.min(1, seconds / length) }))
     } catch (error) {
-      await deps.remove(files[index])
+      await deps.remove(files[index]).catch(() => {})
       return { ok: false, error: t.clipFailed(index + 1, (error as Error).message) }
     }
     deps.onProgress({ index, ratio: 1 })
