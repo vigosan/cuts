@@ -50,8 +50,10 @@ Arrastra un vídeo, escúchalo y marca dónde empieza y acaba cada clip. Arrastr
 
 ## Palabras clave (borrador, máximo 100 caracteres)
 
-- en: `video,clips,carousel,cut,trim,dj,mix,session,reels,fade,export,highlights`
-- es: `vídeo,clips,carrusel,cortar,recortar,dj,mezcla,sesión,reels,fundido,exportar`
+- en: `video,clips,carousel,cut,trim,split,fade,export,highlights,timeline,editor`
+- es: `vídeo,clips,carrusel,cortar,recortar,dividir,fundido,exportar,momentos,editor`
+
+Las palabras clave no incluyen nombres de otras apps ni marcas (por ejemplo Instagram o Reels), porque la norma 2.3.7 no lo permite.
 
 ## Capturas de pantalla
 

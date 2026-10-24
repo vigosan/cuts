@@ -21,7 +21,7 @@ const decimal = (locale: Locale, n: number) => new Intl.NumberFormat(locale, { m
 function english(locale: Locale) {
   return {
     replaceVideoConfirm: 'Open another video? Your marked clips will be lost.',
-    dropTitle: 'Drop your session video here',
+    dropTitle: 'Drop a video here',
     dropSubtitle: 'Mark the best moments and export them as clips.',
     chooseVideo: 'Choose video…',
     videoUnplayable: 'This video can’t be played.',
@@ -110,7 +110,7 @@ export type Messages = ReturnType<typeof english>
 function spanish(locale: Locale): Messages {
   return {
     replaceVideoConfirm: '¿Abrir otro vídeo? Se perderán los clips marcados.',
-    dropTitle: 'Arrastra aquí el vídeo de la sesión',
+    dropTitle: 'Arrastra aquí un vídeo',
     dropSubtitle: 'Marca los mejores momentos y expórtalos como clips.',
     chooseVideo: 'Elegir vídeo…',
     videoUnplayable: 'No se puede reproducir este vídeo.',

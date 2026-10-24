@@ -34,7 +34,7 @@ export const content = {
       ],
       privacyTitle: "Private by design",
       privacy: "Everything happens on your Mac. No account, no uploads, no tracking.",
-      screenshotAlt: "Cuts with a DJ session video, six clips marked and one selected",
+      screenshotAlt: "Cuts with a long video, six clips marked and one selected",
       zoomAlt: "The timeline zoomed to two minutes, with video frames, the waveform and a selected clip",
     },
     privacy: {
@@ -106,7 +106,7 @@ export const content = {
       ],
       privacyTitle: "Privada por diseño",
       privacy: "Todo ocurre en tu Mac. Sin cuentas, sin subidas, sin rastreo.",
-      screenshotAlt: "Cuts con el vídeo de una sesión de DJ, seis clips marcados y uno seleccionado",
+      screenshotAlt: "Cuts con un vídeo largo, seis clips marcados y uno seleccionado",
       zoomAlt: "La línea de tiempo con zoom de dos minutos, con fotogramas, forma de onda y un clip seleccionado",
     },
     privacy: {
