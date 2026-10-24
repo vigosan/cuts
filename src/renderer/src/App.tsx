@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, type Clip } from '@shared/clips'
 import { DEFAULT_FADE, type ClipFade } from '@shared/fades'
+import type { ExportResult } from '@shared/api'
 import type { OutputFormat } from '@shared/formats'
 import { mediaUrl } from '@shared/media-url'
 import { ClipList } from './components/ClipList'
@@ -114,13 +115,15 @@ export function App() {
   const runExport = async () => {
     if (!videoPath || !folder) return
     setExportState({ status: 'running', progress: clips.map(() => 0) })
-    const result = await window.api.exportClips({
-      input: videoPath,
-      folder: `${folder}/${defaultBaseName(videoPath)}`,
-      baseName,
-      format,
-      clips: clips.map((clip) => ({ ...clip, ...fadeOf(clip) }))
-    })
+    const result = await window.api
+      .exportClips({
+        input: videoPath,
+        folder: `${folder}/${defaultBaseName(videoPath)}`,
+        baseName,
+        format,
+        clips: clips.map((clip) => ({ ...clip, ...fadeOf(clip) }))
+      })
+      .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
   }
 
@@ -129,7 +132,10 @@ export function App() {
     void videoRef.current?.play()
   }
 
+  const exporting = exportState.status === 'running'
+
   const openVideo = async () => {
+    if (exporting) return
     if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
     const path = await window.api.openVideo()
     if (path) load(path)
@@ -150,7 +156,7 @@ export function App() {
       onDrop={(e) => {
         e.preventDefault()
         const file = e.dataTransfer.files[0]
-        if (!file) return
+        if (!file || exporting) return
         if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
         load(window.api.pathForFile(file))
       }}

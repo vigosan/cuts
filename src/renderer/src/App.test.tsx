@@ -409,4 +409,28 @@ describe('App', () => {
     await act(async () => menuOpenVideo())
     expect(api.openVideo).toHaveBeenCalled()
   })
+
+  it('ignores opening another video while exporting, so the running export never reports onto a different video', async () => {
+    vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('export'))
+    vi.mocked(api.openVideo).mockClear()
+    await act(async () => menuOpenVideo())
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'other.mov')] } })
+    expect(api.openVideo).not.toHaveBeenCalled()
+    expect(api.pathForFile).not.toHaveBeenCalled()
+    vi.mocked(window.confirm).mockRestore()
+  })
+
+  it('shows an error when the export call itself fails instead of staying on Exporting… forever', async () => {
+    vi.mocked(api.exportClips).mockRejectedValue(new Error('IPC failed'))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(await screen.findByTestId('export-error')).toHaveTextContent('IPC failed')
+  })
 })
