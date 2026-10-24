@@ -3,14 +3,14 @@ set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="$ROOT/dist-sandbox"
-APP="$OUT/mas-arm64/Cuts.app"
+APP="$OUT/mas-universal/Cuts.app"
 INHERIT="$ROOT/build/entitlements.mas.inherit.plist"
 PARENT="$OUT/entitlements.local.plist"
 
 cd "$ROOT"
 npx electron-vite build
 rm -rf "$OUT"
-npx electron-builder --mac mas --arm64 -c.mas.identity=null -c.mas.provisioningProfile=null \
+npx electron-builder --mac mas --universal -c.mas.identity=null -c.mas.provisioningProfile=null \
   -c.mac.identity=null -c.directories.output="$OUT" || [ -d "$APP" ]
 
 sed "s/APPLE_TEAM_ID/LOCALTEST/" build/entitlements.mas.template.plist \
