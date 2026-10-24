@@ -6,8 +6,8 @@ const request: ExportRequest = {
   input: '/Movies/session.mov',
   folder: '/Movies/Instagram',
   baseName: 'sesion',
-  videoFade: true,
-  audioFade: true,
+  videoFade: 'black',
+  audioFade: 'natural',
   fadeSeconds: 1,
   format: 'original',
   clips: [

@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, FADE_SECONDS, formatTime, type Clip } from '@shared/clips'
+import type { AudioFade, VideoFade } from '@shared/fades'
 import type { OutputFormat } from '@shared/formats'
 import { mediaUrl } from '@shared/media-url'
 import { ClipList } from './components/ClipList'
@@ -22,8 +23,8 @@ export function App() {
   const [playing, setPlaying] = useState(false)
   const [baseName, setBaseName] = useState('')
   const [folder, setFolder] = useState<string | null>(null)
-  const [videoFade, setVideoFade] = useState(true)
-  const [audioFade, setAudioFade] = useState(true)
+  const [videoFade, setVideoFade] = useState<VideoFade>('black')
+  const [audioFade, setAudioFade] = useState<AudioFade>('natural')
   const [fadeSeconds, setFadeSeconds] = useState(FADE_SECONDS)
   const [format, setFormat] = useState<OutputFormat>('original')
   const [exportState, setExportState] = useState<ExportState>({ status: 'idle' })

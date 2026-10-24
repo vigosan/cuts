@@ -94,17 +94,17 @@ describe('App', () => {
     await userEvent.clear(screen.getByTestId('base-name'))
     await userEvent.type(screen.getByTestId('base-name'), 'sesion-22-oct')
     await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
-    expect(screen.getByTestId('fade-video')).toBeChecked()
-    expect(screen.getByTestId('fade-audio')).toBeChecked()
-    await userEvent.click(screen.getByTestId('fade-video'))
+    expect(screen.getByTestId('fade-video')).toHaveValue('black')
+    expect(screen.getByTestId('fade-audio')).toHaveValue('natural')
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
     await userEvent.selectOptions(screen.getByTestId('fade-seconds'), '2')
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(api.exportClips).toHaveBeenCalledWith({
       input: VIDEO,
       folder: '/Users/vicent/Movies/Instagram',
       baseName: 'sesion-22-oct',
-      videoFade: false,
-      audioFade: true,
+      videoFade: 'white',
+      audioFade: 'natural',
       fadeSeconds: 2,
       format: '4:5',
       clips: [expect.objectContaining({ start: 600, end: 650 }), expect.objectContaining({ start: 100, end: 140 })]
@@ -122,15 +122,14 @@ describe('App', () => {
     expect(await screen.findByTestId('export-error')).toHaveTextContent('No se encontró ffmpeg')
   })
 
-  it('keeps space as play/pause after clicking the fade checkbox, so shortcuts never silently change export settings', async () => {
+  it('keeps space as play/pause after using an export option, so shortcuts never silently change export settings', async () => {
     render(<App />)
     const video = await loadVideo()
     const play = vi.fn(async () => {})
     Object.assign(video, { play })
-    await userEvent.click(screen.getByTestId('fade-audio'))
-    await userEvent.click(screen.getByTestId('fade-audio'))
+    await userEvent.selectOptions(screen.getByTestId('fade-audio'), 'linear')
     await userEvent.keyboard(' ')
-    expect(screen.getByTestId('fade-audio')).toBeChecked()
+    expect(screen.getByTestId('fade-audio')).toHaveValue('linear')
     expect(play).toHaveBeenCalled()
   })
 

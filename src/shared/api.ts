@@ -1,12 +1,13 @@
 import type { Clip } from './clips'
+import type { AudioFade, VideoFade } from './fades'
 import type { OutputFormat } from './formats'
 
 export type ExportRequest = {
   input: string
   folder: string
   baseName: string
-  videoFade: boolean
-  audioFade: boolean
+  videoFade: VideoFade
+  audioFade: AudioFade
   fadeSeconds: number
   format: OutputFormat
   clips: Clip[]

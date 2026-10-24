@@ -1,3 +1,4 @@
+import type { AudioFade, VideoFade } from '../shared/fades'
 import { formatSize, type OutputFormat } from '../shared/formats'
 
 export type CutOptions = {
@@ -5,8 +6,8 @@ export type CutOptions = {
   output: string
   start: number
   end: number
-  videoFade: boolean
-  audioFade: boolean
+  videoFade: VideoFade
+  audioFade: AudioFade
   fadeSeconds: number
   videoFadeIn: boolean
   format: OutputFormat
@@ -14,9 +15,12 @@ export type CutOptions = {
 
 const num = (n: number) => String(Number(n.toFixed(3)))
 
-function fadeFilters(prefix: string, duration: number, seconds: number): string[] {
+function fadeFilters(prefix: string, duration: number, seconds: number, options = ''): string[] {
   const d = Math.min(seconds, duration / 2)
-  return [`${prefix}=t=in:st=0:d=${num(d)}`, `${prefix}=t=out:st=${num(duration - d)}:d=${num(d)}`]
+  return [
+    `${prefix}=t=in:st=0:d=${num(d)}${options}`,
+    `${prefix}=t=out:st=${num(duration - d)}:d=${num(d)}${options}`
+  ]
 }
 
 function cropFilters(format: OutputFormat): string[] {
@@ -28,9 +32,13 @@ function cropFilters(format: OutputFormat): string[] {
 
 export function buildFfmpegArgs(o: CutOptions): string[] {
   const duration = o.end - o.start
-  const videoFades = o.videoFade ? fadeFilters('fade', duration, o.fadeSeconds).slice(o.videoFadeIn ? 0 : 1) : []
+  const videoFades =
+    o.videoFade === 'none'
+      ? []
+      : fadeFilters('fade', duration, o.fadeSeconds, o.videoFade === 'white' ? ':color=white' : '').slice(o.videoFadeIn ? 0 : 1)
   const video = [...cropFilters(o.format), ...videoFades]
-  const audio = o.audioFade ? fadeFilters('afade', duration, o.fadeSeconds) : []
+  const audio =
+    o.audioFade === 'none' ? [] : fadeFilters('afade', duration, o.fadeSeconds, o.audioFade === 'natural' ? ':curve=qsin' : '')
   return [
     '-hide_banner',
     '-y',

@@ -1,4 +1,5 @@
 import { FADE_OPTIONS } from '@shared/clips'
+import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type VideoFade } from '@shared/fades'
 import { FORMATS, type OutputFormat } from '@shared/formats'
 import { FolderIcon } from './icons'
 
@@ -13,15 +14,15 @@ type Props = {
   canExport: boolean
   baseName: string
   folder: string | null
-  videoFade: boolean
-  audioFade: boolean
+  videoFade: VideoFade
+  audioFade: AudioFade
   fadeSeconds: number
   format: OutputFormat
   state: ExportState
   onBaseName: (value: string) => void
   onChooseFolder: () => void
-  onVideoFade: (value: boolean) => void
-  onAudioFade: (value: boolean) => void
+  onVideoFade: (value: VideoFade) => void
+  onAudioFade: (value: AudioFade) => void
   onFadeSeconds: (value: number) => void
   onFormat: (value: OutputFormat) => void
   onExport: () => void
@@ -78,16 +79,46 @@ export function ExportPanel(p: Props) {
             </option>
           ))}
         </select>
-        <span className="text-ink-2">Fundido</span>
-        <div className="flex items-center gap-4">
-          <Switch testId="fade-video" label="Imagen" checked={p.videoFade} onChange={p.onVideoFade} />
-          <Switch testId="fade-audio" label="Audio" checked={p.audioFade} onChange={p.onAudioFade} />
+        <label htmlFor="fade-video" className="text-ink-2">
+          Fundido
+        </label>
+        <div className="grid grid-cols-[1fr_1fr_4.5rem] gap-2">
+          <select
+            id="fade-video"
+            data-testid="fade-video"
+            aria-label="Fundido de imagen"
+            title="Fundido de imagen"
+            className={field}
+            value={p.videoFade}
+            onChange={(e) => p.onVideoFade(e.target.value as VideoFade)}
+          >
+            {VIDEO_FADES.map((f) => (
+              <option key={f.id} value={f.id}>
+                Imagen: {f.label}
+              </option>
+            ))}
+          </select>
+          <select
+            data-testid="fade-audio"
+            aria-label="Fundido de audio"
+            title="Fundido de audio"
+            className={field}
+            value={p.audioFade}
+            onChange={(e) => p.onAudioFade(e.target.value as AudioFade)}
+          >
+            {AUDIO_FADES.map((f) => (
+              <option key={f.id} value={f.id}>
+                Audio: {f.label}
+              </option>
+            ))}
+          </select>
           <select
             data-testid="fade-seconds"
             aria-label="Duración del fundido"
-            className={`${field} ml-auto w-20 disabled:opacity-40`}
+            title="Duración del fundido"
+            className={`${field} disabled:opacity-40`}
             value={p.fadeSeconds}
-            disabled={!p.videoFade && !p.audioFade}
+            disabled={p.videoFade === 'none' && p.audioFade === 'none'}
             onChange={(e) => p.onFadeSeconds(Number(e.target.value))}
           >
             {FADE_OPTIONS.map((seconds) => (
@@ -138,20 +169,5 @@ export function ExportPanel(p: Props) {
         </p>
       )}
     </section>
-  )
-}
-
-function Switch({ testId, label, checked, onChange }: { testId: string; label: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2 text-ink-2">
-      <input
-        data-testid={testId}
-        type="checkbox"
-        className="relative h-5 w-8 shrink-0 cursor-pointer appearance-none rounded-full bg-sunken transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-4 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:bg-accent checked:before:translate-x-3"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      {label}
-    </label>
   )
 }
