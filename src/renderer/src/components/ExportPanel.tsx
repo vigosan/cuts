@@ -1,3 +1,4 @@
+import { FADE_OPTIONS } from '@shared/clips'
 import { FORMATS, type OutputFormat } from '@shared/formats'
 import { FolderIcon } from './icons'
 
@@ -12,12 +13,16 @@ type Props = {
   canExport: boolean
   baseName: string
   folder: string | null
-  fade: boolean
+  videoFade: boolean
+  audioFade: boolean
+  fadeSeconds: number
   format: OutputFormat
   state: ExportState
   onBaseName: (value: string) => void
   onChooseFolder: () => void
-  onFade: (value: boolean) => void
+  onVideoFade: (value: boolean) => void
+  onAudioFade: (value: boolean) => void
+  onFadeSeconds: (value: number) => void
   onFormat: (value: OutputFormat) => void
   onExport: () => void
   onReveal: (path: string) => void
@@ -60,30 +65,37 @@ export function ExportPanel(p: Props) {
         <label htmlFor="format" className="text-ink-2">
           Formato
         </label>
-        <div className="flex items-center gap-3">
+        <select
+          id="format"
+          data-testid="format"
+          className={field}
+          value={p.format}
+          onChange={(e) => p.onFormat(e.target.value as OutputFormat)}
+        >
+          {FORMATS.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+        <span className="text-ink-2">Fundido</span>
+        <div className="flex items-center gap-4">
+          <Switch testId="fade-video" label="Imagen" checked={p.videoFade} onChange={p.onVideoFade} />
+          <Switch testId="fade-audio" label="Audio" checked={p.audioFade} onChange={p.onAudioFade} />
           <select
-            id="format"
-            data-testid="format"
-            className={`${field} min-w-0 flex-1`}
-            value={p.format}
-            onChange={(e) => p.onFormat(e.target.value as OutputFormat)}
+            data-testid="fade-seconds"
+            aria-label="Duración del fundido"
+            className={`${field} ml-auto w-20 disabled:opacity-40`}
+            value={p.fadeSeconds}
+            disabled={!p.videoFade && !p.audioFade}
+            onChange={(e) => p.onFadeSeconds(Number(e.target.value))}
           >
-            {FORMATS.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.label}
+            {FADE_OPTIONS.map((seconds) => (
+              <option key={seconds} value={seconds}>
+                {String(seconds).replace('.', ',')} s
               </option>
             ))}
           </select>
-          <label className="flex shrink-0 cursor-pointer items-center gap-2 text-ink-2" title="Fundido de 1 s en imagen y audio">
-            <input
-              data-testid="fade"
-              type="checkbox"
-              className="peer relative h-5 w-8 cursor-pointer appearance-none rounded-full bg-sunken transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-4 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:bg-accent checked:before:translate-x-3"
-              checked={p.fade}
-              onChange={(e) => p.onFade(e.target.checked)}
-            />
-            Fundido
-          </label>
         </div>
       </div>
 
@@ -126,5 +138,20 @@ export function ExportPanel(p: Props) {
         </p>
       )}
     </section>
+  )
+}
+
+function Switch({ testId, label, checked, onChange }: { testId: string; label: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 text-ink-2">
+      <input
+        data-testid={testId}
+        type="checkbox"
+        className="relative h-5 w-8 shrink-0 cursor-pointer appearance-none rounded-full bg-sunken transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-4 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:bg-accent checked:before:translate-x-3"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {label}
+    </label>
   )
 }

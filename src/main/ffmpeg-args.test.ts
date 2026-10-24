@@ -6,7 +6,9 @@ const base = {
   output: '/out/sesion-1.mp4',
   start: 584,
   end: 643,
-  fade: false,
+  videoFade: false,
+  audioFade: false,
+  fadeSeconds: 1,
   videoFadeIn: true,
   format: 'original' as const
 }
@@ -35,24 +37,42 @@ describe('buildFfmpegArgs', () => {
   })
 
   it('fades image and audio in over 1 s and out over the last second', () => {
-    const args = buildFfmpegArgs({ ...base, fade: true })
+    const args = buildFfmpegArgs({ ...base, videoFade: true, audioFade: true })
     expect(valueAfter(args, '-vf')).toBe('fade=t=in:st=0:d=1,fade=t=out:st=58:d=1')
     expect(valueAfter(args, '-af')).toBe('afade=t=in:st=0:d=1,afade=t=out:st=58:d=1')
   })
 
   it('starts on a real image when the image fade-in is off, so the carousel cover is not black', () => {
-    const args = buildFfmpegArgs({ ...base, fade: true, videoFadeIn: false })
+    const args = buildFfmpegArgs({ ...base, videoFade: true, audioFade: true, videoFadeIn: false })
     expect(valueAfter(args, '-vf')).toBe('fade=t=out:st=58:d=1')
     expect(valueAfter(args, '-af')).toBe('afade=t=in:st=0:d=1,afade=t=out:st=58:d=1')
   })
 
+  it('fades only the audio when the image fade is off, so the sound never cuts abruptly but the picture stays', () => {
+    const args = buildFfmpegArgs({ ...base, audioFade: true })
+    expect(args).not.toContain('-vf')
+    expect(valueAfter(args, '-af')).toBe('afade=t=in:st=0:d=1,afade=t=out:st=58:d=1')
+  })
+
+  it('fades only the image when the audio fade is off', () => {
+    const args = buildFfmpegArgs({ ...base, videoFade: true })
+    expect(valueAfter(args, '-vf')).toBe('fade=t=in:st=0:d=1,fade=t=out:st=58:d=1')
+    expect(args).not.toContain('-af')
+  })
+
+  it('uses the chosen fade length', () => {
+    const args = buildFfmpegArgs({ ...base, videoFade: true, audioFade: true, fadeSeconds: 2 })
+    expect(valueAfter(args, '-vf')).toBe('fade=t=in:st=0:d=2,fade=t=out:st=57:d=2')
+    expect(valueAfter(args, '-af')).toBe('afade=t=in:st=0:d=2,afade=t=out:st=57:d=2')
+  })
+
   it('shortens fades on very short clips so in and out never overlap', () => {
-    const args = buildFfmpegArgs({ ...base, end: base.start + 1.5, fade: true })
+    const args = buildFfmpegArgs({ ...base, end: base.start + 1.5, videoFade: true })
     expect(valueAfter(args, '-vf')).toBe('fade=t=in:st=0:d=0.75,fade=t=out:st=0.75:d=0.75')
   })
 
   it('center-crops and scales to the Instagram size before fading', () => {
-    const args = buildFfmpegArgs({ ...base, fade: true, format: '4:5' })
+    const args = buildFfmpegArgs({ ...base, videoFade: true, format: '4:5' })
     expect(valueAfter(args, '-vf')).toBe(
       "crop='min(iw,ih*1080/1350)':'min(ih,iw*1350/1080)',scale=1080:1350,setsar=1,fade=t=in:st=0:d=1,fade=t=out:st=58:d=1"
     )

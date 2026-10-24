@@ -5,7 +5,9 @@ export type ExportRequest = {
   input: string
   folder: string
   baseName: string
-  fade: boolean
+  videoFade: boolean
+  audioFade: boolean
+  fadeSeconds: number
   format: OutputFormat
   clips: Clip[]
 }

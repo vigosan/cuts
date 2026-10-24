@@ -94,13 +94,18 @@ describe('App', () => {
     await userEvent.clear(screen.getByTestId('base-name'))
     await userEvent.type(screen.getByTestId('base-name'), 'sesion-22-oct')
     await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
-    expect(screen.getByTestId('fade')).toBeChecked()
+    expect(screen.getByTestId('fade-video')).toBeChecked()
+    expect(screen.getByTestId('fade-audio')).toBeChecked()
+    await userEvent.click(screen.getByTestId('fade-video'))
+    await userEvent.selectOptions(screen.getByTestId('fade-seconds'), '2')
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(api.exportClips).toHaveBeenCalledWith({
       input: VIDEO,
       folder: '/Users/vicent/Movies/Instagram',
       baseName: 'sesion-22-oct',
-      fade: true,
+      videoFade: false,
+      audioFade: true,
+      fadeSeconds: 2,
       format: '4:5',
       clips: [expect.objectContaining({ start: 600, end: 650 }), expect.objectContaining({ start: 100, end: 140 })]
     })
@@ -122,10 +127,10 @@ describe('App', () => {
     const video = await loadVideo()
     const play = vi.fn(async () => {})
     Object.assign(video, { play })
-    await userEvent.click(screen.getByTestId('fade'))
-    await userEvent.click(screen.getByTestId('fade'))
+    await userEvent.click(screen.getByTestId('fade-audio'))
+    await userEvent.click(screen.getByTestId('fade-audio'))
     await userEvent.keyboard(' ')
-    expect(screen.getByTestId('fade')).toBeChecked()
+    expect(screen.getByTestId('fade-audio')).toBeChecked()
     expect(play).toHaveBeenCalled()
   })
 

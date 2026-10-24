@@ -1,5 +1,6 @@
 export const MAX_CLIP_SECONDS = 59
 export const FADE_SECONDS = 1
+export const FADE_OPTIONS = [0.5, 1, 2]
 
 export type Clip = { id: string; start: number; end: number }
 

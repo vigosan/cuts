@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { defaultBaseName, formatTime, type Clip } from '@shared/clips'
+import { defaultBaseName, FADE_SECONDS, formatTime, type Clip } from '@shared/clips'
 import type { OutputFormat } from '@shared/formats'
 import { mediaUrl } from '@shared/media-url'
 import { ClipList } from './components/ClipList'
@@ -22,7 +22,9 @@ export function App() {
   const [playing, setPlaying] = useState(false)
   const [baseName, setBaseName] = useState('')
   const [folder, setFolder] = useState<string | null>(null)
-  const [fade, setFade] = useState(true)
+  const [videoFade, setVideoFade] = useState(true)
+  const [audioFade, setAudioFade] = useState(true)
+  const [fadeSeconds, setFadeSeconds] = useState(FADE_SECONDS)
   const [format, setFormat] = useState<OutputFormat>('original')
   const [exportState, setExportState] = useState<ExportState>({ status: 'idle' })
   const [zoom, setZoom] = useState<Zoom>(null)
@@ -89,7 +91,16 @@ export function App() {
   const runExport = async () => {
     if (!videoPath || !folder) return
     setExportState({ status: 'running', progress: clips.map(() => 0) })
-    const result = await window.api.exportClips({ input: videoPath, folder, baseName, fade, format, clips })
+    const result = await window.api.exportClips({
+      input: videoPath,
+      folder,
+      baseName,
+      videoFade,
+      audioFade,
+      fadeSeconds,
+      format,
+      clips
+    })
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
   }
 
@@ -261,7 +272,9 @@ export function App() {
               canExport={canExport}
               baseName={baseName}
               folder={folder}
-              fade={fade}
+              videoFade={videoFade}
+              audioFade={audioFade}
+              fadeSeconds={fadeSeconds}
               format={format}
               state={exportState}
               onBaseName={setBaseName}
@@ -269,7 +282,9 @@ export function App() {
                 const chosen = await window.api.chooseFolder()
                 if (chosen) setFolder(chosen)
               }}
-              onFade={setFade}
+              onVideoFade={setVideoFade}
+              onAudioFade={setAudioFade}
+              onFadeSeconds={setFadeSeconds}
               onFormat={setFormat}
               onExport={runExport}
               onReveal={window.api.reveal}
