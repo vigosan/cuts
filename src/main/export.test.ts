@@ -21,6 +21,7 @@ function deps(overrides: Partial<ExportDeps> = {}): ExportDeps {
     ffmpeg: '/opt/homebrew/bin/ffmpeg',
     exists: () => false,
     ensureDir: vi.fn(async () => {}),
+    remove: vi.fn(async () => {}),
     t,
     confirmOverwrite: vi.fn(async () => true),
     run: vi.fn(async (_ffmpeg: string, _args: string[], onSeconds: (s: number) => void) => onSeconds(25)),
@@ -105,5 +106,14 @@ describe('exportClips', () => {
     const result = await exportClips(request, d)
     expect(result).toEqual({ ok: false, error: t.folderFailed('EACCES: permission denied') })
     expect(d.run).not.toHaveBeenCalled()
+  })
+
+  it('deletes the half-written clip when a cut fails, so a broken file is never uploaded by mistake', async () => {
+    const run = vi.fn(async () => {
+      throw new Error('No space left on device')
+    })
+    const d = deps({ run })
+    await exportClips(request, d)
+    expect(d.remove).toHaveBeenCalledWith('/Movies/Instagram/sesion-1.mp4')
   })
 })

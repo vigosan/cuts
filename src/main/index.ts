@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { mkdir, realpath } from 'node:fs/promises'
+import { mkdir, realpath, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron'
 import type { ExportRequest } from '../shared/api'
@@ -65,6 +65,7 @@ app.whenReady().then(() => {
       ensureDir: async (path) => {
         await mkdir(path, { recursive: true })
       },
+      remove: (path) => rm(path, { force: true }),
       run: runFfmpeg,
       onProgress: (progress) => event.sender.send('export-progress', progress),
       t,
