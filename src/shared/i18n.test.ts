@@ -24,6 +24,8 @@ describe('messagesFor', () => {
     expect(messagesFor('en').exportClips(3)).toBe('Export 3 clips')
     expect(messagesFor('es').exportClips(1)).toBe('Exportar 1 clip')
     expect(messagesFor('es').exportedClips(2)).toBe('2 clips exportados')
+    expect(messagesFor('en').exportClips(0)).toBe('Export')
+    expect(messagesFor('es').exportClips(0)).toBe('Exportar')
   })
 
   it('formats decimal fade lengths with the locale separator', () => {

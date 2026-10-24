@@ -454,4 +454,10 @@ describe('App', () => {
     expect(api.waveform).toHaveBeenCalledTimes(1)
     expect(api.waveform).toHaveBeenCalledWith(VIDEO)
   })
+
+  it('labels the button just Export while there is nothing to export, instead of Export 0 clips', async () => {
+    render(<App />)
+    await loadVideo()
+    expect(screen.getByTestId('export')).toHaveTextContent(/^Export$/)
+  })
 })
