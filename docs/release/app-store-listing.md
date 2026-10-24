@@ -25,6 +25,7 @@ Cuts turns a long recording into short clips, ready to post.
 Drop in a video, listen, and mark where each clip starts and ends. Drag clips on the timeline to fine-tune them, zoom in for second-accurate edits, and reorder them into the order you will post them.
 
 • Mark clips while you listen, with keyboard shortcuts (I / O, Space)
+• See the video frames and the audio waveform along the timeline
 • Clips of up to 59 seconds are flagged as carousel-ready; longer ones are allowed for regular posts
 • Fades to black or white and smooth audio fades, per clip
 • Original size, or 4:5, 1:1 and 9:16 crops at 1080 px
@@ -39,6 +40,7 @@ Cuts convierte una grabación larga en clips cortos, listos para publicar.
 Arrastra un vídeo, escúchalo y marca dónde empieza y acaba cada clip. Arrastra los clips en la línea de tiempo para afinarlos, haz zoom para ajustar al segundo y ordénalos tal y como los vas a publicar.
 
 • Marca clips mientras escuchas, con atajos de teclado (I / O, espacio)
+• Ve los fotogramas del vídeo y la forma de onda del audio en la línea de tiempo
 • Los clips de hasta 59 segundos se marcan como aptos para carrusel; los más largos se permiten para publicaciones normales
 • Fundidos a negro o a blanco y fundidos de audio suaves, en cada clip
 • Tamaño original, o recortes 4:5, 1:1 y 9:16 a 1080 px

@@ -1,11 +1,19 @@
 export type Tile = { time: number; left: number }
 
-export function filmstripTiles(viewStart: number, viewSpan: number, width: number, tileWidth: number): Tile[] {
+const LAST_FRAME_MARGIN = 0.5
+
+export function filmstripTiles(
+  viewStart: number,
+  viewSpan: number,
+  width: number,
+  tileWidth: number,
+  duration = Infinity
+): Tile[] {
   if (width <= 0 || viewSpan <= 0) return []
   const tileSpan = (viewSpan * tileWidth) / width
   const tiles: Tile[] = []
   for (let i = Math.floor(viewStart / tileSpan); i * tileSpan < viewStart + viewSpan; i++) {
-    tiles.push({ time: (i + 0.5) * tileSpan, left: ((i * tileSpan - viewStart) / viewSpan) * 100 })
+    tiles.push({ time: Math.min((i + 0.5) * tileSpan, duration - LAST_FRAME_MARGIN), left: ((i * tileSpan - viewStart) / viewSpan) * 100 })
   }
   return tiles
 }

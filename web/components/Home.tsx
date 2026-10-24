@@ -27,6 +27,13 @@ export function Home({ c }: { c: Content }) {
           ))}
         </ul>
       </article>
+      <img
+        src={`/screenshots/${c.lang}-zoom.png`}
+        alt={c.home.zoomAlt}
+        width={2880}
+        height={1800}
+        className="w-full rounded-lg border border-gray-200"
+      />
       <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800">{c.home.privacyTitle}</h2>
         <p>{c.home.privacy}</p>

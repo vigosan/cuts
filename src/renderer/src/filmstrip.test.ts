@@ -14,6 +14,12 @@ describe('filmstripTiles', () => {
     expect(after.slice(0, 4)).toEqual(before.slice(1))
   })
 
+  it('takes the last frame inside the video, so the filmstrip reaches the end of the timeline', () => {
+    const tiles = filmstripTiles(0, 100, 450, 100, 100)
+    expect(tiles.at(-1)!.time).toBeLessThan(100)
+    expect(tiles).toHaveLength(5)
+  })
+
   it('returns nothing until the timeline has a width and the video a duration', () => {
     expect(filmstripTiles(0, 100, 0, 100)).toEqual([])
     expect(filmstripTiles(0, 0, 500, 100)).toEqual([])

@@ -38,7 +38,7 @@ export function Timeline({ videoPath, duration, viewStart, viewSpan, time, clips
   const barRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [width, setWidth] = useState(0)
-  const tiles = filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX)
+  const tiles = filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration)
   const frames = useThumbnails(videoPath, tiles.map((tile) => tile.time))
   const peaks = useWaveform(videoPath)
 

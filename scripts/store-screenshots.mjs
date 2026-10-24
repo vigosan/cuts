@@ -10,6 +10,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const shot = async (name) => { const s = await send('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(`${dir}/${lang}-${name}.png`, Buffer.from(s.data, 'base64')) }
 const select = (testid, value) => evalJs(`(() => { const s = document.querySelector('[data-testid=${testid}]'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(s, '${value}'); s.dispatchEvent(new Event('change', { bubbles: true })) })()`)
 const click = (testid) => evalJs(`document.querySelector('[data-testid=${testid}]').click()`)
+const waitForTimeline = async () => {
+  let previous = -1
+  for (let i = 0; i < 60; i++) {
+    const frames = await evalJs(`document.querySelectorAll('[data-testid=filmstrip-frame]').length`)
+    if (frames > 0 && frames === previous) break
+    previous = frames
+    await sleep(700)
+  }
+  await sleep(500)
+}
 ws.onopen = async () => {
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false })
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] })
@@ -21,16 +31,18 @@ ws.onopen = async () => {
   await click('clip-row-2')
   await select('fade-video', 'white')
   await seek(1196)
-  await sleep(800)
+  await sleep(4000)
+  await waitForTimeline()
   await shot('1-overview')
   await click('zoom-120')
   await seek(1222)
-  await sleep(800)
+  await waitForTimeline()
   await shot('2-zoom')
   await click('zoom-all')
+  await evalJs(`document.head.insertAdjacentHTML('beforeend', '<style>*{transition:none!important}</style>')`)
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
   await seek(3020)
-  await sleep(800)
+  await waitForTimeline()
   await shot('3-dark')
   ws.close()
 }

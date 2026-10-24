@@ -24,6 +24,7 @@ export const content = {
       featuresTitle: "What it does",
       features: [
         "Mark clips while you listen, with I and O, and play or pause with Space.",
+        "See the video frames and the audio waveform along the timeline, like in a video editor.",
         "Drag clips and their edges on the timeline, and zoom in to fine-tune to the second.",
         "Clips up to 59 seconds are carousel-ready. Longer ones are allowed for regular posts.",
         "Fades to black or white, and smooth audio fades, set per clip.",
@@ -34,6 +35,7 @@ export const content = {
       privacyTitle: "Private by design",
       privacy: "Everything happens on your Mac. No account, no uploads, no tracking.",
       screenshotAlt: "Cuts with a DJ session video, six clips marked and one selected",
+      zoomAlt: "The timeline zoomed to two minutes, with video frames, the waveform and a selected clip",
     },
     privacy: {
       title: "Privacy policy",
@@ -94,6 +96,7 @@ export const content = {
       featuresTitle: "Qué hace",
       features: [
         "Marca clips mientras escuchas, con I y O, y reproduce o pausa con la barra espaciadora.",
+        "Ve los fotogramas del vídeo y la forma de onda del audio en la línea de tiempo, como en un editor de vídeo.",
         "Arrastra los clips y sus bordes en la línea de tiempo, y haz zoom para afinar al segundo.",
         "Los clips de hasta 59 segundos valen para carrusel. Los más largos se permiten para publicaciones normales.",
         "Fundidos a negro o a blanco, y fundidos de audio suaves, en cada clip.",
@@ -104,6 +107,7 @@ export const content = {
       privacyTitle: "Privada por diseño",
       privacy: "Todo ocurre en tu Mac. Sin cuentas, sin subidas, sin rastreo.",
       screenshotAlt: "Cuts con el vídeo de una sesión de DJ, seis clips marcados y uno seleccionado",
+      zoomAlt: "La línea de tiempo con zoom de dos minutos, con fotogramas, forma de onda y un clip seleccionado",
     },
     privacy: {
       title: "Política de privacidad",
