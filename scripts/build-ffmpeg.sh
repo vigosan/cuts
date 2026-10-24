@@ -48,5 +48,8 @@ cp "$WORK/arm64/ffmpeg-$VERSION/COPYING.LGPLv2.1" "$OUT/LICENSE-FFmpeg.txt"
   echo "x86_64 configure line: ./configure $X86_64" | tr -s ' '
 } > "$OUT/BUILD-FFmpeg.txt"
 
+mkdir -p "$ROOT/web/public/ffmpeg"
+cp "$OUT/BUILD-FFmpeg.txt" "$OUT/LICENSE-FFmpeg.txt" "$ROOT/web/public/ffmpeg/"
+
 lipo -info "$OUT/ffmpeg"
 "$OUT/ffmpeg" -hide_banner -L | head -1

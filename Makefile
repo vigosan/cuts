@@ -1,4 +1,4 @@
-.PHONY: install dev test typecheck build app ffmpeg icon mas
+.PHONY: install dev test typecheck build app ffmpeg icon mas web web-dev
 
 install:
 	npm install
@@ -35,3 +35,9 @@ mas: ffmpeg
 	sed "s/APPLE_TEAM_ID/$(APPLE_TEAM_ID)/" build/entitlements.mas.template.plist > build/entitlements.mas.plist
 	npx electron-vite build
 	npx electron-builder --mac mas --universal
+
+web:
+	cd web && npm ci && npm test && npm run build
+
+web-dev:
+	cd web && npm run dev
