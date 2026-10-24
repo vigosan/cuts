@@ -118,6 +118,10 @@ describe('findFfmpeg', () => {
     expect(findFfmpeg((p) => p === '/usr/local/bin/ffmpeg')).toBe('/usr/local/bin/ffmpeg')
   })
 
+  it('only uses the bundled ffmpeg in the Mac App Store build, where nothing outside the app may run', () => {
+    expect(findFfmpeg((p) => p === '/opt/homebrew/bin/ffmpeg', '/App/Contents/MacOS/ffmpeg', false)).toBeNull()
+  })
+
   it('reports missing ffmpeg instead of failing mid-export', () => {
     expect(findFfmpeg(() => false)).toBeNull()
   })

@@ -55,9 +55,9 @@ describe('exportClips', () => {
     expect(d.run).not.toHaveBeenCalled()
   })
 
-  it('explains how to fix a missing ffmpeg', async () => {
+  it('explains that a missing ffmpeg is fixed by reinstalling, never by installing third-party tools', async () => {
     const result = await exportClips(request, deps({ ffmpeg: null }))
-    expect(result).toEqual({ ok: false, error: expect.stringContaining('brew install ffmpeg') })
+    expect(result).toEqual({ ok: false, error: t.ffmpegMissing })
   })
 
   it('stops and reports which clip failed', async () => {

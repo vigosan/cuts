@@ -66,6 +66,6 @@ export function parseProgressSeconds(chunk: string): number | null {
 
 const FFMPEG_CANDIDATES = ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg']
 
-export function findFfmpeg(exists: (path: string) => boolean, bundled?: string): string | null {
-  return [...(bundled ? [bundled] : []), ...FFMPEG_CANDIDATES].find(exists) ?? null
+export function findFfmpeg(exists: (path: string) => boolean, bundled?: string, allowSystem = true): string | null {
+  return [...(bundled ? [bundled] : []), ...(allowSystem ? FFMPEG_CANDIDATES : [])].find(exists) ?? null
 }

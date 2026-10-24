@@ -36,7 +36,13 @@ function createWindow(): BrowserWindow {
 
 app.whenReady().then(() => {
   const t = messagesFor(resolveLocale(app.getPreferredSystemLanguages()))
-  const openVideo = () => BrowserWindow.getFocusedWindow()?.webContents.send('menu-open-video')
+  const openVideo = () => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    if (!win) return
+    if (win.isMinimized()) win.restore()
+    win.focus()
+    win.webContents.send('menu-open-video')
+  }
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name, { openVideo })))
   app.setAboutPanelOptions({ credits: t.aboutCredits })
   handleMediaProtocol()
@@ -62,7 +68,7 @@ app.whenReady().then(() => {
   ipcMain.handle('export-clips', (event, request: ExportRequest) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     return exportClips(request, {
-      ffmpeg: findFfmpeg(existsSync, join(process.resourcesPath, '..', 'MacOS', 'ffmpeg')),
+      ffmpeg: findFfmpeg(existsSync, join(process.resourcesPath, '..', 'MacOS', 'ffmpeg'), !process.mas),
       exists: existsSync,
       ensureDir: async (path) => {
         await mkdir(path, { recursive: true })
@@ -85,7 +91,7 @@ app.whenReady().then(() => {
     })
   })
 
-  ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')))
+  ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')).catch(() => app.getPath('videos')))
 
   ipcMain.on('reveal', (_event, path: string) => shell.showItemInFolder(path))
 
