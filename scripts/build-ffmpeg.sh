@@ -19,7 +19,7 @@ fi
 COMMON="--extra-cflags=-mmacosx-version-min=13.0 \
   --extra-ldflags=-mmacosx-version-min=13.0 \
   --enable-static --disable-shared \
-  --disable-autodetect --enable-videotoolbox --enable-audiotoolbox \
+  --disable-autodetect --enable-videotoolbox --enable-audiotoolbox --enable-zlib \
   --disable-network --disable-doc --disable-ffplay --disable-ffprobe \
   --disable-debug"
 ARM64="--arch=arm64 $COMMON"

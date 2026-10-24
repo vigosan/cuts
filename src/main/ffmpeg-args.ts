@@ -48,6 +48,7 @@ export function buildFfmpegArgs(o: CutOptions): string[] {
     ...(video.length ? ['-vf', video.join(',')] : []),
     ...(audio.length ? ['-af', audio.join(',')] : []),
     '-c:v', 'h264_videotoolbox',
+    '-allow_sw', '1',
     '-b:v', '12M',
     '-c:a', 'aac',
     '-b:a', '320k',

@@ -91,6 +91,7 @@ describe('buildFfmpegArgs', () => {
   it('writes an H.264/AAC mp4 that starts playing immediately on Instagram', () => {
     const args = buildFfmpegArgs(base)
     expect(valueAfter(args, '-c:v')).toBe('h264_videotoolbox')
+    expect(valueAfter(args, '-allow_sw')).toBe('1')
     expect(valueAfter(args, '-c:a')).toBe('aac')
     expect(valueAfter(args, '-movflags')).toBe('+faststart')
     expect(args.at(-1)).toBe(base.output)
