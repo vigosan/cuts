@@ -231,6 +231,8 @@ export function App() {
                 viewSpan={viewSpan}
                 time={time}
                 clips={clips}
+                videoFade={videoFade}
+                fadeSeconds={fadeSeconds}
                 pendingStart={pendingStart}
                 onSeek={seekTo}
                 onClipChange={(clip) => dispatch({ type: 'replace', clip })}
@@ -262,6 +264,7 @@ export function App() {
               <ClipList
                 clips={clips}
                 time={time}
+                videoFade={videoFade}
                 onPlay={playClip}
                 onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
                 onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}

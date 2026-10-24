@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { clipDuration, formatDuration, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@shared/clips'
-import { CloseIcon, GripIcon, PlayIcon } from './icons'
+import type { VideoFade } from '@shared/fades'
+import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PlayIcon } from './icons'
 
 type Props = {
   clips: Clip[]
   time: number
+  videoFade: VideoFade
   onPlay: (clip: Clip) => void
   onSetStart: (clip: Clip) => void
   onSetEnd: (clip: Clip) => void
@@ -17,8 +19,10 @@ const iconButton =
 const timeButton =
   'rounded-md px-1 tabular-nums transition-colors hover:bg-accent-soft hover:text-accent disabled:pointer-events-none'
 
-export function ClipList({ clips, time, onPlay, onSetStart, onSetEnd, onDelete, onReorder }: Props) {
+export function ClipList({ clips, time, videoFade, onPlay, onSetStart, onSetEnd, onDelete, onReorder }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const fades = videoFade !== 'none'
+  const fadeTitle = videoFade === 'white' ? 'Fundido a blanco' : 'Fundido a negro'
   const [overIndex, setOverIndex] = useState<number | null>(null)
 
   if (clips.length === 0) {
@@ -75,10 +79,17 @@ export function ClipList({ clips, time, onPlay, onSetStart, onSetEnd, onDelete, 
             <span className="cursor-grab text-ink-3 opacity-0 transition-opacity group-hover:opacity-100" title="Arrastra para cambiar el orden">
               <GripIcon />
             </span>
-            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-sunken text-xs font-medium text-ink-2 tabular-nums">
+            <span
+              data-testid={index === 0 ? 'clip-cover-1' : undefined}
+              title={index === 0 ? 'Portada del carrusel' : undefined}
+              className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums ${index === 0 ? 'bg-accent text-white' : 'bg-sunken text-ink-2'}`}
+            >
               {n}
             </span>
             <span className="flex flex-1 items-center text-sm text-ink">
+              <span className="w-3 text-ink-3" title={fades && index > 0 ? fadeTitle : undefined}>
+                {fades && index > 0 && <FadeInIcon data-testid={`clip-fade-in-${n}`} />}
+              </span>
               <button
                 data-testid={`clip-set-start-${n}`}
                 className={timeButton}
@@ -98,6 +109,9 @@ export function ClipList({ clips, time, onPlay, onSetStart, onSetEnd, onDelete, 
               >
                 {formatTime(clip.end)}
               </button>
+              <span className="w-3 text-ink-3" title={fades ? fadeTitle : undefined}>
+                {fades && <FadeOutIcon data-testid={`clip-fade-out-${n}`} />}
+              </span>
             </span>
             <span
               data-testid={`clip-duration-${n}`}

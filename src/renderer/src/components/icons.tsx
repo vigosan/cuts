@@ -1,4 +1,4 @@
-type IconProps = { className?: string }
+type IconProps = { className?: string; 'data-testid'?: string }
 
 const base = 'shrink-0'
 
@@ -53,6 +53,40 @@ export function GripIcon({ className = 'size-3.5' }: IconProps) {
       <circle cx="10" cy="8" r="1.2" />
       <circle cx="6" cy="12" r="1.2" />
       <circle cx="10" cy="12" r="1.2" />
+    </svg>
+  )
+}
+
+export function FadeInIcon({ className = 'size-3', ...rest }: IconProps) {
+  return (
+    <svg {...rest} viewBox="0 0 12 12" fill="currentColor" aria-hidden className={`${base} ${className}`}>
+      <path d="M1 11 11 2v9Z" />
+    </svg>
+  )
+}
+
+export function FadeOutIcon({ className = 'size-3', ...rest }: IconProps) {
+  return (
+    <svg {...rest} viewBox="0 0 12 12" fill="currentColor" aria-hidden className={`${base} ${className}`}>
+      <path d="M1 2l10 9H1Z" />
+    </svg>
+  )
+}
+
+export function ImageIcon({ className = 'size-3.5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
+      <rect x="2" y="3" width="12" height="10" rx="2" />
+      <path d="M2.5 11.5 6 8l2.5 2.5L10.5 8.5l3 3" />
+    </svg>
+  )
+}
+
+export function SpeakerIcon({ className = 'size-3.5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
+      <path d="M2.5 6.25h2.25L8 3.5v9L4.75 9.75H2.5Z" />
+      <path d="M10.5 6a3 3 0 0 1 0 4M12.25 4.25a5.5 5.5 0 0 1 0 7.5" />
     </svg>
   )
 }

@@ -1,8 +1,17 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { isOverLimit, type Clip } from '@shared/clips'
+import type { VideoFade } from '@shared/fades'
 import { dragClip, type DragMode } from '../drag-clip'
 
 const DRAG_THRESHOLD_PX = 3
+
+function fadeMask(fadeIn: boolean, fadeOut: boolean, rampPercent: number): string | undefined {
+  if (!fadeIn && !fadeOut) return undefined
+  const ramp = `max(6px, ${rampPercent}%)`
+  const start = fadeIn ? `transparent, black ${ramp}` : 'black, black'
+  const end = fadeOut ? `black calc(100% - ${ramp}), transparent` : 'black, black'
+  return `linear-gradient(to right, ${start}, ${end})`
+}
 
 type Props = {
   duration: number
@@ -10,12 +19,14 @@ type Props = {
   viewSpan: number
   time: number
   clips: Clip[]
+  videoFade: VideoFade
+  fadeSeconds: number
   pendingStart: number | null
   onSeek: (time: number) => void
   onClipChange: (clip: Clip) => void
 }
 
-export function Timeline({ duration, viewStart, viewSpan, time, clips, pendingStart, onSeek, onClipChange }: Props) {
+export function Timeline({ duration, viewStart, viewSpan, time, clips, videoFade, fadeSeconds, pendingStart, onSeek, onClipChange }: Props) {
   const justDragged = useRef(false)
   const pct = (t: number) => (viewSpan > 0 ? `${(t / viewSpan) * 100}%` : '0%')
 
@@ -60,8 +71,14 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, pendingSt
         <div
           key={clip.id}
           data-testid={`clip-block-${index + 1}`}
+          data-fade-in={videoFade !== 'none' && index > 0}
+          data-fade-out={videoFade !== 'none'}
           className={`group absolute inset-y-1.5 min-w-3 cursor-grab rounded-md transition-colors active:cursor-grabbing ${isOverLimit(clip) ? 'bg-warn/75 hover:bg-warn' : 'bg-accent/70 hover:bg-accent'}`}
-          style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
+          style={{
+            left: pct(clip.start - viewStart),
+            width: pct(clip.end - clip.start),
+            maskImage: fadeMask(videoFade !== 'none' && index > 0, videoFade !== 'none', (fadeSeconds / (clip.end - clip.start)) * 100)
+          }}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => startDrag(e, clip, 'move')}
         >
