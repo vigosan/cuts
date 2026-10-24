@@ -1,16 +1,20 @@
 import { spawn, type ChildProcess } from 'node:child_process'
+import { rmSync } from 'node:fs'
 import { parseProgressSeconds } from './ffmpeg-args'
 
-const running = new Set<ChildProcess>()
+const running = new Map<ChildProcess, string>()
 
 export function stopAllFfmpeg(): void {
-  for (const child of running) child.kill('SIGKILL')
+  for (const [child, output] of running) {
+    child.kill('SIGKILL')
+    rmSync(output, { force: true })
+  }
 }
 
 export function runFfmpeg(ffmpeg: string, args: string[], onSeconds: (seconds: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(ffmpeg, args)
-    running.add(child)
+    running.set(child, args.at(-1)!)
     let stderr = ''
     child.stdout.on('data', (data: Buffer) => {
       const seconds = parseProgressSeconds(data.toString())

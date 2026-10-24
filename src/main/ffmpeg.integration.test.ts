@@ -61,7 +61,7 @@ describe('runFfmpeg with real ffmpeg', () => {
     ).rejects.toThrow(/No such file/)
   })
 
-  it('stops running exports when the app quits, so no ffmpeg keeps working in the background', async () => {
+  it('stops running exports when the app quits and removes the half-written clip, so nothing broken is left behind', async () => {
     const output = join(dir, 'long.mp4')
     const args = ['-y', '-re', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=30:duration=60', '-progress', 'pipe:1', output]
     let started: () => void
@@ -70,5 +70,6 @@ describe('runFfmpeg with real ffmpeg', () => {
     await running
     stopAllFfmpeg()
     await expect(exporting).rejects.toThrow()
+    expect(existsSync(output)).toBe(false)
   })
 })
