@@ -6,10 +6,10 @@ Estado a 2026-10-24. Cuts (antes "Carousel Cutter") es una app Electron 45 + Rea
 
 | Comando | Qué produce | Para qué |
 |---|---|---|
-| `make ffmpeg` | `resources/ffmpeg/ffmpeg` (LGPL, arm64) a partir del código oficial de FFmpeg 9.0.2, con SHA-256 fijado en `scripts/build-ffmpeg.sh` | Se incluye en la app como herramienta auxiliar |
-| `make app` | `dist/mac-arm64/Cuts.app` sin firmar, copiada a `/Applications` | Uso personal y pruebas |
-| `./scripts/sandbox-local.sh` | `dist-sandbox/mas-arm64/Cuts.app` con la build MAS de Electron, firmada ad hoc con sandbox y Team ID ficticio `LOCALTEST` | **Solo pruebas locales del sandbox**. No sirve para subir |
-| `APPLE_TEAM_ID=XXXXXXXXXX make mas` | `dist/mas-arm64/*.pkg` firmado para la Mac App Store | Envío. Necesita certificados y perfil (ver tareas) |
+| `make ffmpeg` | `resources/ffmpeg/ffmpeg` (LGPL, universal arm64 + x86_64) a partir del código oficial de FFmpeg 9.0.2, con SHA-256 fijado en `scripts/build-ffmpeg.sh` | Se incluye en la app como herramienta auxiliar |
+| `make app` | `dist/mac-universal/Cuts.app` sin firmar, copiada a `/Applications` | Uso personal y pruebas |
+| `./scripts/sandbox-local.sh` | `dist-sandbox/mas-universal/Cuts.app` con la build MAS de Electron, firmada ad hoc con sandbox y Team ID ficticio `LOCALTEST` | **Solo pruebas locales del sandbox**. No sirve para subir |
+| `APPLE_TEAM_ID=XXXXXXXXXX make mas` | `dist/mas-universal/*.pkg` firmado para la Mac App Store | Envío. Necesita certificados y perfil (ver tareas) |
 
 El paquete es autocontenido: no depende de Homebrew ni de instaladores externos. FFmpeg va en `Contents/MacOS/ffmpeg`, su licencia y detalles de compilación en `Contents/Resources/LICENSE-FFmpeg.txt` y `BUILD-FFmpeg.txt`.
 
@@ -42,7 +42,7 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 | Escribir fuera de Películas sin elegir la carpeta | ❌ bloqueado; la app muestra "No se pudo crear la carpeta de destino: EPERM…" (esperado) |
 | Carpeta por defecto | ✅ `/Users/<usuario>/Movies/Cuts` (se resuelve el enlace del contenedor) |
 | Flujo completo por la interfaz: soltar vídeo, marcar, exportar | ✅ "1 clip exported" |
-| Salir durante una exportación | ✅ no queda ni la app ni ffmpeg en ejecución (2.4.5(iii)) |
+| Salir durante una exportación | ✅ no queda ni la app ni ffmpeg en ejecución (2.4.5(iii)). Desde el commit posterior, también se borra el clip a medias; esto está cubierto por una prueba de integración, no repetido dentro del sandbox |
 
 **No probado (requiere interacción real o certificados):**
 - Elegir vídeo y carpeta con el diálogo nativo dentro del sandbox. El diálogo se abrió y se comprobó fuera del sandbox.
@@ -61,9 +61,9 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 ## Riesgos pendientes
 
 - **Licencia de FFmpeg.** El binario incluido es LGPL v2.1 (sin `--enable-gpl` ni `--enable-nonfree`, verificado con `ffmpeg -L`). Es un ejecutable aparte que la app lanza, no una biblioteca enlazada. Aun así, la compatibilidad de la LGPL con las condiciones de la App Store es una cuestión legal, no técnica: **conviene revisión legal**. La checklist de FFmpeg pide publicar el código fuente exacto junto a la descarga; ver tareas.
-- **Solo Apple Silicon.** La app y FFmpeg se compilan para arm64. Los Mac Intel no podrán instalarla. Para soportarlos hace falta compilar FFmpeg x64 y combinar ambos con `lipo`, y construir la app universal.
+- **Rendimiento en Intel.** La app es universal. La parte x86_64 de FFmpeg se compila sin las optimizaciones en ensamblador (`--disable-x86asm`) porque no hay `nasm` instalado: en Mac Intel la decodificación es algo más lenta, aunque la codificación sigue en hardware (VideoToolbox). Se comprobó una exportación real ejecutando la app como x86_64 con Rosetta. Para recuperar el rendimiento, instala `nasm` y quita esa opción.
 - **Login helper.** La build MAS de Electron incluye `Contents/Library/LoginItems/Cuts Login Helper.app`. La app no lo usa ni se abre al iniciar sesión. Si el equipo de revisión pregunta, esa es la explicación.
-- **Clip incompleto al salir.** Si se cierra la app a mitad de exportación, el clip que se estaba escribiendo puede quedarse a medias. Si un clip falla, sí se borra.
+- **Tamaño.** La app universal ocupa unos 519 MB instalada, por Electron por duplicado más FFmpeg.
 - **Cifrado para exportación.** Electron incluye BoringSSL, aunque la app no hace conexiones de red. La respuesta a "uses non-exempt encryption" debe darla el propietario.
 
 ## Tareas del propietario
@@ -80,7 +80,7 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 2. Publicar una política de privacidad y una URL de soporte (ver `docs/release/privacy.md`).
 3. Completar la privacidad, la clasificación por edad, la categoría (Video / Foto y vídeo), el precio y el copyright.
 4. Responder la pregunta de cifrado.
-5. Subir capturas de pantalla de Mac y el icono de 1024 px (`build/icon.svg`, se renderiza con `make icon`).
+5. Subir las capturas de `docs/release/screenshots/` (2880×1800, 16:10, sin alfa, en inglés y español; se regeneran con `scripts/store-screenshots.mjs` y la app abierta con `--remote-debugging-port`).
 6. Pegar las notas de revisión de `docs/release/app-store-listing.md`.
 
 **FFmpeg (LGPL)**

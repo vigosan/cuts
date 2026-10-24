@@ -53,7 +53,7 @@ Arrastra un vídeo, escúchalo y marca dónde empieza y acaba cada clip. Arrastr
 
 ## Capturas de pantalla
 
-Pendiente. App Store Connect pide capturas de Mac en 16:10. Comprobar los tamaños admitidos en la propia página de subida. Propuesta de escenas: la ventana con un vídeo y varios clips marcados, el zoom a 2 min ajustando un borde y los ajustes de fundido de un clip seleccionado.
+Hechas: `docs/release/screenshots/` contiene 3 escenas por idioma a 2880×1800 (16:10, PNG sin alfa, uno de los tamaños que admite Apple): vista general, edición con zoom y modo oscuro. Usan el vídeo del propietario.
 
 ## Notas para el equipo de revisión (en): BORRADOR
 
