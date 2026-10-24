@@ -1,5 +1,5 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
-import { isOverLimit, type Clip } from '@shared/clips'
+import type { Clip } from '@shared/clips'
 import type { VideoFade } from '@shared/fades'
 import { dragClip, type DragMode } from '../drag-clip'
 
@@ -73,7 +73,7 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, videoFade
           data-testid={`clip-block-${index + 1}`}
           data-fade-in={videoFade !== 'none' && index > 0}
           data-fade-out={videoFade !== 'none'}
-          className={`group absolute inset-y-1.5 min-w-3 cursor-grab rounded-md transition-colors active:cursor-grabbing ${isOverLimit(clip) ? 'bg-warn/75 hover:bg-warn' : 'bg-accent/70 hover:bg-accent'}`}
+          className="group absolute inset-y-1.5 min-w-3 cursor-grab rounded-md bg-accent/70 transition-colors hover:bg-accent active:cursor-grabbing"
           style={{
             left: pct(clip.start - viewStart),
             width: pct(clip.end - clip.start),
@@ -82,17 +82,17 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, videoFade
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => startDrag(e, clip, 'move')}
         >
-          <span className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden text-[10px] font-semibold text-white tabular-nums">
+          <span className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden text-[10px] font-semibold text-on-accent tabular-nums">
             {index + 1}
           </span>
           <div
             data-testid={`clip-handle-start-${index + 1}`}
-            className="absolute inset-y-0 -left-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:left-1 after:w-0.5 after:rounded-full after:bg-white/0 group-hover:after:bg-white/90"
+            className="absolute inset-y-0 -left-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:left-1 after:w-0.5 after:rounded-full after:bg-transparent group-hover:after:bg-on-accent"
             onPointerDown={(e) => startDrag(e, clip, 'start')}
           />
           <div
             data-testid={`clip-handle-end-${index + 1}`}
-            className="absolute inset-y-0 -right-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:right-1 after:w-0.5 after:rounded-full after:bg-white/0 group-hover:after:bg-white/90"
+            className="absolute inset-y-0 -right-1 w-2.5 cursor-ew-resize after:absolute after:inset-y-2 after:right-1 after:w-0.5 after:rounded-full after:bg-transparent group-hover:after:bg-on-accent"
             onPointerDown={(e) => startDrag(e, clip, 'end')}
           />
         </div>

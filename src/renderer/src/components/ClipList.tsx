@@ -82,7 +82,7 @@ export function ClipList({ clips, time, videoFade, onPlay, onSetStart, onSetEnd,
             <span
               data-testid={index === 0 ? 'clip-cover-1' : undefined}
               title={index === 0 ? 'Portada del carrusel' : undefined}
-              className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums ${index === 0 ? 'bg-accent text-white' : 'bg-sunken text-ink-2'}`}
+              className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums ${index === 0 ? 'bg-accent text-on-accent' : 'bg-sunken text-ink-2'}`}
             >
               {n}
             </span>
@@ -116,8 +116,9 @@ export function ClipList({ clips, time, videoFade, onPlay, onSetStart, onSetEnd,
             <span
               data-testid={`clip-duration-${n}`}
               title={over ? `Más de ${MAX_CLIP_SECONDS} s: no vale para carrusel` : undefined}
-              className={`rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${over ? 'bg-warn-soft text-warn' : 'bg-accent-soft text-accent'}`}
+              className="flex items-center gap-1.5 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-ink tabular-nums"
             >
+              {over && <span className="size-1.5 rounded-full bg-warn" />}
               {formatDuration(clipDuration(clip))}
             </span>
             <button data-testid={`clip-play-${n}`} className={iconButton} title="Escuchar" onClick={() => onPlay(clip)}>

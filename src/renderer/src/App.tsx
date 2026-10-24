@@ -158,7 +158,7 @@ export function App() {
             </div>
             <button
               data-testid="open-video"
-              className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+              className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
               onClick={openVideo}
             >
               Elegir vídeo…

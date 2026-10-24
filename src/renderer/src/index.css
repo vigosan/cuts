@@ -5,36 +5,38 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 
-  --canvas: #f3f3f5;
+  --canvas: #f5f4f2;
   --surface: #ffffff;
-  --sunken: #e9e9ed;
+  --sunken: #ebeae7;
   --line: rgb(0 0 0 / 0.07);
-  --ink: #1c1c1f;
-  --ink-2: #66666d;
-  --ink-3: #9b9ba2;
-  --accent: #2f66f5;
-  --accent-hover: #2457dd;
-  --accent-soft: rgb(47 102 245 / 0.12);
-  --warn: #c2541a;
-  --warn-soft: rgb(194 84 26 / 0.12);
-  --ok: #23824a;
+  --ink: #1c1c1e;
+  --ink-2: #6b6a67;
+  --ink-3: #a19f9b;
+  --accent: #1c1c1e;
+  --accent-hover: #3a3a3c;
+  --accent-soft: rgb(28 28 30 / 0.07);
+  --on-accent: #ffffff;
+  --warn: #b0892f;
+  --warn-soft: rgb(176 137 47 / 0.14);
+  --ok: #3d7a50;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #1b1b1e;
-    --surface: #252528;
-    --sunken: #313135;
-    --line: rgb(255 255 255 / 0.08);
-    --ink: #f1f1f3;
-    --ink-2: #a6a6ad;
-    --ink-3: #74747b;
-    --accent: #5285ff;
-    --accent-hover: #6a96ff;
-    --accent-soft: rgb(82 133 255 / 0.18);
-    --warn: #ff9257;
-    --warn-soft: rgb(255 146 87 / 0.16);
-    --ok: #4cc27b;
+    --canvas: #161617;
+    --surface: #212123;
+    --sunken: #2c2c2f;
+    --line: rgb(255 255 255 / 0.07);
+    --ink: #f2f1ef;
+    --ink-2: #a3a2a0;
+    --ink-3: #6f6e6c;
+    --accent: #f2f1ef;
+    --accent-hover: #ffffff;
+    --accent-soft: rgb(255 255 255 / 0.09);
+    --on-accent: #161617;
+    --warn: #d4ad55;
+    --warn-soft: rgb(212 173 85 / 0.16);
+    --ok: #6fbf8a;
   }
 }
 
@@ -49,9 +51,19 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-ok: var(--ok);
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%238e8e94' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 0.75rem;
+  padding-right: 1.9rem !important;
 }
 
 button:focus-visible,
