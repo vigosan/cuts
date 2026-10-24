@@ -68,8 +68,7 @@ export function App() {
     setTime(0)
     setDuration(0)
     setBaseName(defaultBaseName(path))
-    setFolder(null)
-    void window.api.moviesDir().then((dir) => setFolder(`${dir}/${APP_FOLDER}/${defaultBaseName(path)}`))
+    if (!folder) void window.api.moviesDir().then((dir) => setFolder(`${dir}/${APP_FOLDER}`))
     setExportState({ status: 'idle' })
     setViewStart(0)
     setFades({})
@@ -112,7 +111,7 @@ export function App() {
     setExportState({ status: 'running', progress: clips.map(() => 0) })
     const result = await window.api.exportClips({
       input: videoPath,
-      folder,
+      folder: `${folder}/${defaultBaseName(videoPath)}`,
       baseName,
       format,
       clips: clips.map((clip) => ({ ...clip, ...fadeOf(clip) }))

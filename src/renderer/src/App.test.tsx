@@ -102,7 +102,7 @@ describe('App', () => {
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(api.exportClips).toHaveBeenCalledWith({
       input: VIDEO,
-      folder: '/Users/vicent/Movies/Instagram',
+      folder: '/Users/vicent/Movies/Instagram/2026-10-22 22-33-13',
       baseName: 'sesion-22-oct',
       format: '4:5',
       clips: [
@@ -348,7 +348,7 @@ describe('App', () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
-    expect(await screen.findByTestId('choose-folder')).toHaveTextContent('2026-10-22 22-33-13')
+    expect(await screen.findByTestId('choose-folder')).toHaveTextContent('Movies/Carousel Cutter')
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(api.exportClips).toHaveBeenCalledWith(
       expect.objectContaining({ folder: '/Users/vicent/Movies/Carousel Cutter/2026-10-22 22-33-13' })

@@ -31,7 +31,7 @@ export function ExportPanel(p: Props) {
     p.state.status === 'running'
       ? p.state.progress.reduce((a, b) => a + b, 0) / Math.max(1, p.state.progress.length)
       : 0
-  const folderName = p.folder?.split('/').filter(Boolean).pop()
+  const folderName = p.folder?.split('/').filter(Boolean).slice(-2).join('/')
 
   return (
     <section className="flex flex-col gap-3 border-t border-line p-4">
