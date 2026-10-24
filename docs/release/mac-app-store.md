@@ -50,6 +50,12 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 - Arrastrar desde Finder un vídeo que esté **fuera** de Películas. La prueba automática solo puede simular el arrastre, no conceder la extensión de sandbox que da Finder.
 - La build firmada con Apple Distribution, el `.pkg` y su validación en Transporter.
 
+### A verificar con la build firmada por Apple
+
+1. Elegir un vídeo **fuera** de Películas con el diálogo y arrastrarlo desde Finder, y exportar a una carpeta elegida fuera de Películas. ffmpeg solo hereda el sandbox, así que debe recibir el acceso que macOS concede a la app en ese momento.
+2. Que App Store Connect acepte el ejecutable `Contents/MacOS/ffmpeg`, firmado con identificador `ffmpeg` y sin Info.plist propio. Lo dirá Transporter al subir.
+3. Con el sistema en un idioma no soportado (por ejemplo francés con español como segundo), que el menú y la ventana salgan en el mismo idioma.
+
 ## Fuentes oficiales consultadas
 
 - App Review Guidelines, 2.4.5, 2.5.2, 4.2.3 y 5.1.1: https://developer.apple.com/app-store/review/guidelines/
