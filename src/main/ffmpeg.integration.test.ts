@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFfmpegArgs, findFfmpeg } from './ffmpeg-args'
-import { runFfmpeg, stopAllFfmpeg } from './ffmpeg'
+import { captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
+import { peaksFromSamples, thumbnailArgs, waveformArgs, PEAKS_PER_SECOND } from './preview'
 
 const ffmpeg = findFfmpeg(existsSync, join(__dirname, '../../resources/ffmpeg/ffmpeg'))!
 const dir = mkdtempSync(join(tmpdir(), 'cuts-'))
@@ -59,6 +60,18 @@ describe('runFfmpeg with real ffmpeg', () => {
     await expect(
       runFfmpeg(ffmpeg, buildFfmpegArgs({ input: join(dir, 'missing.mov'), output: join(dir, 'x.mp4'), start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, format: 'original' }), () => {})
     ).rejects.toThrow(/No such file/)
+  })
+
+  it('grabs a JPEG thumbnail of a frame for the timeline filmstrip', async () => {
+    const jpeg = await captureFfmpeg(ffmpeg, thumbnailArgs(input, 2, 90))
+    expect(jpeg.subarray(0, 2).toString('hex')).toBe('ffd8')
+  })
+
+  it('reads the whole audio track into waveform peaks, one slice per 1/50 s', async () => {
+    const raw = await captureFfmpeg(ffmpeg, waveformArgs(input))
+    const peaks = peaksFromSamples(new Int16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2))
+    expect(peaks.length).toBeGreaterThan(4 * PEAKS_PER_SECOND - 5)
+    expect(Math.max(...peaks)).toBeGreaterThan(0.1)
   })
 
   it('stops running exports when the app quits and removes the half-written clip, so nothing broken is left behind', async () => {
