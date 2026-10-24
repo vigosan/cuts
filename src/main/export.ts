@@ -23,7 +23,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
   }
 
   for (const [index, clip] of request.clips.entries()) {
-    const args = buildFfmpegArgs({ ...request, ...clip, output: files[index] })
+    const args = buildFfmpegArgs({ ...request, ...clip, videoFadeIn: index > 0, output: files[index] })
     const length = clipDuration(clip)
     try {
       await deps.run(ffmpeg, args, (seconds) => deps.onProgress({ index, ratio: Math.min(1, seconds / length) }))

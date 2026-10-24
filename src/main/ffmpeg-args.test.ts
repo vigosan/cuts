@@ -7,6 +7,7 @@ const base = {
   start: 584,
   end: 643,
   fade: false,
+  videoFadeIn: true,
   format: 'original' as const
 }
 
@@ -36,6 +37,12 @@ describe('buildFfmpegArgs', () => {
   it('fades image and audio in over 1 s and out over the last second', () => {
     const args = buildFfmpegArgs({ ...base, fade: true })
     expect(valueAfter(args, '-vf')).toBe('fade=t=in:st=0:d=1,fade=t=out:st=58:d=1')
+    expect(valueAfter(args, '-af')).toBe('afade=t=in:st=0:d=1,afade=t=out:st=58:d=1')
+  })
+
+  it('starts on a real image when the image fade-in is off, so the carousel cover is not black', () => {
+    const args = buildFfmpegArgs({ ...base, fade: true, videoFadeIn: false })
+    expect(valueAfter(args, '-vf')).toBe('fade=t=out:st=58:d=1')
     expect(valueAfter(args, '-af')).toBe('afade=t=in:st=0:d=1,afade=t=out:st=58:d=1')
   })
 

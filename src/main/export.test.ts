@@ -68,4 +68,13 @@ describe('exportClips', () => {
     const result = await exportClips({ ...request, baseName: 'sesion 22/10' }, deps())
     expect(result).toEqual({ ok: true, files: ['/Movies/Instagram/sesion 22-10-1.mp4', '/Movies/Instagram/sesion 22-10-2.mp4'] })
   })
+
+  it('skips the image fade-in only on the first clip, because Instagram uses its first frame as the carousel cover', async () => {
+    const d = deps()
+    await exportClips(request, d)
+    const [first, second] = vi.mocked(d.run).mock.calls.map(([, args]) => args[args.indexOf('-vf') + 1])
+    expect(first).not.toContain('fade=t=in')
+    expect(first).toContain('fade=t=out')
+    expect(second).toContain('fade=t=in')
+  })
 })

@@ -7,6 +7,7 @@ export type CutOptions = {
   start: number
   end: number
   fade: boolean
+  videoFadeIn: boolean
   format: OutputFormat
 }
 
@@ -26,7 +27,8 @@ function cropFilters(format: OutputFormat): string[] {
 
 export function buildFfmpegArgs(o: CutOptions): string[] {
   const duration = o.end - o.start
-  const video = [...cropFilters(o.format), ...(o.fade ? fadeFilters('fade', duration) : [])]
+  const videoFades = o.fade ? fadeFilters('fade', duration).slice(o.videoFadeIn ? 0 : 1) : []
+  const video = [...cropFilters(o.format), ...videoFades]
   const audio = o.fade ? fadeFilters('afade', duration) : []
   return [
     '-hide_banner',
