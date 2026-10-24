@@ -1,6 +1,6 @@
 {
-  "name": "carousel-cutter",
-  "productName": "Carousel Cutter",
+  "name": "cuts",
+  "productName": "Cuts",
   "version": "0.1.0",
   "private": true,
   "main": "./out/main/index.js",

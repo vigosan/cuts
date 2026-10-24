@@ -109,7 +109,7 @@ describe('parseProgressSeconds', () => {
 
 describe('findFfmpeg', () => {
   it('prefers the ffmpeg bundled inside the app, which is the only one a sandboxed app may run', () => {
-    const bundled = '/Applications/Carousel Cutter.app/Contents/MacOS/ffmpeg'
+    const bundled = '/Applications/Cuts.app/Contents/MacOS/ffmpeg'
     expect(findFfmpeg(() => true, bundled)).toBe(bundled)
   })
 

@@ -13,7 +13,7 @@ import { t } from './i18n'
 import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
-const APP_FOLDER = 'Carousel Cutter'
+const APP_FOLDER = 'Cuts'
 
 function zoomLabel(span: Zoom): string {
   if (span === null) return t.zoomAll
@@ -155,7 +155,7 @@ export function App() {
     >
       <header className="flex h-11 shrink-0 items-center justify-center gap-3 px-24 text-sm [-webkit-app-region:drag]">
         <span className="truncate font-medium text-ink-2" title={videoPath ?? undefined}>
-          {fileName ?? 'Carousel Cutter'}
+          {fileName ?? 'Cuts'}
         </span>
         {videoPath && (
           <button

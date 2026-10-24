@@ -19,7 +19,7 @@ function createWindow(): BrowserWindow {
     minWidth: 760,
     minHeight: 600,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#161617' : '#f5f4f2',
-    title: 'Carousel Cutter',
+    title: 'Cuts',
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

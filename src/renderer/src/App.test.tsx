@@ -345,14 +345,14 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:07:53')
   })
 
-  it('exports to Movies/Carousel Cutter/<video name> by default, so no folder has to be chosen', async () => {
+  it('exports to Movies/Cuts/<video name> by default, so no folder has to be chosen', async () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
-    expect(await screen.findByTestId('choose-folder')).toHaveTextContent('Movies/Carousel Cutter')
+    expect(await screen.findByTestId('choose-folder')).toHaveTextContent('Movies/Cuts')
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(api.exportClips).toHaveBeenCalledWith(
-      expect.objectContaining({ folder: '/Users/vicent/Movies/Carousel Cutter/2026-10-22 22-33-13' })
+      expect.objectContaining({ folder: '/Users/vicent/Movies/Cuts/2026-10-22 22-33-13' })
     )
   })
 

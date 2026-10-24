@@ -7,7 +7,7 @@ import { buildFfmpegArgs, findFfmpeg } from './ffmpeg-args'
 import { runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 
 const ffmpeg = findFfmpeg(existsSync, join(__dirname, '../../resources/ffmpeg/ffmpeg'))!
-const dir = mkdtempSync(join(tmpdir(), 'carousel-cutter-'))
+const dir = mkdtempSync(join(tmpdir(), 'cuts-'))
 const input = join(dir, 'session with spaces.mov')
 
 function probe(file: string) {

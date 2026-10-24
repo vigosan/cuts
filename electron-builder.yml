@@ -1,5 +1,5 @@
-appId: com.vicent.carouselcutter
-productName: Carousel Cutter
+appId: com.vigosan.cuts
+productName: Cuts
 directories:
   output: dist
 files:
@@ -15,6 +15,7 @@ extraResources:
     to: BUILD-FFmpeg.txt
 mac:
   target: dir
+  icon: build/icon.icns
   category: public.app-category.video
   identity: null
   electronLanguages:

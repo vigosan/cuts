@@ -1,0 +1,12 @@
+const { app, BrowserWindow } = require('electron')
+const fs = require('fs')
+const [svgPath, outPath, size] = process.argv.slice(-3)
+app.whenReady().then(async () => {
+  const win = new BrowserWindow({ width: +size, height: +size, show: false, frame: false, transparent: true, webPreferences: { offscreen: true } })
+  const svg = fs.readFileSync(svgPath, 'utf8').replace('width="1024" height="1024"', `width="${size}" height="${size}"`)
+  await win.loadURL('data:text/html,' + encodeURIComponent(`<html><body style="margin:0;background:transparent">${svg}</body></html>`))
+  await new Promise((r) => setTimeout(r, 300))
+  const img = await win.webContents.capturePage({ x: 0, y: 0, width: +size, height: +size })
+  fs.writeFileSync(outPath, img.resize({ width: +size, height: +size }).toPNG())
+  app.quit()
+})
