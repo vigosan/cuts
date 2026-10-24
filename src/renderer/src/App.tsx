@@ -1,10 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { defaultBaseName, FADE_SECONDS, formatTime, type Clip } from '@shared/clips'
-import type { AudioFade, VideoFade } from '@shared/fades'
+import { defaultBaseName, formatTime, type Clip } from '@shared/clips'
+import { DEFAULT_FADE, type ClipFade } from '@shared/fades'
 import type { OutputFormat } from '@shared/formats'
 import { mediaUrl } from '@shared/media-url'
 import { ClipList } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
+import { FadeControls } from './components/FadeControls'
 import { FilmIcon, PauseIcon, PlayIcon } from './components/icons'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
@@ -23,9 +24,21 @@ export function App() {
   const [playing, setPlaying] = useState(false)
   const [baseName, setBaseName] = useState('')
   const [folder, setFolder] = useState<string | null>(null)
-  const [videoFade, setVideoFade] = useState<VideoFade>('black')
-  const [audioFade, setAudioFade] = useState<AudioFade>('natural')
-  const [fadeSeconds, setFadeSeconds] = useState(FADE_SECONDS)
+  const [defaultFade, setDefaultFade] = useState<ClipFade>(DEFAULT_FADE)
+  const [fades, setFades] = useState<Record<string, ClipFade>>({})
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const fadeOf = (clip: Clip) => fades[clip.id] ?? defaultFade
+  const selectedIndex = clips.findIndex((clip) => clip.id === selectedId)
+  const selectedClip = selectedIndex === -1 ? null : clips[selectedIndex]
+  const changeFade = (change: Partial<ClipFade>) => {
+    if (selectedClip) {
+      setFades({ ...fades, [selectedClip.id]: { ...fadeOf(selectedClip), ...change } })
+    } else {
+      setDefaultFade({ ...defaultFade, ...change })
+      setFades({})
+    }
+  }
   const [format, setFormat] = useState<OutputFormat>('original')
   const [exportState, setExportState] = useState<ExportState>({ status: 'idle' })
   const [zoom, setZoom] = useState<Zoom>(null)
@@ -56,6 +69,8 @@ export function App() {
     setBaseName(defaultBaseName(path))
     setExportState({ status: 'idle' })
     setViewStart(0)
+    setFades({})
+    setSelectedId(null)
     dispatch({ type: 'reset' })
   }
 
@@ -96,11 +111,8 @@ export function App() {
       input: videoPath,
       folder,
       baseName,
-      videoFade,
-      audioFade,
-      fadeSeconds,
       format,
-      clips
+      clips: clips.map((clip) => ({ ...clip, ...fadeOf(clip) }))
     })
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
   }
@@ -231,8 +243,7 @@ export function App() {
                 viewSpan={viewSpan}
                 time={time}
                 clips={clips}
-                videoFade={videoFade}
-                fadeSeconds={fadeSeconds}
+                fades={clips.map(fadeOf)}
                 pendingStart={pendingStart}
                 onSeek={seekTo}
                 onClipChange={(clip) => dispatch({ type: 'replace', clip })}
@@ -264,7 +275,9 @@ export function App() {
               <ClipList
                 clips={clips}
                 time={time}
-                videoFade={videoFade}
+                videoFades={clips.map((clip) => fadeOf(clip).videoFade)}
+                selectedId={selectedClip?.id ?? null}
+                onSelect={(clip) => setSelectedId(clip.id === selectedId ? null : clip.id)}
                 onPlay={playClip}
                 onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
                 onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}
@@ -272,14 +285,19 @@ export function App() {
                 onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
               />
             </div>
+            {clips.length > 0 && (
+              <FadeControls
+                fade={selectedClip ? fadeOf(selectedClip) : defaultFade}
+                selectedNumber={selectedClip ? selectedIndex + 1 : null}
+                onChange={changeFade}
+                onClearSelection={() => setSelectedId(null)}
+              />
+            )}
             <ExportPanel
               clipCount={clips.length}
               canExport={canExport}
               baseName={baseName}
               folder={folder}
-              videoFade={videoFade}
-              audioFade={audioFade}
-              fadeSeconds={fadeSeconds}
               format={format}
               state={exportState}
               onBaseName={setBaseName}
@@ -287,9 +305,6 @@ export function App() {
                 const chosen = await window.api.chooseFolder()
                 if (chosen) setFolder(chosen)
               }}
-              onVideoFade={setVideoFade}
-              onAudioFade={setAudioFade}
-              onFadeSeconds={setFadeSeconds}
               onFormat={setFormat}
               onExport={runExport}
               onReveal={window.api.reveal}

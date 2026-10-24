@@ -103,11 +103,11 @@ describe('App', () => {
       input: VIDEO,
       folder: '/Users/vicent/Movies/Instagram',
       baseName: 'sesion-22-oct',
-      videoFade: 'white',
-      audioFade: 'natural',
-      fadeSeconds: 2,
       format: '4:5',
-      clips: [expect.objectContaining({ start: 600, end: 650 }), expect.objectContaining({ start: 100, end: 140 })]
+      clips: [
+        expect.objectContaining({ start: 600, end: 650, videoFade: 'white', audioFade: 'natural', fadeSeconds: 2 }),
+        expect.objectContaining({ start: 100, end: 140, videoFade: 'white', audioFade: 'natural', fadeSeconds: 2 })
+      ]
     })
     expect(await screen.findByTestId('export-done')).toBeInTheDocument()
   })
@@ -127,9 +127,9 @@ describe('App', () => {
     const video = await loadVideo()
     const play = vi.fn(async () => {})
     Object.assign(video, { play })
-    await userEvent.selectOptions(screen.getByTestId('fade-audio'), 'linear')
+    await userEvent.selectOptions(screen.getByTestId('format'), '1:1')
     await userEvent.keyboard(' ')
-    expect(screen.getByTestId('fade-audio')).toHaveValue('linear')
+    expect(screen.getByTestId('format')).toHaveValue('1:1')
     expect(play).toHaveBeenCalled()
   })
 
@@ -163,6 +163,7 @@ describe('App', () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 383, 419)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
     seek(video, 473)
     expect(screen.getByTestId('clip-set-end-1')).toHaveAttribute('title', expect.stringContaining('00:07:53'))
     await userEvent.click(screen.getByTestId('clip-set-end-1'))
@@ -173,6 +174,7 @@ describe('App', () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 383, 419)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
     seek(video, 473)
     expect(screen.getByTestId('clip-set-start-1')).toHaveAttribute('title', expect.stringContaining('00:07:53'))
     expect(screen.getByTestId('clip-set-start-1')).toBeDisabled()
@@ -285,5 +287,59 @@ describe('App', () => {
     expect(screen.queryByTestId('clip-fade-out-1')).not.toBeInTheDocument()
     expect(screen.queryByTestId('clip-fade-in-2')).not.toBeInTheDocument()
     expect(screen.getByTestId('clip-block-2')).toHaveAttribute('data-fade-out', 'false')
+  })
+
+  it('edits the fades of the selected clip only, so each carousel slide can have its own transition', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    expect(screen.getByTestId('clip-row-2')).toHaveAttribute('aria-selected', 'true')
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
+    await userEvent.selectOptions(screen.getByTestId('fade-audio'), 'none')
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    expect(screen.getByTestId('fade-video')).toHaveValue('black')
+    expect(screen.getByTestId('fade-audio')).toHaveValue('natural')
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    expect(screen.getByTestId('fade-video')).toHaveValue('white')
+    expect(screen.getByTestId('fade-audio')).toHaveValue('none')
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips.map((c) => [c.videoFade, c.audioFade])).toEqual([
+      ['black', 'natural'],
+      ['white', 'none'],
+      ['black', 'natural']
+    ])
+  })
+
+  it('applies fade changes to every clip when none is selected', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    expect(screen.getByTestId('clip-row-2')).toHaveAttribute('aria-selected', 'false')
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips.map((c) => c.videoFade)).toEqual(['none', 'none'])
+  })
+
+  it('selects a clip when clicking its times instead of moving them, so choosing a clip never edits it by accident', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 383, 419)
+    seek(video, 473)
+    await userEvent.click(screen.getByTestId('clip-set-end-1'))
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:06:59')
+    await userEvent.click(screen.getByTestId('clip-set-end-1'))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:07:53')
   })
 })

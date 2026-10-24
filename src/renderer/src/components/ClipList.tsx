@@ -6,7 +6,9 @@ import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PlayIcon } from './icons'
 type Props = {
   clips: Clip[]
   time: number
-  videoFade: VideoFade
+  videoFades: VideoFade[]
+  selectedId: string | null
+  onSelect: (clip: Clip) => void
   onPlay: (clip: Clip) => void
   onSetStart: (clip: Clip) => void
   onSetEnd: (clip: Clip) => void
@@ -19,10 +21,8 @@ const iconButton =
 const timeButton =
   'rounded-md px-1 tabular-nums transition-colors hover:bg-accent-soft hover:text-accent disabled:pointer-events-none'
 
-export function ClipList({ clips, time, videoFade, onPlay, onSetStart, onSetEnd, onDelete, onReorder }: Props) {
+export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay, onSetStart, onSetEnd, onDelete, onReorder }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const fades = videoFade !== 'none'
-  const fadeTitle = videoFade === 'white' ? 'Fundido a blanco' : 'Fundido a negro'
   const [overIndex, setOverIndex] = useState<number | null>(null)
 
   if (clips.length === 0) {
@@ -45,11 +45,18 @@ export function ClipList({ clips, time, videoFade, onPlay, onSetStart, onSetEnd,
         const over = isOverLimit(clip)
         const dropTarget = dragIndex !== null && overIndex === index && dragIndex !== index
         const now = formatTime(time)
+        const selected = clip.id === selectedId
+        const fades = videoFades[index] !== 'none'
+        const fadeTitle = videoFades[index] === 'white' ? 'Fundido a blanco' : 'Fundido a negro'
         return (
           <li
             key={clip.id}
             data-testid={`clip-row-${n}`}
             data-over-limit={over}
+            aria-selected={selected}
+            onClick={(e) => {
+              if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip)
+            }}
             draggable
             onDragStart={(e) => {
               e.dataTransfer?.setData('text/plain', String(index))
@@ -69,7 +76,7 @@ export function ClipList({ clips, time, videoFade, onPlay, onSetStart, onSetEnd,
               endDrag()
             }}
             onDragEnd={endDrag}
-            className={`group relative flex items-center gap-2 rounded-xl py-1.5 pr-1 pl-1 transition-colors hover:bg-canvas ${dragIndex === index ? 'opacity-40' : ''}`}
+            className={`group relative flex cursor-default items-center gap-2 rounded-xl py-1.5 pr-1 pl-1 transition-colors ${selected ? 'bg-sunken' : 'hover:bg-canvas'} ${dragIndex === index ? 'opacity-40' : ''}`}
           >
             {dropTarget && (
               <span
@@ -82,7 +89,7 @@ export function ClipList({ clips, time, videoFade, onPlay, onSetStart, onSetEnd,
             <span
               data-testid={index === 0 ? 'clip-cover-1' : undefined}
               title={index === 0 ? 'Portada del carrusel' : undefined}
-              className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums ${index === 0 ? 'bg-accent text-on-accent' : 'bg-sunken text-ink-2'}`}
+              className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums ${index === 0 ? 'bg-accent text-on-accent' : selected ? 'bg-surface text-ink-2' : 'bg-sunken text-ink-2'}`}
             >
               {n}
             </span>
@@ -92,20 +99,20 @@ export function ClipList({ clips, time, videoFade, onPlay, onSetStart, onSetEnd,
               </span>
               <button
                 data-testid={`clip-set-start-${n}`}
-                className={timeButton}
-                title={`Mover el inicio a ${now}`}
-                disabled={time >= clip.end}
-                onClick={() => onSetStart(clip)}
+                className={selected ? timeButton : 'px-1 tabular-nums'}
+                title={selected ? `Mover el inicio a ${now}` : undefined}
+                disabled={selected && time >= clip.end}
+                onClick={() => (selected ? onSetStart(clip) : onSelect(clip))}
               >
                 {formatTime(clip.start)}
               </button>
               <span className="text-ink-3">→</span>
               <button
                 data-testid={`clip-set-end-${n}`}
-                className={timeButton}
-                title={`Mover el final a ${now}`}
-                disabled={time <= clip.start}
-                onClick={() => onSetEnd(clip)}
+                className={selected ? timeButton : 'px-1 tabular-nums'}
+                title={selected ? `Mover el final a ${now}` : undefined}
+                disabled={selected && time <= clip.start}
+                onClick={() => (selected ? onSetEnd(clip) : onSelect(clip))}
               >
                 {formatTime(clip.end)}
               </button>

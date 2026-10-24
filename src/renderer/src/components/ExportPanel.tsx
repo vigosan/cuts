@@ -1,7 +1,5 @@
-import { FADE_OPTIONS } from '@shared/clips'
-import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type VideoFade } from '@shared/fades'
 import { FORMATS, type OutputFormat } from '@shared/formats'
-import { FolderIcon, ImageIcon, SpeakerIcon } from './icons'
+import { FolderIcon } from './icons'
 
 export type ExportState =
   | { status: 'idle' }
@@ -14,16 +12,10 @@ type Props = {
   canExport: boolean
   baseName: string
   folder: string | null
-  videoFade: VideoFade
-  audioFade: AudioFade
-  fadeSeconds: number
   format: OutputFormat
   state: ExportState
   onBaseName: (value: string) => void
   onChooseFolder: () => void
-  onVideoFade: (value: VideoFade) => void
-  onAudioFade: (value: AudioFade) => void
-  onFadeSeconds: (value: number) => void
   onFormat: (value: OutputFormat) => void
   onExport: () => void
   onReveal: (path: string) => void
@@ -81,58 +73,6 @@ export function ExportPanel(p: Props) {
             </option>
           ))}
         </select>
-        <div className="col-span-2 grid grid-cols-[1fr_1fr_4.5rem] gap-2">
-          <span className="relative">
-            <ImageIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
-            <select
-              id="fade-video"
-              data-testid="fade-video"
-              aria-label="Fundido de imagen"
-              title="Fundido de imagen"
-              className={`${field} pl-7`}
-              value={p.videoFade}
-              onChange={(e) => p.onVideoFade(e.target.value as VideoFade)}
-            >
-              {VIDEO_FADES.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
-          </span>
-          <span className="relative">
-            <SpeakerIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
-            <select
-              data-testid="fade-audio"
-              aria-label="Fundido de audio"
-              title="Fundido de audio"
-              className={`${field} pl-7`}
-              value={p.audioFade}
-              onChange={(e) => p.onAudioFade(e.target.value as AudioFade)}
-            >
-              {AUDIO_FADES.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
-          </span>
-          <select
-            data-testid="fade-seconds"
-            aria-label="Duración del fundido"
-            title="Duración del fundido"
-            className={`${field} disabled:opacity-40`}
-            value={p.fadeSeconds}
-            disabled={p.videoFade === 'none' && p.audioFade === 'none'}
-            onChange={(e) => p.onFadeSeconds(Number(e.target.value))}
-          >
-            {FADE_OPTIONS.map((seconds) => (
-              <option key={seconds} value={seconds}>
-                {String(seconds).replace('.', ',')} s
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
       <button

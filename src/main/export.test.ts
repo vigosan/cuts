@@ -6,13 +6,10 @@ const request: ExportRequest = {
   input: '/Movies/session.mov',
   folder: '/Movies/Instagram',
   baseName: 'sesion',
-  videoFade: 'black',
-  audioFade: 'natural',
-  fadeSeconds: 1,
   format: 'original',
   clips: [
-    { id: 'a', start: 100, end: 150 },
-    { id: 'b', start: 300, end: 340 }
+    { id: 'a', start: 100, end: 150, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1 },
+    { id: 'b', start: 300, end: 340, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1 }
   ]
 }
 
@@ -78,5 +75,17 @@ describe('exportClips', () => {
     expect(first).not.toContain('fade=t=in')
     expect(first).toContain('fade=t=out')
     expect(second).toContain('fade=t=in')
+  })
+
+  it('applies each clip its own fades', async () => {
+    const d = deps()
+    await exportClips(
+      { ...request, clips: [request.clips[0], { ...request.clips[1], videoFade: 'white', audioFade: 'none' }] },
+      d
+    )
+    const [first, second] = vi.mocked(d.run).mock.calls.map(([, args]) => args)
+    expect(first).toContain('-af')
+    expect(second[second.indexOf('-vf') + 1]).toContain('color=white')
+    expect(second).not.toContain('-af')
   })
 })
