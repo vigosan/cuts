@@ -6,3 +6,7 @@ dist/
 test-output/
 vendor/
 resources/ffmpeg/
+build/entitlements.mas.plist
+build/embedded.provisionprofile
+dist-mas/
+dist-sandbox/
