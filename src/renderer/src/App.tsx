@@ -9,11 +9,16 @@ import { FadeControls } from './components/FadeControls'
 import { FilmIcon, PauseIcon, PlayIcon } from './components/icons'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
+import { t } from './i18n'
 import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
 const APP_FOLDER = 'Carousel Cutter'
-const REPLACE_MESSAGE = '¿Abrir otro vídeo? Se perderán los clips marcados.'
+
+function zoomLabel(span: Zoom): string {
+  if (span === null) return t.zoomAll
+  return span >= 60 ? `${span / 60} min` : `${span} s`
+}
 
 export function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -125,7 +130,7 @@ export function App() {
   }
 
   const openVideo = async () => {
-    if (clips.length > 0 && !window.confirm(REPLACE_MESSAGE)) return
+    if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
     const path = await window.api.openVideo()
     if (path) load(path)
   }
@@ -144,7 +149,7 @@ export function App() {
         e.preventDefault()
         const file = e.dataTransfer.files[0]
         if (!file) return
-        if (clips.length > 0 && !window.confirm(REPLACE_MESSAGE)) return
+        if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
         load(window.api.pathForFile(file))
       }}
     >
@@ -157,7 +162,7 @@ export function App() {
             className="shrink-0 rounded-md px-2 py-0.5 text-xs text-ink-3 transition-colors [-webkit-app-region:no-drag] hover:bg-sunken hover:text-ink"
             onClick={openVideo}
           >
-            Abrir otro…
+            {t.openAnother}
           </button>
         )}
       </header>
@@ -167,15 +172,15 @@ export function App() {
           <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-3xl border border-dashed border-ink-3/40 bg-surface px-8 py-14 text-center">
             <FilmIcon className="size-10 text-ink-3" />
             <div className="flex flex-col gap-1">
-              <p className="text-lg font-medium">Arrastra aquí el vídeo de la sesión</p>
-              <p className="text-sm text-ink-2">Marcarás los mejores momentos y los exportarás como clips.</p>
+              <p className="text-lg font-medium">{t.dropTitle}</p>
+              <p className="text-sm text-ink-2">{t.dropSubtitle}</p>
             </div>
             <button
               data-testid="open-video"
               className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
               onClick={openVideo}
             >
-              Elegir vídeo…
+              {t.chooseVideo}
             </button>
           </div>
         </main>
@@ -197,7 +202,7 @@ export function App() {
               />
               {videoError && (
                 <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">
-                  No se puede reproducir este vídeo.
+                  {t.videoUnplayable}
                 </p>
               )}
             </div>
@@ -207,7 +212,8 @@ export function App() {
                 <button
                   data-testid="play"
                   className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-canvas transition-opacity hover:opacity-85"
-                  title={playing ? 'Pausar (espacio)' : 'Reproducir (espacio)'}
+                  title={playing ? t.pause : t.play}
+                  aria-label={playing ? t.pause : t.play}
                   onClick={togglePlay}
                 >
                   {playing ? <PauseIcon /> : <PlayIcon className="ml-0.5 size-4" />}
@@ -216,16 +222,16 @@ export function App() {
                   {formatTime(time)}
                   <span className="text-ink-3"> / {formatTime(duration)}</span>
                 </span>
-                <MarkButton testId="mark-start" shortcut="I" title="Marcar inicio" onClick={markStart}>
-                  Inicio
+                <MarkButton testId="mark-start" shortcut="I" title={t.markStartHint} onClick={markStart}>
+                  {t.markStart}
                 </MarkButton>
-                <MarkButton testId="mark-end" shortcut="O" title="Marcar fin" onClick={markEnd}>
-                  Fin
+                <MarkButton testId="mark-end" shortcut="O" title={t.markEndHint} onClick={markEnd}>
+                  {t.markEnd}
                 </MarkButton>
                 {pendingStart !== null && (
                   <span
                     data-testid="pending"
-                    title={`Clip en curso desde ${formatTime(pendingStart)}`}
+                    title={t.pendingSince(formatTime(pendingStart))}
                     className="flex items-center gap-1.5 text-sm tabular-nums text-accent"
                   >
                     <span className="size-1.5 rounded-full bg-accent" />
@@ -239,16 +245,16 @@ export function App() {
                       <span data-testid="view-end">{formatTime(currentViewStart + viewSpan)}</span>
                     </span>
                   )}
-                  <div className="flex rounded-lg bg-sunken p-0.5 text-xs" role="group" aria-label="Zoom de la línea de tiempo">
-                    {ZOOM_LEVELS.map((level) => (
+                  <div className="flex rounded-lg bg-sunken p-0.5 text-xs" role="group" aria-label={t.zoomGroup}>
+                    {ZOOM_LEVELS.map((span) => (
                       <button
-                        key={level.label}
-                        data-testid={`zoom-${level.span ?? 'all'}`}
-                        aria-pressed={zoom === level.span}
-                        className={`rounded-md px-1.5 py-1 transition-colors ${zoom === level.span ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
-                        onClick={() => setZoom(level.span)}
+                        key={span ?? 'all'}
+                        data-testid={`zoom-${span ?? 'all'}`}
+                        aria-pressed={zoom === span}
+                        className={`rounded-md px-1.5 py-1 transition-colors ${zoom === span ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
+                        onClick={() => setZoom(span)}
                       >
-                        {level.label}
+                        {zoomLabel(span)}
                       </button>
                     ))}
                   </div>
@@ -272,7 +278,7 @@ export function App() {
 
           <aside className="flex shrink-0 flex-col overflow-hidden rounded-2xl bg-surface lg:w-[23rem]">
             <div className="flex items-baseline justify-between px-4 pt-4 pb-1">
-              <h2 className="text-sm font-semibold">Carrusel</h2>
+              <h2 className="text-sm font-semibold">{t.carousel}</h2>
               {clips.length > 0 && <span className="text-xs text-ink-3">{clips.length}</span>}
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">

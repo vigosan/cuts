@@ -1,12 +1,14 @@
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron'
 import type { ExportRequest } from '../shared/api'
+import { messagesFor, resolveLocale } from '../shared/i18n'
 import { exportClips } from './export'
 import { findFfmpeg } from './ffmpeg-args'
-import { runFfmpeg } from './ffmpeg'
+import { runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
+import { menuTemplate } from './menu'
 
 registerMediaScheme()
 
@@ -16,7 +18,7 @@ function createWindow(): BrowserWindow {
     height: 860,
     minWidth: 760,
     minHeight: 600,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1b1b1e' : '#f3f3f5',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#161617' : '#f5f4f2',
     title: 'Carousel Cutter',
     titleBarStyle: 'hiddenInset',
     webPreferences: {
@@ -32,13 +34,15 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  const t = messagesFor(resolveLocale(app.getPreferredSystemLanguages()))
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name)))
   handleMediaProtocol()
 
   ipcMain.handle('open-video', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
-      filters: [{ name: 'Vídeo', extensions: ['mov', 'mp4', 'm4v', 'mkv', 'webm'] }]
+      filters: [{ name: t.videoFilter, extensions: ['mov', 'mp4', 'm4v', 'mkv', 'webm'] }]
     })
     return result.canceled ? null : result.filePaths[0]
   })
@@ -59,13 +63,14 @@ app.whenReady().then(() => {
       },
       run: runFfmpeg,
       onProgress: (progress) => event.sender.send('export-progress', progress),
+      t,
       confirmOverwrite: async (names) => {
         const { response } = await dialog.showMessageBox(win, {
           type: 'question',
-          buttons: ['Sobrescribir', 'Cancelar'],
+          buttons: [t.overwrite, t.cancel],
           defaultId: 0,
           cancelId: 1,
-          message: 'Ya existen estos archivos en la carpeta:',
+          message: t.overwriteMessage,
           detail: names.join('\n')
         })
         return response === 0
@@ -83,4 +88,5 @@ app.whenReady().then(() => {
   })
 })
 
+app.on('before-quit', stopAllFfmpeg)
 app.on('window-all-closed', () => app.quit())

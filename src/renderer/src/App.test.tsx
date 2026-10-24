@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Api } from '@shared/api'
 import { App } from './App'
+import { t } from './i18n'
 
 const VIDEO = '/Users/vicent/Movies/2026-10-22 22-33-13.mov'
 
@@ -72,7 +73,7 @@ describe('App', () => {
     await userEvent.click(screen.getByTestId('choose-folder'))
     await markClip(video, 10, 120)
     expect(screen.getByTestId('clip-row-1')).toHaveAttribute('data-over-limit', 'true')
-    expect(screen.getByTestId('clip-duration-1')).toHaveAttribute('title', expect.stringContaining('no vale para carrusel'))
+    expect(screen.getByTestId('clip-duration-1')).toHaveAttribute('title', t.overLimit(59))
     expect(screen.getByTestId('export')).toBeEnabled()
   })
 
@@ -353,5 +354,14 @@ describe('App', () => {
     expect(api.exportClips).toHaveBeenCalledWith(
       expect.objectContaining({ folder: '/Users/vicent/Movies/Carousel Cutter/2026-10-22 22-33-13' })
     )
+  })
+
+  it('shows the interface in the user language, here English from the test environment', async () => {
+    render(<App />)
+    expect(screen.getByTestId('open-video')).toHaveTextContent('Choose video…')
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
+    expect(screen.getByTestId('mark-start')).toHaveAttribute('title', 'Mark start (I)')
   })
 })

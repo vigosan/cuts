@@ -9,3 +9,20 @@ mac:
   target: dir
   category: public.app-category.video
   identity: null
+  electronLanguages:
+    - en
+    - en_FEMININE
+    - en_MASCULINE
+    - en_NEUTER
+    - en_GB
+    - en_GB_FEMININE
+    - en_GB_MASCULINE
+    - en_GB_NEUTER
+    - es
+    - es_FEMININE
+    - es_MASCULINE
+    - es_NEUTER
+    - es_419
+    - es_419_FEMININE
+    - es_419_MASCULINE
+    - es_419_NEUTER

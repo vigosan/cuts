@@ -2,6 +2,7 @@ import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import type { Clip } from '@shared/clips'
 import type { ClipFade } from '@shared/fades'
 import { dragClip, type DragMode } from '../drag-clip'
+import { t } from '../i18n'
 
 const DRAG_THRESHOLD_PX = 3
 
@@ -58,7 +59,7 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, fades, pe
   return (
     <div
       data-testid="timeline"
-      title="Clic para ir a un punto · arrastra un clip o sus bordes para ajustarlo · ← → saltan 5 s"
+      title={t.timelineHelp}
       className="relative h-11 w-full cursor-pointer touch-none select-none overflow-hidden rounded-lg bg-sunken"
       onClick={(e) => {
         if (justDragged.current) return

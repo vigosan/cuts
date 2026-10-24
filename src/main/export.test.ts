@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ExportRequest } from '../shared/api'
+import { messagesFor } from '../shared/i18n'
 import { exportClips, type ExportDeps } from './export'
+
+const t = messagesFor('en')
 
 const request: ExportRequest = {
   input: '/Movies/session.mov',
@@ -18,6 +21,7 @@ function deps(overrides: Partial<ExportDeps> = {}): ExportDeps {
     ffmpeg: '/opt/homebrew/bin/ffmpeg',
     exists: () => false,
     ensureDir: vi.fn(async () => {}),
+    t,
     confirmOverwrite: vi.fn(async () => true),
     run: vi.fn(async (_ffmpeg: string, _args: string[], onSeconds: (s: number) => void) => onSeconds(25)),
     onProgress: vi.fn(),
@@ -46,7 +50,7 @@ describe('exportClips', () => {
     const d = deps({ exists: (p) => p.endsWith('sesion-2.mp4'), confirmOverwrite: vi.fn(async () => false) })
     const result = await exportClips(request, d)
     expect(d.confirmOverwrite).toHaveBeenCalledWith(['sesion-2.mp4'])
-    expect(result).toEqual({ ok: false, error: 'Exportación cancelada.' })
+    expect(result).toEqual({ ok: false, error: t.exportCancelled })
     expect(d.run).not.toHaveBeenCalled()
   })
 
@@ -60,7 +64,7 @@ describe('exportClips', () => {
       throw new Error('Invalid data found')
     })
     const result = await exportClips(request, deps({ run }))
-    expect(result).toEqual({ ok: false, error: 'Falló el trozo 1: Invalid data found' })
+    expect(result).toEqual({ ok: false, error: t.clipFailed(1, 'Invalid data found') })
     expect(run).toHaveBeenCalledTimes(1)
   })
 
@@ -94,5 +98,12 @@ describe('exportClips', () => {
     const d = deps()
     await exportClips(request, d)
     expect(d.ensureDir).toHaveBeenCalledWith('/Movies/Instagram')
+  })
+
+  it('reports a folder that cannot be created instead of leaving the export hanging', async () => {
+    const d = deps({ ensureDir: vi.fn(async () => Promise.reject(new Error('EACCES: permission denied'))) })
+    const result = await exportClips(request, d)
+    expect(result).toEqual({ ok: false, error: t.folderFailed('EACCES: permission denied') })
+    expect(d.run).not.toHaveBeenCalled()
   })
 })

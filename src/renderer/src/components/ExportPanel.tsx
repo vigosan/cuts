@@ -1,4 +1,5 @@
 import { FORMATS, type OutputFormat } from '@shared/formats'
+import { t } from '../i18n'
 import { FolderIcon } from './icons'
 
 export type ExportState =
@@ -23,7 +24,6 @@ type Props = {
 
 const field =
   'h-8 w-full rounded-lg bg-sunken px-2.5 text-sm text-ink placeholder:text-ink-3 transition-colors hover:bg-sunken/80'
-const clipsLabel = (n: number) => `${n} ${n === 1 ? 'clip' : 'clips'}`
 
 export function ExportPanel(p: Props) {
   const running = p.state.status === 'running'
@@ -37,28 +37,28 @@ export function ExportPanel(p: Props) {
     <section className="flex flex-col gap-3 border-t border-line p-4">
       <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-sm">
         <label htmlFor="base-name" className="text-ink-2">
-          Nombre
+          {t.name}
         </label>
         <input
           id="base-name"
           data-testid="base-name"
           className={field}
           value={p.baseName}
-          placeholder="Nombre de los archivos"
+          placeholder={t.fileNamePlaceholder}
           onChange={(e) => p.onBaseName(e.target.value)}
         />
-        <span className="text-ink-2">Carpeta</span>
+        <span className="text-ink-2">{t.folder}</span>
         <button
           data-testid="choose-folder"
           className={`${field} flex items-center gap-2 text-left`}
-          title={p.folder ?? 'Elegir carpeta de destino'}
+          title={p.folder ?? t.chooseFolder}
           onClick={p.onChooseFolder}
         >
           <FolderIcon className="size-4 text-ink-3" />
-          <span className={`truncate ${folderName ? '' : 'text-ink-3'}`}>{folderName ?? 'Elegir…'}</span>
+          <span className={`truncate ${folderName ? '' : 'text-ink-3'}`}>{folderName ?? t.choose}</span>
         </button>
         <label htmlFor="format" className="text-ink-2">
-          Formato
+          {t.format}
         </label>
         <select
           id="format"
@@ -69,7 +69,7 @@ export function ExportPanel(p: Props) {
         >
           {FORMATS.map((f) => (
             <option key={f.id} value={f.id}>
-              {f.label}
+              {t.formats[f.id]}
             </option>
           ))}
         </select>
@@ -81,7 +81,7 @@ export function ExportPanel(p: Props) {
         disabled={!p.canExport || running}
         onClick={p.onExport}
       >
-        {running ? 'Exportando…' : `Exportar ${clipsLabel(p.clipCount)}`}
+        {running ? t.exporting : t.exportClips(p.clipCount)}
       </button>
 
       {running && (
@@ -97,12 +97,12 @@ export function ExportPanel(p: Props) {
       )}
       {p.state.status === 'done' && (
         <p data-testid="export-done" className="text-center text-sm text-ok">
-          {clipsLabel(p.state.files.length)} {p.state.files.length === 1 ? 'exportado' : 'exportados'} ·{' '}
+          {t.exportedClips(p.state.files.length)} ·{' '}
           <button
             className="font-medium underline-offset-2 hover:underline"
             onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
           >
-            Mostrar en Finder
+            {t.showInFinder}
           </button>
         </p>
       )}

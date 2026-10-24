@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { clipDuration, formatDuration, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@shared/clips'
 import type { VideoFade } from '@shared/fades'
+import { t } from '../i18n'
 import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PlayIcon } from './icons'
 
 type Props = {
@@ -28,7 +29,7 @@ export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay
   if (clips.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-10">
-        <p className="text-sm text-ink-3">Marca inicio y fin para añadir clips</p>
+        <p className="text-sm text-ink-3">{t.noClips}</p>
       </div>
     )
   }
@@ -47,7 +48,7 @@ export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay
         const now = formatTime(time)
         const selected = clip.id === selectedId
         const fades = videoFades[index] !== 'none'
-        const fadeTitle = videoFades[index] === 'white' ? 'Fundido a blanco' : 'Fundido a negro'
+        const fadeTitle = videoFades[index] === 'white' ? t.fadeToWhite : t.fadeToBlack
         return (
           <li
             key={clip.id}
@@ -83,12 +84,12 @@ export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay
                 className={`pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-accent ${dragIndex < index ? '-bottom-0.5' : '-top-0.5'}`}
               />
             )}
-            <span className="cursor-grab text-ink-3 opacity-0 transition-opacity group-hover:opacity-100" title="Arrastra para cambiar el orden">
+            <span className="cursor-grab text-ink-3 opacity-0 transition-opacity group-hover:opacity-100" title={t.reorderHint}>
               <GripIcon />
             </span>
             <span
               data-testid={index === 0 ? 'clip-cover-1' : undefined}
-              title={index === 0 ? 'Portada del carrusel' : undefined}
+              title={index === 0 ? t.cover : undefined}
               className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums ${index === 0 ? 'bg-accent text-on-accent' : selected ? 'bg-surface text-ink-2' : 'bg-sunken text-ink-2'}`}
             >
               {n}
@@ -100,7 +101,7 @@ export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay
               <button
                 data-testid={`clip-set-start-${n}`}
                 className={selected ? timeButton : 'px-1 tabular-nums'}
-                title={selected ? `Mover el inicio a ${now}` : undefined}
+                title={selected ? t.moveStartTo(now) : undefined}
                 disabled={selected && time >= clip.end}
                 onClick={() => (selected ? onSetStart(clip) : onSelect(clip))}
               >
@@ -110,7 +111,7 @@ export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay
               <button
                 data-testid={`clip-set-end-${n}`}
                 className={selected ? timeButton : 'px-1 tabular-nums'}
-                title={selected ? `Mover el final a ${now}` : undefined}
+                title={selected ? t.moveEndTo(now) : undefined}
                 disabled={selected && time <= clip.start}
                 onClick={() => (selected ? onSetEnd(clip) : onSelect(clip))}
               >
@@ -122,16 +123,18 @@ export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay
             </span>
             <span
               data-testid={`clip-duration-${n}`}
-              title={over ? `Más de ${MAX_CLIP_SECONDS} s: no vale para carrusel` : undefined}
+              title={over ? t.overLimit(MAX_CLIP_SECONDS) : undefined}
               className="flex items-center gap-1.5 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-ink tabular-nums"
             >
               {over && <span className="size-1.5 rounded-full bg-warn" />}
               {formatDuration(clipDuration(clip))}
             </span>
-            <button data-testid={`clip-play-${n}`} className={iconButton} title="Escuchar" onClick={() => onPlay(clip)}>
+            <button data-testid={`clip-play-${n}`} className={iconButton} title={t.playClip}
+              aria-label={t.playClip} onClick={() => onPlay(clip)}>
               <PlayIcon className="size-3.5" />
             </button>
-            <button data-testid={`clip-delete-${n}`} className={iconButton} title="Borrar" onClick={() => onDelete(clip)}>
+            <button data-testid={`clip-delete-${n}`} className={iconButton} title={t.deleteClip}
+              aria-label={t.deleteClip} onClick={() => onDelete(clip)}>
               <CloseIcon />
             </button>
           </li>

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFfmpegArgs, findFfmpeg } from './ffmpeg-args'
-import { runFfmpeg } from './ffmpeg'
+import { runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 
 const ffmpeg = findFfmpeg(existsSync)!
 const dir = mkdtempSync(join(tmpdir(), 'carousel-cutter-'))
@@ -52,5 +52,16 @@ describe('runFfmpeg with real ffmpeg', () => {
     await expect(
       runFfmpeg(ffmpeg, buildFfmpegArgs({ input: join(dir, 'missing.mov'), output: join(dir, 'x.mp4'), start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, format: 'original' }), () => {})
     ).rejects.toThrow(/No such file/)
+  })
+
+  it('stops running exports when the app quits, so no ffmpeg keeps working in the background', async () => {
+    const output = join(dir, 'long.mp4')
+    const args = ['-y', '-re', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=30:duration=60', '-progress', 'pipe:1', output]
+    let started: () => void
+    const running = new Promise<void>((resolve) => (started = resolve))
+    const exporting = runFfmpeg(ffmpeg, args, () => started())
+    await running
+    stopAllFfmpeg()
+    await expect(exporting).rejects.toThrow()
   })
 })
