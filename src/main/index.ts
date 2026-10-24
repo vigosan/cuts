@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, realpath } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron'
 import type { ExportRequest } from '../shared/api'
@@ -9,6 +9,7 @@ import { findFfmpeg } from './ffmpeg-args'
 import { runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
+import { existingAncestor } from './paths'
 
 registerMediaScheme()
 
@@ -47,9 +48,12 @@ app.whenReady().then(() => {
     return result.canceled ? null : result.filePaths[0]
   })
 
-  ipcMain.handle('choose-folder', async (event) => {
+  ipcMain.handle('choose-folder', async (event, current: string | null) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
-    const result = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] })
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openDirectory', 'createDirectory'],
+      defaultPath: current ? existingAncestor(current, existsSync) : undefined
+    })
     return result.canceled ? null : result.filePaths[0]
   })
 
@@ -78,7 +82,7 @@ app.whenReady().then(() => {
     })
   })
 
-  ipcMain.handle('movies-dir', () => app.getPath('videos'))
+  ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')))
 
   ipcMain.on('reveal', (_event, path: string) => shell.showItemInFolder(path))
 
