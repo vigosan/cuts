@@ -373,4 +373,27 @@ describe('App', () => {
     await userEvent.click(screen.getByTestId('choose-folder'))
     expect(api.chooseFolder).toHaveBeenCalledWith('/Users/vicent/Movies/Cuts')
   })
+
+  it('highlights the selected clip on the timeline too, so list and timeline always point at the same clip', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    expect(screen.getByTestId('clip-block-2')).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('clip-block-1')).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('selects a clip in the list when clicking its block on the timeline', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(screen.getByTestId('clip-block-1'), { clientX: 120 })
+    fireEvent.pointerUp(window, { clientX: 120 })
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-selected', 'true')
+    expect(video.currentTime).toBe(120)
+  })
 })

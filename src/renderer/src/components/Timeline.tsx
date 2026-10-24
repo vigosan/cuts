@@ -22,17 +22,20 @@ type Props = {
   clips: Clip[]
   fades: ClipFade[]
   pendingStart: number | null
+  selectedId: string | null
+  onSelect: (clip: Clip) => void
   onSeek: (time: number) => void
   onClipChange: (clip: Clip) => void
 }
 
-export function Timeline({ duration, viewStart, viewSpan, time, clips, fades, pendingStart, onSeek, onClipChange }: Props) {
+export function Timeline({ duration, viewStart, viewSpan, time, clips, fades, selectedId, onSelect, pendingStart, onSeek, onClipChange }: Props) {
   const justDragged = useRef(false)
   const pct = (t: number) => (viewSpan > 0 ? `${(t / viewSpan) * 100}%` : '0%')
 
   const startDrag = (e: ReactPointerEvent<HTMLElement>, clip: Clip, mode: DragMode) => {
     e.stopPropagation()
     e.preventDefault()
+    onSelect(clip)
     const bar = e.currentTarget.closest('[data-testid=timeline]')!.getBoundingClientRect()
     const originX = e.clientX
     let moved = false
@@ -73,19 +76,22 @@ export function Timeline({ duration, viewStart, viewSpan, time, clips, fades, pe
           data-testid={`clip-block-${index + 1}`}
           data-fade-in={fades[index].videoFade !== 'none' && index > 0}
           data-fade-out={fades[index].videoFade !== 'none'}
-          className="group absolute inset-y-1.5 min-w-3 cursor-grab rounded-md bg-accent/70 transition-colors hover:bg-accent active:cursor-grabbing"
-          style={{
-            left: pct(clip.start - viewStart),
-            width: pct(clip.end - clip.start),
-            maskImage: fadeMask(
-              fades[index].videoFade !== 'none' && index > 0,
-              fades[index].videoFade !== 'none',
-              (fades[index].fadeSeconds / (clip.end - clip.start)) * 100
-            )
-          }}
+          aria-selected={clip.id === selectedId}
+          className={`group absolute inset-y-1.5 min-w-3 cursor-grab rounded-md active:cursor-grabbing ${clip.id === selectedId ? 'z-10 ring-2 ring-accent ring-offset-2 ring-offset-sunken' : ''}`}
+          style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => startDrag(e, clip, 'move')}
         >
+          <span
+            className={`pointer-events-none absolute inset-0 rounded-md transition-colors ${clip.id === selectedId ? 'bg-accent' : selectedId ? 'bg-accent/40 group-hover:bg-accent/60' : 'bg-accent/70 group-hover:bg-accent'}`}
+            style={{
+              maskImage: fadeMask(
+                fades[index].videoFade !== 'none' && index > 0,
+                fades[index].videoFade !== 'none',
+                (fades[index].fadeSeconds / (clip.end - clip.start)) * 100
+              )
+            }}
+          />
           <span className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden text-[10px] font-semibold text-on-accent tabular-nums">
             {index + 1}
           </span>

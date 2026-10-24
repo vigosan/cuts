@@ -269,6 +269,8 @@ export function App() {
                 clips={clips}
                 fades={clips.map(fadeOf)}
                 pendingStart={pendingStart}
+                selectedId={selectedClip?.id ?? null}
+                onSelect={(clip) => setSelectedId(clip.id)}
                 onSeek={seekTo}
                 onClipChange={(clip) => dispatch({ type: 'replace', clip })}
               />
