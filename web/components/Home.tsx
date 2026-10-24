@@ -5,7 +5,6 @@ export function Home({ c }: { c: Content }) {
   return (
     <Page c={c} current="home">
       <article className="flex flex-col gap-6">
-        <img src="/icon.png" alt="" width={96} height={96} />
         <h1 className="text-2xl font-medium text-gray-800">{c.home.tagline}</h1>
         <p>{c.home.intro}</p>
         <p className="text-gray-800">{c.home.availability}</p>
