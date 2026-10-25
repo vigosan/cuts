@@ -257,8 +257,11 @@ export function App() {
 
   const suggest = async (path: string) => {
     setSuggesting(true)
-    const peaks = await window.api.waveform(path).finally(() => setSuggesting(false))
-    if (openedPath.current !== path) return
+    const peaks = await window.api
+      .waveform(path)
+      .catch(() => null)
+      .finally(() => setSuggesting(false))
+    if (!peaks || openedPath.current !== path) return
     const moments = suggestMoments({ peaks, peaksPerSecond: PEAKS_PER_SECOND, duration, clipLength: MAX_CLIP_SECONDS, existing: clips })
     dispatch({ type: 'add', clips: moments.map((moment) => ({ id: crypto.randomUUID(), ...moment })) })
   }

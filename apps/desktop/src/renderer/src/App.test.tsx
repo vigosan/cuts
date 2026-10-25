@@ -728,6 +728,15 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:16:10')
   })
 
+  it('lets the suggestions be asked again when the audio cannot be read, instead of failing in the background', async () => {
+    vi.mocked(api.waveform).mockRejectedValue(new Error('Invalid data found'))
+    render(<App />)
+    await loadVideo()
+    await userEvent.click(screen.getByTestId('suggest'))
+    await waitFor(() => expect(screen.getByTestId('suggest')).toBeEnabled())
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+  })
+
   it('drops suggestions that arrive after another video was opened, so they never land on the wrong video', async () => {
     let finish: (value: Float32Array) => void = () => {}
     vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))
