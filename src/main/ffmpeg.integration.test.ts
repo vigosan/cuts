@@ -32,7 +32,7 @@ describe('runFfmpeg with real ffmpeg', () => {
     execFileSync(ffmpeg, [
       '-y', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=30:duration=4',
       '-f', 'lavfi', '-i', 'sine=frequency=440:duration=4',
-      '-c:v', 'h264_videotoolbox', '-c:a', 'aac', '-shortest', input
+      '-c:v', 'mpeg4', '-c:a', 'aac', '-shortest', input
     ], { stdio: 'ignore' })
   })
 
