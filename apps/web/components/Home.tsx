@@ -1,17 +1,20 @@
 import { DARK_SCREENSHOTS, DROPS_VIDEO, type Content } from "@/content";
+import { fetchDownloads } from "@/downloads";
 import { splitKeys } from "@/keys";
 import { Download } from "./Download";
 import { LoopVideo } from "./LoopVideo";
 import { Page } from "./Page";
 import { Screenshot } from "./Screenshot";
 
-export function Home({ c }: { c: Content }) {
+export async function Home({ c }: { c: Content }) {
+  const downloads = await fetchDownloads();
+
   return (
     <Page c={c} current="home">
       <section className="flex flex-col items-center gap-6 text-center">
         <h1 className="text-2xl font-medium text-balance text-gray-800 dark:text-gray-100">{c.home.tagline}</h1>
         <p className="max-w-xl text-pretty">{c.home.intro}</p>
-        <Download home={c.home} />
+        <Download home={c.home} lang={c.lang} downloads={downloads} />
       </section>
       <Screenshot
         src={`/screenshots/${c.lang}-overview.png`}

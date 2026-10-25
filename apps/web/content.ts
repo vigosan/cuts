@@ -47,6 +47,7 @@ export const content = {
       download: { mac: "Download for Mac", windows: "Download for Windows", linux: "Download for Linux", also: "Also for" },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Version ${VERSION}`,
+      downloads: { one: "download", other: "downloads" },
       dropsTitle: "Let Cuts find the drops",
       dropsText:
         "Press Suggest moments and Cuts listens to the whole session. It spots every breakdown and the moment the track comes back in full, the drop, and picks the strongest ones, spread across the set. Each becomes a clip with the build-up before and the mix after, ready to fine-tune or remove like any other.",
@@ -147,6 +148,7 @@ export const content = {
       download: { mac: "Descargar para Mac", windows: "Descargar para Windows", linux: "Descargar para Linux", also: "También para" },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Versión ${VERSION}`,
+      downloads: { one: "descarga", other: "descargas" },
       dropsTitle: "Cuts encuentra los subidones por ti",
       dropsText:
         "Pulsa Sugerir momentos y Cuts escucha la sesión entera. Detecta cada bajón y el momento en que la pista vuelve con toda su fuerza, el drop, y se queda con los más intensos, repartidos por todo el set. Cada uno se convierte en un clip con la subida antes y la mezcla después, listo para retocarlo o quitarlo como cualquier otro.",

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DOWNLOADS, type Content } from "@/content";
+import { DOWNLOADS, type Content, type Lang } from "@/content";
+import { formatDownloads } from "@/downloads";
 import { detectOS, type OS } from "@/os";
 import { link } from "./Page";
 
@@ -20,11 +21,13 @@ function ArrowDown() {
   );
 }
 
-export function Download({ home }: { home: Content["home"] }) {
+export function Download({ home, lang, downloads }: { home: Content["home"]; lang: Lang; downloads: number | null }) {
   const [os, setOs] = useState<OS | null>(null);
   useEffect(() => setOs(detectOS(navigator.userAgent)), []);
 
-  const meta = `${home.free} · ${home.version}`;
+  const meta = [home.free, home.version, downloads !== null && formatDownloads(downloads, lang, home.downloads)]
+    .filter(Boolean)
+    .join(" · ");
 
   if (!os) {
     return (
