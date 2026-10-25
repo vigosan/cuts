@@ -3,7 +3,7 @@ export type Lang = (typeof LANGS)[number];
 
 export const SITE_URL = "https://cuts.vicent.io";
 export const CONTACT = "hello@vicent.io";
-export const UPDATED = "2026-10-24";
+export const UPDATED = "2026-10-25";
 export const SCREENSHOTS = ["overview", "timeline"] as const;
 
 export const content = {
@@ -49,7 +49,8 @@ export const content = {
           heading: "The app",
           body: [
             "Cuts does not collect, store or share any personal data. It has no accounts, analytics, advertising or third-party SDKs, and it does not connect to the internet.",
-            "Your videos never leave your Mac. Cuts reads the video you open and writes the exported clips to the folder you choose, by default Movies › Cuts. It keeps no history of what you open or export.",
+            "Your videos never leave your Mac. Cuts reads the video you open and writes the exported clips to the folder you choose, by default Movies › Cuts.",
+            "So you can pick up where you left off, Cuts saves on your Mac the clips you mark in each video: their times, order and settings. This stays on your Mac, is never sent anywhere, and is deleted when you remove all the clips of a video or uninstall the app.",
             "To remove everything Cuts creates, delete the exported clips and uninstall the app.",
           ],
         },
@@ -124,7 +125,8 @@ export const content = {
           heading: "La app",
           body: [
             "Cuts no recopila, guarda ni comparte ningún dato personal. No tiene cuentas, analítica, publicidad ni SDK de terceros, y no se conecta a internet.",
-            "Tus vídeos nunca salen de tu Mac. Cuts lee el vídeo que abres y guarda los clips en la carpeta que elijas, por defecto Películas › Cuts. No guarda historial de lo que abres ni de lo que exportas.",
+            "Tus vídeos nunca salen de tu Mac. Cuts lee el vídeo que abres y guarda los clips en la carpeta que elijas, por defecto Películas › Cuts.",
+            "Para que puedas seguir donde lo dejaste, Cuts guarda en tu Mac los clips que marcas en cada vídeo: sus tiempos, su orden y sus ajustes. Esto se queda en tu Mac, nunca se envía a ningún sitio y se borra cuando eliminas todos los clips de un vídeo o desinstalas la app.",
             "Para borrar todo lo que crea Cuts, elimina los clips exportados y desinstala la app.",
           ],
         },

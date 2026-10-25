@@ -11,7 +11,7 @@ Inventario hecho a partir del código (`src/`), las dependencias (`package.json`
   - el vídeo que el usuario elige o arrastra, solo para leerlo;
   - la carpeta de destino: por defecto `~/Movies/Cuts/<nombre del vídeo>/`, o la que el usuario elija;
   - vídeos dentro de `~/Movies`, solo si el usuario los abre.
-- **Lo que guarda la app:** solo los clips exportados, en la carpeta indicada. No guarda historial, proyectos ni preferencias propias. Electron crea su caché en el contenedor de la app (`~/Library/Containers/com.vigosan.cuts`), que macOS borra al desinstalar.
+- **Lo que guarda la app:** los clips exportados, en la carpeta indicada, y (desde la versión 1.1) el trabajo de cada vídeo para poder retomarlo: tiempos, orden y ajustes de sus clips, en un JSON por vídeo dentro del contenedor de la app (`~/Library/Containers/com.vigosan.cuts/Data/Library/Application Support/Cuts/sessions`). El archivo se borra al eliminar todos los clips de ese vídeo, y macOS borra el contenedor al desinstalar. Electron también crea ahí su caché.
 - **Cómo borrarlo:** borrando los clips exportados y desinstalando la app.
 
 ## Pendiente de decidir o completar por el propietario
