@@ -90,3 +90,11 @@ export function SpeakerIcon({ className = 'size-3.5' }: IconProps) {
     </svg>
   )
 }
+
+export function TrashIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
+      <path d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9.5h6.6L12 4M6.8 6.5v4.5M9.2 6.5v4.5" />
+    </svg>
+  )
+}

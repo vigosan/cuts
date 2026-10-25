@@ -8,7 +8,7 @@ import { ClipList } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
-import { FilmIcon, PauseIcon, PlayIcon } from './components/icons'
+import { FilmIcon, PauseIcon, PlayIcon, TrashIcon } from './components/icons'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
 import { withHistory } from './history'
@@ -424,9 +424,25 @@ export function App() {
           </section>
 
           <aside className="flex shrink-0 flex-col overflow-hidden rounded-2xl bg-surface lg:w-[23rem]">
-            <div className="flex items-baseline justify-between px-4 pt-4 pb-1">
+            <div className="flex h-12 items-center justify-between px-4 pt-3">
               <h2 className="text-sm font-semibold">{t.carousel}</h2>
-              {clips.length > 0 && <span className="text-xs text-ink-3">{clips.length}</span>}
+              {clips.length > 0 && (
+                <span className="flex items-center gap-2">
+                  <button
+                    data-testid="clear-clips"
+                    className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+                    title={t.clearClips}
+                    aria-label={t.clearClips}
+                    onClick={() => {
+                      dispatch({ type: 'reset' })
+                      setSelectedId(null)
+                    }}
+                  >
+                    <TrashIcon className="size-3.5" />
+                  </button>
+                  <span className="text-xs text-ink-3">{clips.length}</span>
+                </span>
+              )}
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
               <ClipList

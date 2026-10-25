@@ -631,6 +631,18 @@ describe('App', () => {
     expect(screen.getByTestId('view-start')).toHaveTextContent('00:16:10')
   })
 
+  it('removes every clip at once and brings them back with undo, so starting over is one click and never a loss', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    expect(screen.queryByTestId('clear-clips')).not.toBeInTheDocument()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.click(screen.getByTestId('clear-clips'))
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+    await act(async () => menuCommand('undo'))
+    expect(screen.getByTestId('clip-row-2')).toBeInTheDocument()
+  })
+
   it('plays a clip on loop from its row, the way Instagram plays carousel videos', async () => {
     render(<App />)
     const video = await loadVideo()
