@@ -110,7 +110,7 @@ export function ExportPanel(p: Props) {
         <p data-testid="export-done" className="text-center text-sm text-ok">
           {t.exportedClips(p.state.files.length)} ·{' '}
           <button
-            className="font-medium underline-offset-2 hover:underline"
+            className="cursor-pointer font-medium underline-offset-2 hover:underline"
             onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
           >
             {t.showInFinder}
@@ -118,7 +118,7 @@ export function ExportPanel(p: Props) {
           ·{' '}
           <button
             data-testid="share"
-            className="font-medium underline-offset-2 hover:underline"
+            className="cursor-pointer font-medium underline-offset-2 hover:underline"
             onClick={() => p.state.status === 'done' && p.onShare(p.state.files)}
           >
             {t.share}
