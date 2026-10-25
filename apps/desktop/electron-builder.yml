@@ -73,3 +73,8 @@ mas:
   entitlements: build/entitlements.mas.plist
   entitlementsInherit: build/entitlements.mas.inherit.plist
   provisioningProfile: build/embedded.provisionprofile
+publish:
+  provider: github
+  owner: vigosan
+  repo: cuts-releases
+  releaseType: release

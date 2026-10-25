@@ -109,6 +109,11 @@ function english(locale: Locale) {
     menuHelp: 'Help',
     menuPrivacy: 'Privacy Policy',
     menuSupport: 'Cuts Support',
+    menuCheckForUpdates: 'Check for Updates…',
+    upToDate: 'You’re up to date.',
+    updateCheckFailed: 'Couldn’t check for updates. Try again later.',
+    updateReady: (version: string) => `Cuts ${version} is ready`,
+    restartToUpdate: 'Restart',
     privacyUrl: 'https://cuts.vicent.io/privacy',
     supportUrl: 'https://cuts.vicent.io/support',
     aboutCredits:
@@ -209,6 +214,11 @@ function spanish(locale: Locale): Messages {
     menuHelp: 'Ayuda',
     menuPrivacy: 'Política de privacidad',
     menuSupport: 'Soporte de Cuts',
+    menuCheckForUpdates: 'Buscar actualizaciones…',
+    upToDate: 'Tienes la última versión.',
+    updateCheckFailed: 'No se pudo buscar actualizaciones. Inténtalo más tarde.',
+    updateReady: (version) => `Cuts ${version} está lista`,
+    restartToUpdate: 'Reiniciar',
     privacyUrl: 'https://cuts.vicent.io/es/privacidad',
     supportUrl: 'https://cuts.vicent.io/es/soporte',
     aboutCredits:

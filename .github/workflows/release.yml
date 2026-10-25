@@ -43,7 +43,7 @@ jobs:
         include:
           - target: mac
             os: macos-14
-            args: --mac dmg --universal -c.forceCodeSigning=true
+            args: --mac dmg zip --universal -c.forceCodeSigning=true
             artifact: dist/Cuts-mac.dmg
           - target: linux
             os: ubuntu-latest
@@ -97,7 +97,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.target }}
-          path: apps/desktop/${{ matrix.artifact }}
+          path: |
+            apps/desktop/${{ matrix.artifact }}
+            apps/desktop/dist/Cuts-mac.zip
+            apps/desktop/dist/*.blockmap
+            apps/desktop/dist/latest*.yml
       - if: matrix.target == 'windows'
         uses: actions/upload-artifact@v4
         with:
@@ -112,7 +116,7 @@ jobs:
         with:
           pattern: app-*
           merge-multiple: true
-      - run: gh release create "$GITHUB_REF_NAME" --repo vigosan/cuts-releases --title "Cuts ${GITHUB_REF_NAME#v}" --notes "" Cuts-mac.dmg Cuts-windows.exe Cuts-linux.AppImage
+      - run: gh release create "$GITHUB_REF_NAME" --repo vigosan/cuts-releases --title "Cuts ${GITHUB_REF_NAME#v}" --notes "" Cuts-mac.dmg Cuts-mac.zip Cuts-windows.exe Cuts-linux.AppImage latest*.yml *.blockmap
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
 

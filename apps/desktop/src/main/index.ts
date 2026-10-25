@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 import { mkdir, realpath, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
+import electronUpdater from 'electron-updater'
 import type { ExportRequest, Session } from '../shared/api'
 import { messagesFor, resolveLocale } from '@cuts/core/i18n'
 import { exportClips } from './export'
@@ -11,6 +12,7 @@ import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { existingAncestor } from './paths'
 import { loadSession, saveSession } from './sessions'
+import { UPDATE_CHECK_INTERVAL_MS, updatesEnabled } from './updates'
 import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
 
 registerMediaScheme()
@@ -51,7 +53,30 @@ app.whenReady().then(() => {
     win.webContents.send('menu-open-video')
   }
   const command = (name: 'undo' | 'redo') => () => mainWindow()?.webContents.send('menu-command', name)
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name, { openVideo, openUrl: (url) => void shell.openExternal(url), undo: command('undo'), redo: command('redo') })))
+  const { autoUpdater } = electronUpdater
+  const updates = updatesEnabled({ packaged: app.isPackaged, mas: process.mas === true, windowsStore: process.windowsStore === true })
+  const checkInBackground = () => void autoUpdater.checkForUpdates().catch(() => {})
+  const checkForUpdates = async () => {
+    const win = mainWindow()
+    const show = (options: MessageBoxOptions) => (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options))
+    try {
+      const result = await autoUpdater.checkForUpdates()
+      if (!result?.isUpdateAvailable) await show({ type: 'info', message: t.upToDate })
+    } catch {
+      await show({ type: 'warning', message: t.updateCheckFailed })
+    }
+  }
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate(
+      menuTemplate(t, app.name, {
+        openVideo,
+        openUrl: (url) => void shell.openExternal(url),
+        undo: command('undo'),
+        redo: command('redo'),
+        checkForUpdates: updates ? () => void checkForUpdates() : undefined
+      })
+    )
+  )
   app.setAboutPanelOptions({ credits: t.aboutCredits })
   const openedVideos = new Set<string>()
   const opened = (path: string) => {
@@ -159,7 +184,13 @@ app.whenReady().then(() => {
 
   ipcMain.on('reveal', (_event, path: string) => shell.showItemInFolder(path))
 
-  createWindow()
+  const win = createWindow()
+  if (updates) {
+    autoUpdater.on('update-downloaded', ({ version }) => mainWindow()?.webContents.send('update-ready', version))
+    ipcMain.on('restart-to-update', () => autoUpdater.quitAndInstall())
+    win.webContents.once('did-finish-load', checkInBackground)
+    setInterval(checkInBackground, UPDATE_CHECK_INTERVAL_MS)
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

@@ -34,7 +34,13 @@ const api: Api = {
     const listener = () => callback()
     ipcRenderer.on('menu-open-video', listener)
     return () => ipcRenderer.removeListener('menu-open-video', listener)
-  }
+  },
+  onUpdateReady: (callback) => {
+    const listener = (_event: IpcRendererEvent, version: string) => callback(version)
+    ipcRenderer.on('update-ready', listener)
+    return () => ipcRenderer.removeListener('update-ready', listener)
+  },
+  restartToUpdate: () => ipcRenderer.send('restart-to-update')
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -280,6 +280,9 @@ export function App() {
   const onMenuOpenVideo = useEffectEvent(() => void openVideo())
   useEffect(() => window.api.onMenuOpenVideo(() => onMenuOpenVideo()), [])
 
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+  useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
+
   useEffect(
     () =>
       window.api.onMenuCommand((command) => {
@@ -537,6 +540,23 @@ export function App() {
             />
           </aside>
         </main>
+      )}
+
+      {updateVersion && (
+        <div
+          data-testid="update-ready"
+          role="status"
+          className="fixed right-5 bottom-5 flex items-center gap-3 rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20"
+        >
+          {t.updateReady(updateVersion)}
+          <button
+            data-testid="restart-to-update"
+            className="h-8 rounded-lg bg-accent px-3 font-medium text-on-accent transition-colors hover:bg-accent-hover"
+            onClick={window.api.restartToUpdate}
+          >
+            {t.restartToUpdate}
+          </button>
+        </div>
       )}
     </div>
   )

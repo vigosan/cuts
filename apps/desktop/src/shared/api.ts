@@ -37,6 +37,8 @@ export type Api = {
   share(files: string[]): void
   onMenuOpenVideo(callback: () => void): () => void
   onMenuCommand(callback: (command: 'undo' | 'redo') => void): () => void
+  onUpdateReady(callback: (version: string) => void): () => void
+  restartToUpdate(): void
   thumbnail(path: string, time: number): Promise<string>
   loadSession(videoPath: string): Promise<Session | null>
   saveSession(videoPath: string, session: Session): void
