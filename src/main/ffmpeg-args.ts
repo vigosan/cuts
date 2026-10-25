@@ -1,3 +1,4 @@
+import { posix, win32 } from 'node:path'
 import type { AudioFade, VideoFade } from '../shared/fades'
 import type { ClipFraming } from '../shared/framing'
 import { formatSize, type OutputFormat } from '../shared/formats'
@@ -44,7 +45,13 @@ function framingFilters(o: CutOptions): string[] {
   ]
 }
 
-export function buildFfmpegArgs(o: CutOptions): string[] {
+const VIDEO_ENCODERS: Partial<Record<NodeJS.Platform, string[]>> = {
+  darwin: ['-c:v', 'h264_videotoolbox', '-allow_sw', '1'],
+  win32: ['-c:v', 'h264_mf'],
+  linux: ['-c:v', 'libopenh264']
+}
+
+export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = process.platform): string[] {
   const duration = o.end - o.start
   const videoFades =
     o.videoFade === 'none'
@@ -61,8 +68,7 @@ export function buildFfmpegArgs(o: CutOptions): string[] {
     '-t', num(duration),
     ...(video.length ? ['-vf', video.join(',')] : []),
     ...(audio.length ? ['-af', audio.join(',')] : []),
-    '-c:v', 'h264_videotoolbox',
-    '-allow_sw', '1',
+    ...VIDEO_ENCODERS[platform]!,
     '-b:v', '12M',
     '-c:a', 'aac',
     '-b:a', '320k',
@@ -83,4 +89,10 @@ const FFMPEG_CANDIDATES = ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg']
 
 export function findFfmpeg(exists: (path: string) => boolean, bundled?: string, allowSystem = true): string | null {
   return [...(bundled ? [bundled] : []), ...(allowSystem ? FFMPEG_CANDIDATES : [])].find(exists) ?? null
+}
+
+export function bundledFfmpegPath(platform: NodeJS.Platform, resourcesPath: string, execPath: string): string {
+  if (platform === 'darwin') return posix.join(resourcesPath, '..', 'Helpers', 'ffmpeg')
+  if (platform === 'win32') return win32.join(win32.dirname(execPath), 'ffmpeg.exe')
+  return posix.join(posix.dirname(execPath), 'ffmpeg')
 }

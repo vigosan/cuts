@@ -7,7 +7,7 @@ import { buildFfmpegArgs, findFfmpeg } from './ffmpeg-args'
 import { cancelFfmpeg, captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { peaksFromSamples, thumbnailArgs, waveformArgs, PEAKS_PER_SECOND } from './preview'
 
-const ffmpeg = findFfmpeg(existsSync, join(__dirname, '../../resources/ffmpeg/ffmpeg'))!
+const ffmpeg = findFfmpeg(existsSync, join(__dirname, '../../resources/ffmpeg', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'))!
 const dir = mkdtempSync(join(tmpdir(), 'cuts-'))
 const input = join(dir, 'session with spaces.mov')
 

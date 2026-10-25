@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFfmpegArgs, findFfmpeg, parseProgressSeconds } from './ffmpeg-args'
+import { buildFfmpegArgs, bundledFfmpegPath, findFfmpeg, parseProgressSeconds } from './ffmpeg-args'
 
 const base = {
   input: '/Users/vicent/Movies/2026-10-22 22-33-13.mov',
@@ -113,12 +113,26 @@ describe('buildFfmpegArgs', () => {
   })
 
   it('writes an H.264/AAC mp4 that starts playing immediately on Instagram', () => {
-    const args = buildFfmpegArgs(base)
+    const args = buildFfmpegArgs(base, 'darwin')
     expect(valueAfter(args, '-c:v')).toBe('h264_videotoolbox')
     expect(valueAfter(args, '-allow_sw')).toBe('1')
     expect(valueAfter(args, '-c:a')).toBe('aac')
     expect(valueAfter(args, '-movflags')).toBe('+faststart')
     expect(args.at(-1)).toBe(base.output)
+  })
+
+  it('encodes H.264 with Media Foundation on Windows, where VideoToolbox does not exist', () => {
+    const args = buildFfmpegArgs(base, 'win32')
+    expect(valueAfter(args, '-c:v')).toBe('h264_mf')
+    expect(args).not.toContain('-allow_sw')
+    expect(valueAfter(args, '-b:v')).toBe('12M')
+  })
+
+  it('encodes H.264 with OpenH264 on Linux, which keeps the bundled ffmpeg free of GPL code', () => {
+    const args = buildFfmpegArgs(base, 'linux')
+    expect(valueAfter(args, '-c:v')).toBe('libopenh264')
+    expect(args).not.toContain('-allow_sw')
+    expect(valueAfter(args, '-b:v')).toBe('12M')
   })
 })
 
@@ -149,5 +163,23 @@ describe('findFfmpeg', () => {
 
   it('reports missing ffmpeg instead of failing mid-export', () => {
     expect(findFfmpeg(() => false)).toBeNull()
+  })
+})
+
+describe('bundledFfmpegPath', () => {
+  it('looks in Contents/Helpers on macOS, the only place a sandboxed app may run a helper from', () => {
+    expect(bundledFfmpegPath('darwin', '/Applications/Cuts.app/Contents/Resources', '/Applications/Cuts.app/Contents/MacOS/Cuts')).toBe(
+      '/Applications/Cuts.app/Contents/Helpers/ffmpeg'
+    )
+  })
+
+  it('looks next to Cuts.exe on Windows, with the extension Windows needs to run it', () => {
+    expect(bundledFfmpegPath('win32', 'C:\\Program Files\\Cuts\\resources', 'C:\\Program Files\\Cuts\\Cuts.exe')).toBe(
+      'C:\\Program Files\\Cuts\\ffmpeg.exe'
+    )
+  })
+
+  it('looks next to the executable on Linux, inside the mounted AppImage', () => {
+    expect(bundledFfmpegPath('linux', '/tmp/.mount_Cuts/resources', '/tmp/.mount_Cuts/cuts')).toBe('/tmp/.mount_Cuts/ffmpeg')
   })
 })

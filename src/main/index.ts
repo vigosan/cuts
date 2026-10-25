@@ -5,7 +5,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shel
 import type { ExportRequest, Session } from '../shared/api'
 import { messagesFor, resolveLocale } from '../shared/i18n'
 import { exportClips } from './export'
-import { findFfmpeg } from './ffmpeg-args'
+import { bundledFfmpegPath, findFfmpeg } from './ffmpeg-args'
 import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
@@ -106,7 +106,7 @@ app.whenReady().then(() => {
     })
   })
 
-  const bundledFfmpeg = () => findFfmpeg(existsSync, join(process.resourcesPath, '..', 'Helpers', 'ffmpeg'), !process.mas)
+  const bundledFfmpeg = () => findFfmpeg(existsSync, bundledFfmpegPath(process.platform, process.resourcesPath, process.execPath), !process.mas)
 
   ipcMain.handle('thumbnail', async (_event, path: string, time: number) => {
     const jpeg = await captureFfmpeg(bundledFfmpeg()!, thumbnailArgs(path, time, THUMBNAIL_HEIGHT))
