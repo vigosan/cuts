@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { ExportRequest } from '../shared/api'
 import { messagesFor } from '../shared/i18n'
@@ -35,9 +36,9 @@ describe('exportClips', () => {
   it('writes one numbered file per clip, in order', async () => {
     const d = deps()
     const result = await exportClips(request, d)
-    expect(result).toEqual({ ok: true, files: ['/Movies/Instagram/sesion-1.mp4', '/Movies/Instagram/sesion-2.mp4'] })
+    expect(result).toEqual({ ok: true, files: [join('/Movies/Instagram', 'sesion-1.mp4'), join('/Movies/Instagram', 'sesion-2.mp4')] })
     const outputs = vi.mocked(d.run).mock.calls.map(([, args]) => args.at(-1))
-    expect(outputs).toEqual(['/Movies/Instagram/sesion-1.mp4', '/Movies/Instagram/sesion-2.mp4'])
+    expect(outputs).toEqual([join('/Movies/Instagram', 'sesion-1.mp4'), join('/Movies/Instagram', 'sesion-2.mp4')])
   })
 
   it('reports progress per clip as a fraction of its length', async () => {
@@ -72,7 +73,7 @@ describe('exportClips', () => {
 
   it('turns slashes in a date-like name into dashes instead of writing into a missing subfolder', async () => {
     const result = await exportClips({ ...request, baseName: 'sesion 22/10' }, deps())
-    expect(result).toEqual({ ok: true, files: ['/Movies/Instagram/sesion 22-10-1.mp4', '/Movies/Instagram/sesion 22-10-2.mp4'] })
+    expect(result).toEqual({ ok: true, files: [join('/Movies/Instagram', 'sesion 22-10-1.mp4'), join('/Movies/Instagram', 'sesion 22-10-2.mp4')] })
   })
 
   it('skips the image fade-in only on the first clip, because Instagram uses its first frame as the carousel cover', async () => {
@@ -115,7 +116,7 @@ describe('exportClips', () => {
     })
     const d = deps({ run })
     await exportClips(request, d)
-    expect(d.remove).toHaveBeenCalledWith('/Movies/Instagram/sesion-1.mp4')
+    expect(d.remove).toHaveBeenCalledWith(join('/Movies/Instagram', 'sesion-1.mp4'))
   })
 
   it('still reports the failed clip when the half-written file cannot be deleted', async () => {
