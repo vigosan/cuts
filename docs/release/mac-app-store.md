@@ -52,11 +52,11 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 - Arrastrar desde Finder un vídeo que esté **fuera** de Películas. La prueba automática solo puede simular el arrastre, no conceder la extensión de sandbox que da Finder.
 - La build firmada con Apple Distribution, el `.pkg` y su validación en Transporter.
 
-### A verificar con la build firmada por Apple
+### Build firmada por Apple (TestFlight, 2026-10-25)
 
-1. Elegir un vídeo **fuera** de Películas con el diálogo y arrastrarlo desde Finder, y exportar a una carpeta elegida fuera de Películas. ffmpeg solo hereda el sandbox, así que debe recibir el acceso que macOS concede a la app en ese momento.
-2. Que App Store Connect acepte el ejecutable `Contents/Helpers/ffmpeg`, firmado con identificador `ffmpeg` y sin Info.plist propio. Lo dirá Transporter al subir.
-3. Con el sistema en un idioma no soportado (por ejemplo francés con español como segundo), que el menú y la ventana salgan en el mismo idioma.
+- `make mas` genera `dist/mas-universal/Cuts-1.0.0-universal.pkg`, firmado con Apple Distribution y 3rd Party Mac Developer Installer (equipo `TKAZA7ZPZ2`). FFmpeg va en `Contents/Helpers/ffmpeg` para que se firme antes que el ejecutable principal.
+- Transporter lo entregó y App Store Connect lo procesó sin errores ("Ready for internal testing").
+- El propietario instaló la build 1.0.0 desde TestFlight e informó de que todo funciona: abrir y arrastrar vídeos fuera de Películas, fotogramas y forma de onda, exportar a la carpeta por defecto y a otra elegida, y cancelar y salir. Lo comprobó el propietario; Claude no lo ha visto ejecutarse.
 
 ## Fuentes oficiales consultadas
 
