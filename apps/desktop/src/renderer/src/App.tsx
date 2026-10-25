@@ -242,15 +242,17 @@ export function App() {
     seekTo(t)
   }
 
+  const onFrame = useEffectEvent((video: HTMLVideoElement) => keepLooping(video))
+  const isLooping = loopingClip !== null
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !loopingClip || !playing) return
+    if (!video || !isLooping || !playing) return
     let frame = requestAnimationFrame(function check() {
-      keepLooping(video)
+      onFrame(video)
       frame = requestAnimationFrame(check)
     })
     return () => cancelAnimationFrame(frame)
-  })
+  }, [isLooping, playing])
 
   const pickClip = (clip: Clip) => {
     if (clip.id === selectedId) return setSelectedId(null)

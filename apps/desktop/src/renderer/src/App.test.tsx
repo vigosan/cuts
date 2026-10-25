@@ -798,6 +798,21 @@ describe('App', () => {
     expect(video.currentTime).toBe(100)
   })
 
+  it('keeps one frame watcher running while a clip loops instead of restarting it on every render', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    Object.assign(video, { play: vi.fn(async () => {}) })
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('clip-play-1'))
+    fireEvent(video, new Event('play'))
+    const cancel = vi.spyOn(window, 'cancelAnimationFrame')
+    seek(video, 110)
+    seek(video, 120)
+    seek(video, 130)
+    expect(cancel).not.toHaveBeenCalled()
+    cancel.mockRestore()
+  })
+
   it('plays on into the next clip and back to the first, so the whole carousel can be heard in posting order', async () => {
     render(<App />)
     const video = await loadVideo()
