@@ -154,6 +154,7 @@ export function App() {
     if (!videoPath) return
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
+      if (e.metaKey || e.ctrlKey) return
       const actions: Record<string, () => void> = {
         i: markStart,
         o: markEnd,

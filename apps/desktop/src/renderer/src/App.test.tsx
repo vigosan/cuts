@@ -107,6 +107,19 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('0:30')
   })
 
+  it('leaves Command and Control shortcuts to the menu, so Command-O opens a video instead of marking an end', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 100)
+    await userEvent.keyboard('i')
+    seek(video, 130)
+    const shortcut = new KeyboardEvent('keydown', { key: 'o', code: 'KeyO', metaKey: true, cancelable: true })
+    window.dispatchEvent(shortcut)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', code: 'KeyO', ctrlKey: true, cancelable: true }))
+    expect(shortcut.defaultPrevented).toBe(false)
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+  })
+
   it('exports every clip in order with the chosen name, folder, fades and format', async () => {
     render(<App />)
     const video = await loadVideo()
