@@ -30,6 +30,7 @@ export const content = {
     lang: "en",
     other: "es",
     switchLabel: "Español",
+    theme: { system: "Theme: system", light: "Theme: light", dark: "Theme: dark" },
     routes: { home: "/", privacy: "/privacy", support: "/support", ffmpeg: "/ffmpeg" },
     meta: {
       title: "Cuts — cut your best moments into clips",
@@ -129,6 +130,7 @@ export const content = {
     lang: "es",
     other: "en",
     switchLabel: "English",
+    theme: { system: "Tema: sistema", light: "Tema: claro", dark: "Tema: oscuro" },
     routes: { home: "/es", privacy: "/es/privacidad", support: "/es/soporte", ffmpeg: "/es/ffmpeg" },
     meta: {
       title: "Cuts — corta tus mejores momentos en clips",
