@@ -25,9 +25,10 @@ export function useThumbnails(path: string, times: number[]): Map<number, string
     const entry = cache.current
     const missing = times.filter((time) => !entry.frames.has(time) && !entry.pending.has(time))
     missing.forEach((time) => entry.pending.add(time))
+    let current = true
     const next = async () => {
       for (const time of missing) {
-        if (cache.current !== entry) return
+        if (!current) return
         const src = await window.api.thumbnail(path, time).catch(() => null)
         entry.pending.delete(time)
         if (src) entry.frames.set(time, src)
@@ -35,6 +36,10 @@ export function useThumbnails(path: string, times: number[]): Map<number, string
       }
     }
     void next()
+    return () => {
+      current = false
+      missing.forEach((time) => entry.frames.has(time) || entry.pending.delete(time))
+    }
   }, [path, key])
 
   return cache.current.frames
