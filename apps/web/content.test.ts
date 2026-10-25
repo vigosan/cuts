@@ -62,7 +62,7 @@ describe("site content", () => {
   });
 
   it("downloads the installers the release workflow publishes, so the button never leads to a 404", () => {
-    const workflow = readFileSync("../.github/workflows/release.yml", "utf8");
+    const workflow = readFileSync("../../.github/workflows/release.yml", "utf8");
     for (const url of Object.values(DOWNLOADS)) {
       expect(url).toMatch(/^https:\/\/github\.com\/vigosan\/cuts-releases\/releases\/latest\/download\//);
       expect(workflow).toContain(url.split("/").pop());

@@ -50,7 +50,7 @@ src/renderer/   interfaz en React
 src/shared/     tipos, formatos, fundidos, textos (i18n) compartidos
 scripts/        compilar FFmpeg, icono, capturas, prueba local del sandbox
 build/          icono, entitlements y perfil de la Mac App Store
-web/            web cuts.vicent.io (Next.js, desplegada en Vercel)
+apps/web/       web cuts.vicent.io (Next.js, desplegada en Vercel)
 docs/           publicación en la Mac App Store, privacidad, idiomas
 ```
 

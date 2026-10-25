@@ -61,9 +61,9 @@ build() {
 publish() {
   build_file=$1
   cp "$WORK/$2/ffmpeg-$VERSION/COPYING.LGPLv2.1" "$OUT/LICENSE-FFmpeg.txt"
-  mkdir -p "$ROOT/web/public/ffmpeg"
-  cp "$OUT/BUILD-FFmpeg.txt" "$ROOT/web/public/ffmpeg/$build_file"
-  cp "$OUT/LICENSE-FFmpeg.txt" "$ROOT/web/public/ffmpeg/"
+  mkdir -p "$ROOT/apps/web/public/ffmpeg"
+  cp "$OUT/BUILD-FFmpeg.txt" "$ROOT/apps/web/public/ffmpeg/$build_file"
+  cp "$OUT/LICENSE-FFmpeg.txt" "$ROOT/apps/web/public/ffmpeg/"
 }
 
 case "$TARGET" in
@@ -119,7 +119,7 @@ case "$TARGET" in
       echo "configure line: ./configure $LINUX" | tr -s ' '
     } > "$OUT/BUILD-FFmpeg.txt"
     publish BUILD-FFmpeg-linux.txt linux
-    cp "$OUT/LICENSE-OpenH264.txt" "$ROOT/web/public/ffmpeg/"
+    cp "$OUT/LICENSE-OpenH264.txt" "$ROOT/apps/web/public/ffmpeg/"
 
     "$OUT/ffmpeg" -hide_banner -encoders | grep libopenh264
     ;;

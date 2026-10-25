@@ -48,7 +48,7 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 ## 5. Después de la aprobación
 
 - Publicar (si elegiste "Manualmente").
-- Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
+- Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`.
 
 ## Novedades de la 1.1

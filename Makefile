@@ -37,7 +37,7 @@ mas: ffmpeg
 	npx electron-builder --mac mas --universal
 
 web:
-	cd web && npm ci && npm test && npm run build
+	cd apps/web && npm ci && npm test && npm run build
 
 web-dev:
-	cd web && npm run dev
+	cd apps/web && npm run dev
