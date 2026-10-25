@@ -38,6 +38,10 @@ describe("site content", () => {
     }
   });
 
+  it("has the share card each language points to, so a link pasted in a chat shows a preview", () => {
+    for (const lang of LANGS) expect(existsSync(`public${content[lang].meta.image}`), lang).toBe(true);
+  });
+
   it("shows the app version next to the download in both languages, so visitors know which release they get", () => {
     for (const lang of LANGS) expect(content[lang].home.version).toContain(VERSION);
   });

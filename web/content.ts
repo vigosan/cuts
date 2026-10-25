@@ -32,6 +32,7 @@ export const content = {
     routes: { home: "/", privacy: "/privacy", support: "/support", ffmpeg: "/ffmpeg" },
     meta: {
       title: "Cuts — cut your best moments into clips",
+      image: "/og-en.png",
       description:
         "An app for Mac, Windows and Linux to mark the best moments of a long video and export them as short clips, ready for an Instagram carousel.",
     },
@@ -130,6 +131,7 @@ export const content = {
     routes: { home: "/es", privacy: "/es/privacidad", support: "/es/soporte", ffmpeg: "/es/ffmpeg" },
     meta: {
       title: "Cuts — corta tus mejores momentos en clips",
+      image: "/og-es.png",
       description:
         "Una app para Mac, Windows y Linux que marca los mejores momentos de un vídeo largo y los exporta como clips cortos, listos para un carrusel de Instagram.",
     },

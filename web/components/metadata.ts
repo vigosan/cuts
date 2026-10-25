@@ -18,7 +18,8 @@ export function metadataFor(c: Content, route: keyof Content["routes"], title?: 
       siteName: "Cuts",
       type: "website",
       locale: c.lang === "en" ? "en_US" : "es_ES",
-      images: [`/screenshots/${c.lang}-overview.png`],
+      images: [{ url: c.meta.image, width: 1200, height: 630, alt: c.meta.title }],
     },
+    twitter: { card: "summary_large_image" },
   };
 }
