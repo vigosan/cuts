@@ -38,10 +38,11 @@ jobs:
   build:
     needs: ffmpeg
     strategy:
+      fail-fast: false
       matrix:
         include:
           - target: mac
-            os: macos-latest
+            os: macos-14
             args: --mac dmg --universal -c.forceCodeSigning=true
             artifact: dist/Cuts-mac.dmg
           - target: linux
