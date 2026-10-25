@@ -24,6 +24,10 @@ export function formatDuration(seconds: number): string {
   return `${Math.floor(total / 60)}:${pad(total % 60)}`
 }
 
+export function safeBaseName(name: string): string {
+  return name.trim().replace(/[\\/:*?"<>|]/g, '-')
+}
+
 export function outputFileName(base: string, index: number): string {
   return `${base}-${index + 1}.mp4`
 }

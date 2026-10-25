@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import type { ExportProgress, ExportRequest, ExportResult } from '../shared/api'
-import { clipDuration, outputFileName } from '@cuts/core/clips'
+import { clipDuration, outputFileName, safeBaseName } from '@cuts/core/clips'
 import type { Messages } from '@cuts/core/i18n'
 import { buildFfmpegArgs } from './ffmpeg-args'
 
@@ -25,7 +25,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
   } catch (error) {
     return { ok: false, error: t.folderFailed((error as Error).message) }
   }
-  const names = request.clips.map((_, index) => outputFileName(request.baseName.trim().replaceAll('/', '-'), index))
+  const names = request.clips.map((_, index) => outputFileName(safeBaseName(request.baseName), index))
   const files = names.map((name) => join(request.folder, name))
   const existing = names.filter((_, index) => deps.exists(files[index]))
   if (existing.length > 0 && !(await deps.confirmOverwrite(existing))) {
