@@ -397,6 +397,19 @@ describe('App', () => {
     )
   })
 
+  it('names the clips and the default folder after the video on Windows, whose paths use backslashes', async () => {
+    vi.mocked(api.openVideo).mockResolvedValue('C:\\Users\\vicent\\Videos\\set.mov')
+    vi.mocked(api.moviesDir).mockResolvedValue('C:\\Users\\vicent\\Videos')
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    expect(await screen.findByTestId('choose-folder')).toHaveTextContent('Videos/Cuts')
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(api.exportClips).toHaveBeenCalledWith(
+      expect.objectContaining({ baseName: 'set', folder: 'C:\\Users\\vicent\\Videos/Cuts/set' })
+    )
+  })
+
   it('shows the interface in the user language, here English from the test environment', async () => {
     render(<App />)
     expect(screen.getByTestId('open-video')).toHaveTextContent('Choose video…')

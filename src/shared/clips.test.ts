@@ -48,4 +48,8 @@ describe('output naming', () => {
   it('defaults the base name to the source file name without extension', () => {
     expect(defaultBaseName('/Users/x/Movies/2026-10-22 22-33-13.mov')).toBe('2026-10-22 22-33-13')
   })
+
+  it('reads the file name from a Windows path too, or the exported clips would be named after the whole path', () => {
+    expect(defaultBaseName('C:\\Users\\x\\Videos\\set.mov')).toBe('set')
+  })
 })
