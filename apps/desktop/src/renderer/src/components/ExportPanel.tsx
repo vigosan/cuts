@@ -1,6 +1,7 @@
 import { outputFileName, safeBaseName } from '@cuts/core/clips'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import { t } from '../i18n'
+import { field } from './field'
 import { FolderIcon } from './icons'
 
 export type ExportState =
@@ -26,9 +27,6 @@ type Props = {
   onShare: (files: string[]) => void
   canShare: boolean
 }
-
-const field =
-  'h-8 w-full rounded-lg bg-sunken px-2.5 text-sm text-ink placeholder:text-ink-3 transition-colors hover:bg-sunken/80'
 
 export function ExportPanel(p: Props) {
   const running = p.state.status === 'running'
