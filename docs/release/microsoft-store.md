@@ -8,11 +8,12 @@ La misma cuenta de particular que Surco.
 
 | Campo | Valor |
 |---|---|
-| Nombre reservado | Pendiente (ver «Alta») |
-| `Package/Identity/Name` | Pendiente |
+| Nombre reservado | Cuts – Video Clips («Cuts» estaba ocupado) |
+| `Package/Identity/Name` | `VicentGozalbes.CutsVideoClips` |
 | `Package/Identity/Publisher` | `CN=D13B979E-AC81-4811-B7E0-309749169C20` |
 | `PublisherDisplayName` | `Vicent Gozalbes` |
-| Store ID | Pendiente |
+| Package Family Name | `VicentGozalbes.CutsVideoClips_hwxpacmcgspfe` |
+| Store ID | `9NXPTL60M1SC` |
 
 ## El paquete
 

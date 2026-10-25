@@ -51,7 +51,7 @@ jobs:
             artifact: dist/Cuts-linux.AppImage
           - target: windows
             os: windows-latest
-            args: --win nsis --x64
+            args: --win nsis appx --x64
             artifact: dist/Cuts-windows.exe
     runs-on: ${{ matrix.os }}
     defaults:
@@ -98,6 +98,11 @@ jobs:
         with:
           name: app-${{ matrix.target }}
           path: apps/desktop/${{ matrix.artifact }}
+      - if: matrix.target == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: store-appx
+          path: apps/desktop/dist/Cuts-windows.appx
 
   release:
     needs: build

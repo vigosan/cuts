@@ -45,6 +45,14 @@ win:
   extraFiles:
     - from: resources/ffmpeg/ffmpeg.exe
       to: ffmpeg.exe
+appx:
+  identityName: VicentGozalbes.CutsVideoClips
+  publisher: CN=D13B979E-AC81-4811-B7E0-309749169C20
+  publisherDisplayName: Vicent Gozalbes
+  displayName: Cuts – Video Clips
+  languages:
+    - en-US
+    - es-ES
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
