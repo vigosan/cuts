@@ -25,7 +25,7 @@ Requisitos: macOS con Xcode Command Line Tools y Node.js con npm.
 
 ```bash
 make install   # dependencias
-make ffmpeg    # compila el FFmpeg LGPL universal en resources/ffmpeg (tarda un rato, solo la primera vez)
+make ffmpeg    # compila el FFmpeg LGPL universal en apps/desktop/resources/ffmpeg (tarda un rato, solo la primera vez)
 make dev       # app en modo desarrollo
 ```
 
@@ -35,7 +35,7 @@ make dev       # app en modo desarrollo
 |---|---|
 | `make test` | Todas las pruebas |
 | `make typecheck` | Comprobación de tipos |
-| `npm run app` | Construye `dist/mac-universal/Cuts.app` sin firmar |
+| `cd apps/desktop && npm run app` | Construye `apps/desktop/dist/mac-universal/Cuts.app` sin firmar |
 | `make app` | Lo mismo y además la copia a `/Applications` (sustituye la que haya instalada) |
 | `APPLE_TEAM_ID=… make mas` | `.pkg` firmado para la Mac App Store |
 | `make icon` | Regenera el icono |
@@ -44,14 +44,15 @@ make dev       # app en modo desarrollo
 ## Estructura
 
 ```
-src/main/       proceso principal: ventana, menú, FFmpeg, exportación, sesiones
-src/preload/    puente seguro entre el proceso principal y la interfaz
-src/renderer/   interfaz en React
-src/shared/     tipos, formatos, fundidos, textos (i18n) compartidos
-scripts/        compilar FFmpeg, icono, capturas, prueba local del sandbox
-build/          icono, entitlements y perfil de la Mac App Store
-apps/web/       web cuts.vicent.io (Next.js, desplegada en Vercel)
-docs/           publicación en la Mac App Store, privacidad, idiomas
+apps/desktop/           app de escritorio (Electron)
+  src/main/             proceso principal: ventana, menú, FFmpeg, exportación, sesiones
+  src/preload/          puente seguro entre el proceso principal y la interfaz
+  src/renderer/         interfaz en React
+  src/shared/           tipos, formatos, fundidos, textos (i18n) compartidos
+  scripts/              compilar FFmpeg, icono, capturas, prueba local del sandbox
+  build/                icono, entitlements y perfil de la Mac App Store
+apps/web/               web cuts.vicent.io (Next.js, desplegada en Vercel)
+docs/                   publicación en la Mac App Store, privacidad, idiomas
 ```
 
 ## Documentación

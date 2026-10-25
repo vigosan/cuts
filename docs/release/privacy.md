@@ -1,11 +1,11 @@
 # Privacidad de Cuts
 
-Inventario hecho a partir del código (`src/`), las dependencias (`package.json`) y las pruebas del 2026-10-24.
+Inventario hecho a partir del código (`apps/desktop/src/`), las dependencias (`apps/desktop/package.json`) y las pruebas del 2026-10-24.
 
 ## Hechos comprobados
 
 - **Datos recopilados:** ninguno. La app no tiene cuentas, formularios, analítica, telemetría, publicidad ni informes de errores. El `crashReporter` de Electron está desactivado en la build MAS y el código no lo usa.
-- **Red:** el código no hace ninguna petición. La política de contenido de la ventana (`src/renderer/index.html`) solo permite recursos propios (`'self'`, `data:` para imágenes y `media:` para el vídeo local). Las únicas dependencias de ejecución son `react` y `react-dom`, que no hacen peticiones.
+- **Red:** el código no hace ninguna petición. La política de contenido de la ventana (`apps/desktop/src/renderer/index.html`) solo permite recursos propios (`'self'`, `data:` para imágenes y `media:` para el vídeo local). Las únicas dependencias de ejecución son `react` y `react-dom`, que no hacen peticiones.
 - **Procesamiento local:** el vídeo se reproduce leyéndolo del disco y los clips se generan con el FFmpeg incluido en la app. Nada sale del Mac.
 - **Archivos a los que accede:**
   - el vídeo que el usuario elige o arrastra, solo para leerlo;

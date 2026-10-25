@@ -6,20 +6,20 @@ Guía para la 1.1 y las siguientes. Parte de lo que funcionó con la 1.0.0 (`mac
 
 - La versión anterior tiene que estar aprobada o retirada de revisión: App Store Connect no deja enviar otra mientras una está "Waiting for Review" o "In Review".
 - Los certificados Apple Distribution y 3rd Party Mac Developer Installer siguen en el llavero (`security find-identity -v -p codesigning` muestra el primero).
-- El perfil `build/embedded.provisionprofile` no ha caducado (duran un año). Para verlo: `security cms -D -i build/embedded.provisionprofile | grep -A1 ExpirationDate`. Si caducó, descarga uno nuevo en developer.apple.com › Profiles con el mismo nombre de archivo.
+- El perfil `apps/desktop/build/embedded.provisionprofile` no ha caducado (duran un año). Para verlo: `security cms -D -i apps/desktop/build/embedded.provisionprofile | grep -A1 ExpirationDate`. Si caducó, descarga uno nuevo en developer.apple.com › Profiles con el mismo nombre de archivo.
 
 ## 1. Preparar el código
 
 1. Sin cambios pendientes: `git status` limpio y en `master`.
 2. Tests y tipos: `make test` y `make typecheck`.
-3. Subir el número de versión en `package.json` (`"version": "1.1.0"`) y hacer commit (`Set version 1.1.0`).
+3. Subir el número de versión en `apps/desktop/package.json` (`"version": "1.1.0"`) y hacer commit (`Set version 1.1.0`).
 
 El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si hay que volver a subir la misma versión (por ejemplo, tras un rechazo), Apple exige un número de compilación mayor: `npx electron-builder --mac mas --universal -c.buildVersion=1.1.0.1` después de `make mas`, o cambia la versión a `1.1.1`.
 
 ## 2. Construir y subir
 
 1. `APPLE_TEAM_ID=TKAZA7ZPZ2 make mas`
-2. Resultado: `dist/mas-universal/Cuts-1.1.0-universal.pkg`.
+2. Resultado: `apps/desktop/dist/mas-universal/Cuts-1.1.0-universal.pkg`.
 3. Abrir Transporter, arrastrar el `.pkg` y pulsar "Entregar".
 4. Esperar el correo de Apple de que la compilación se ha procesado (de 10 a 30 minutos).
 

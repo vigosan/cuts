@@ -1,40 +1,42 @@
 .PHONY: install dev test typecheck build app ffmpeg icon mas web web-dev
 
+DESKTOP := apps/desktop
+
 install:
-	npm install
-	npx install-electron
+	cd $(DESKTOP) && npm install
+	cd $(DESKTOP) && npx install-electron
 
 dev:
-	npm run dev
+	cd $(DESKTOP) && npm run dev
 
 test: ffmpeg
-	npm test
+	cd $(DESKTOP) && npm test
 
 typecheck:
-	npm run typecheck
+	cd $(DESKTOP) && npm run typecheck
 
 build:
-	npm run build
+	cd $(DESKTOP) && npm run build
 
 icon:
-	./scripts/build-icon.sh
+	$(DESKTOP)/scripts/build-icon.sh
 
-ffmpeg: resources/ffmpeg/ffmpeg
+ffmpeg: $(DESKTOP)/resources/ffmpeg/ffmpeg
 
-resources/ffmpeg/ffmpeg:
-	./scripts/build-ffmpeg.sh
+$(DESKTOP)/resources/ffmpeg/ffmpeg:
+	$(DESKTOP)/scripts/build-ffmpeg.sh
 
 app: ffmpeg
-	npm run app
+	cd $(DESKTOP) && npm run app
 	rm -rf "/Applications/Cuts.app"
-	cp -R "dist/mac-universal/Cuts.app" /Applications/
+	cp -R "$(DESKTOP)/dist/mac-universal/Cuts.app" /Applications/
 
 mas: ffmpeg
 	@test -n "$(APPLE_TEAM_ID)" || (echo "Set APPLE_TEAM_ID (Apple Developer > Membership)" && exit 1)
-	@test -f build/embedded.provisionprofile || (echo "Download the Mac App Store provisioning profile to build/embedded.provisionprofile" && exit 1)
-	sed "s/APPLE_TEAM_ID/$(APPLE_TEAM_ID)/" build/entitlements.mas.template.plist > build/entitlements.mas.plist
-	npx electron-vite build
-	npx electron-builder --mac mas --universal
+	@test -f $(DESKTOP)/build/embedded.provisionprofile || (echo "Download the Mac App Store provisioning profile to $(DESKTOP)/build/embedded.provisionprofile" && exit 1)
+	sed "s/APPLE_TEAM_ID/$(APPLE_TEAM_ID)/" $(DESKTOP)/build/entitlements.mas.template.plist > $(DESKTOP)/build/entitlements.mas.plist
+	cd $(DESKTOP) && npx electron-vite build
+	cd $(DESKTOP) && npx electron-builder --mac mas --universal
 
 web:
 	cd apps/web && npm ci && npm test && npm run build

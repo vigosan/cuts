@@ -24,16 +24,16 @@ jobs:
       - id: cache
         uses: actions/cache@v4
         with:
-          path: resources/ffmpeg
-          key: ffmpeg-${{ matrix.target }}-${{ hashFiles('scripts/build-ffmpeg.sh') }}
+          path: apps/desktop/resources/ffmpeg
+          key: ffmpeg-${{ matrix.target }}-${{ hashFiles('apps/desktop/scripts/build-ffmpeg.sh') }}
       - if: steps.cache.outputs.cache-hit != 'true' && matrix.target != 'mac'
         run: sudo apt-get update && sudo apt-get install -y pkg-config zlib1g-dev mingw-w64
       - if: steps.cache.outputs.cache-hit != 'true'
-        run: ./scripts/build-ffmpeg.sh ${{ matrix.target }}
+        run: apps/desktop/scripts/build-ffmpeg.sh ${{ matrix.target }}
       - uses: actions/upload-artifact@v4
         with:
           name: ffmpeg-${{ matrix.target }}
-          path: resources/ffmpeg
+          path: apps/desktop/resources/ffmpeg
 
   build:
     needs: ffmpeg
@@ -54,19 +54,23 @@ jobs:
             args: --win nsis --x64
             artifact: dist/Cuts-windows.exe
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: apps/desktop
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
       - name: Tag matches package.json version
         shell: bash
         run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./package.json').version")"
       - uses: actions/download-artifact@v4
         with:
           name: ffmpeg-${{ matrix.target }}
-          path: resources/ffmpeg
+          path: apps/desktop/resources/ffmpeg
       - if: matrix.target != 'windows'
         run: chmod +x resources/ffmpeg/ffmpeg
       - run: npm ci
@@ -91,7 +95,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.target }}
-          path: ${{ matrix.artifact }}
+          path: apps/desktop/${{ matrix.artifact }}
 
   release:
     needs: build

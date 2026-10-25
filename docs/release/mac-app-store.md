@@ -6,16 +6,16 @@ Estado a 2026-10-24. Cuts (antes "Carousel Cutter") es una app Electron 45 + Rea
 
 | Comando | Qué produce | Para qué |
 |---|---|---|
-| `make ffmpeg` | `resources/ffmpeg/ffmpeg` (LGPL, universal arm64 + x86_64) a partir del código oficial de FFmpeg 9.0.2, con SHA-256 fijado en `scripts/build-ffmpeg.sh` | Se incluye en la app como herramienta auxiliar |
-| `make app` | `dist/mac-universal/Cuts.app` sin firmar, copiada a `/Applications` | Uso personal y pruebas |
-| `./scripts/sandbox-local.sh` | `dist-sandbox/mas-universal/Cuts.app` con la build MAS de Electron, firmada ad hoc con sandbox y Team ID ficticio `LOCALTEST` | **Solo pruebas locales del sandbox**. No sirve para subir |
-| `APPLE_TEAM_ID=XXXXXXXXXX make mas` | `dist/mas-universal/*.pkg` firmado para la Mac App Store | Envío. Necesita certificados y perfil (ver tareas) |
+| `make ffmpeg` | `apps/desktop/resources/ffmpeg/ffmpeg` (LGPL, universal arm64 + x86_64) a partir del código oficial de FFmpeg 9.0.2, con SHA-256 fijado en `apps/desktop/scripts/build-ffmpeg.sh` | Se incluye en la app como herramienta auxiliar |
+| `make app` | `apps/desktop/dist/mac-universal/Cuts.app` sin firmar, copiada a `/Applications` | Uso personal y pruebas |
+| `apps/desktop/scripts/sandbox-local.sh` | `apps/desktop/dist-sandbox/mas-universal/Cuts.app` con la build MAS de Electron, firmada ad hoc con sandbox y Team ID ficticio `LOCALTEST` | **Solo pruebas locales del sandbox**. No sirve para subir |
+| `APPLE_TEAM_ID=XXXXXXXXXX make mas` | `apps/desktop/dist/mas-universal/*.pkg` firmado para la Mac App Store | Envío. Necesita certificados y perfil (ver tareas) |
 
 El paquete es autocontenido: no depende de Homebrew ni de instaladores externos. FFmpeg va en `Contents/Helpers/ffmpeg`, su licencia y detalles de compilación en `Contents/Resources/LICENSE-FFmpeg.txt` y `BUILD-FFmpeg.txt`.
 
 ## Sandbox y permisos
 
-Entitlements de la app (`build/entitlements.mas.template.plist`):
+Entitlements de la app (`apps/desktop/build/entitlements.mas.template.plist`):
 
 | Entitlement | Por qué | ¿Evitable? |
 |---|---|---|
@@ -24,7 +24,7 @@ Entitlements de la app (`build/entitlements.mas.template.plist`):
 | `com.apple.security.files.user-selected.read-write` | Leer el vídeo elegido o arrastrado y escribir en la carpeta elegida con el diálogo | No |
 | `com.apple.security.assets.movies.read-write` | Carpeta por defecto `~/Movies/Cuts/<vídeo>` y leer vídeos guardados en Películas sin pedir nada | Sí, pero entonces habría que elegir carpeta en cada sesión |
 
-Procesos auxiliares (`build/entitlements.mas.inherit.plist`: `app-sandbox` + `inherit`): los helpers de Electron y `ffmpeg` heredan el sandbox de la app. Así lo indica la guía oficial "Embedding a helper tool in a sandboxed app".
+Procesos auxiliares (`apps/desktop/build/entitlements.mas.inherit.plist`: `app-sandbox` + `inherit`): los helpers de Electron y `ffmpeg` heredan el sandbox de la app. Así lo indica la guía oficial "Embedding a helper tool in a sandboxed app".
 
 No se pide ningún permiso con diálogo del sistema: no hay cámara, micrófono, red, contactos ni fotos. El acceso a archivos lo concede macOS implícitamente cuando el usuario elige o arrastra un archivo.
 
@@ -54,7 +54,7 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 
 ### Build firmada por Apple (TestFlight, 2026-10-25)
 
-- `make mas` genera `dist/mas-universal/Cuts-1.0.0-universal.pkg`, firmado con Apple Distribution y 3rd Party Mac Developer Installer (equipo `TKAZA7ZPZ2`). FFmpeg va en `Contents/Helpers/ffmpeg` para que se firme antes que el ejecutable principal.
+- `make mas` genera `apps/desktop/dist/mas-universal/Cuts-1.0.0-universal.pkg`, firmado con Apple Distribution y 3rd Party Mac Developer Installer (equipo `TKAZA7ZPZ2`). FFmpeg va en `Contents/Helpers/ffmpeg` para que se firme antes que el ejecutable principal.
 - Transporter lo entregó y App Store Connect lo procesó sin errores ("Ready for internal testing").
 - El propietario instaló la build 1.0.0 desde TestFlight e informó de que todo funciona: abrir y arrastrar vídeos fuera de Películas, fotogramas y forma de onda, exportar a la carpeta por defecto y a otra elegida, y cancelar y salir. Lo comprobó el propietario; Claude no lo ha visto ejecutarse.
 
@@ -70,7 +70,7 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 ## Riesgos pendientes
 
 - **Licencia de FFmpeg.** El binario incluido es LGPL v2.1 (sin `--enable-gpl` ni `--enable-nonfree`, verificado con `ffmpeg -L`). Es un ejecutable aparte que la app lanza, no una biblioteca enlazada. Aun así, la compatibilidad de la LGPL con las condiciones de la App Store es una cuestión legal, no técnica: **conviene revisión legal**. La checklist de FFmpeg pide publicar el código fuente exacto junto a la descarga; ver tareas.
-- **Intel.** La app es universal. FFmpeg x86_64 se compila con sus optimizaciones en ensamblador gracias a `nasm`, que `scripts/build-ffmpeg.sh` compila desde su código en `vendor/nasm` (no se instala en el sistema ni va dentro de la app). Exportar 10 s con recorte y fundido tarda 2,3 s en x86_64 (Rosetta) frente a 2,1 s en arm64.
+- **Intel.** La app es universal. FFmpeg x86_64 se compila con sus optimizaciones en ensamblador gracias a `nasm`, que `apps/desktop/scripts/build-ffmpeg.sh` compila desde su código en `apps/desktop/vendor/nasm` (no se instala en el sistema ni va dentro de la app). Exportar 10 s con recorte y fundido tarda 2,3 s en x86_64 (Rosetta) frente a 2,1 s en arm64.
 - **Login helper.** La build MAS de Electron incluye `Contents/Library/LoginItems/Cuts Login Helper.app`. La app no lo usa ni se abre al iniciar sesión. Si el equipo de revisión pregunta, esa es la explicación.
 - **Tamaño.** La app universal ocupa unos 519 MB instalada, por Electron por duplicado más FFmpeg.
 - **Cifrado para exportación.** Electron incluye BoringSSL, aunque la app no hace conexiones de red. La respuesta a "uses non-exempt encryption" debe darla el propietario.
@@ -81,7 +81,7 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 1. Confirmar el bundle ID `com.vigosan.cuts` (propuesto por coherencia con `com.vigosan.surco`) y registrarlo como App ID.
 2. Activar la capacidad App Groups y crear el grupo `TEAMID.com.vigosan.cuts`.
 3. Crear y descargar los certificados **Apple Distribution** y **Mac Installer Distribution**. Ahora el llavero no tiene ninguno de Apple.
-4. Crear un perfil de aprovisionamiento "Mac App Store" para ese App ID y guardarlo como `build/embedded.provisionprofile`.
+4. Crear un perfil de aprovisionamiento "Mac App Store" para ese App ID y guardarlo como `apps/desktop/build/embedded.provisionprofile`.
 5. Ejecutar `APPLE_TEAM_ID=<tu Team ID> make mas` y subir el `.pkg` con Transporter.
 
 **App Store Connect**
@@ -89,13 +89,13 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 2. Publicar una política de privacidad y una URL de soporte (ver `docs/release/privacy.md`).
 3. Completar la privacidad, la clasificación por edad, la categoría (Video / Foto y vídeo), el precio y el copyright.
 4. Responder la pregunta de cifrado.
-5. Subir las capturas de `docs/release/screenshots/` (2880×1800, 16:10, sin alfa, en inglés y español; se regeneran con `scripts/store-screenshots.mjs` y la app abierta con `--remote-debugging-port`).
+5. Subir las capturas de `docs/release/screenshots/` (2880×1800, 16:10, sin alfa, en inglés y español; se regeneran con `apps/desktop/scripts/store-screenshots.mjs` y la app abierta con `--remote-debugging-port`).
 6. Pegar las notas de revisión de `docs/release/app-store-listing.md`.
 
 **FFmpeg (LGPL)**
-1. Alojar `vendor/ffmpeg/ffmpeg-9.0.2.tar.xz` y `resources/ffmpeg/BUILD-FFmpeg.txt` en una web propia, y enlazarlos desde la web de soporte.
+1. Alojar `apps/desktop/vendor/ffmpeg/ffmpeg-9.0.2.tar.xz` y `apps/desktop/resources/ffmpeg/BUILD-FFmpeg.txt` en una web propia, y enlazarlos desde la web de soporte.
 2. Mencionar FFmpeg y la LGPL v2.1 en el EULA si se usa uno propio. Ya se menciona en "Acerca de Cuts".
 
 **Dentro de la app (cuando haya URLs)**
 1. Añadir en el menú un enlace a la política de privacidad. La norma 5.1.1(i) lo exige dentro de la app y todavía no hay URL.
-2. Fijar el copyright real en `electron-builder.yml`. Ahora el valor por defecto es "Copyright © 2026 Cuts".
+2. Fijar el copyright real en `apps/desktop/electron-builder.yml`. Ahora el valor por defecto es "Copyright © 2026 Cuts".

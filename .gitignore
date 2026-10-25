@@ -5,9 +5,9 @@ dist/
 *.log
 test-output/
 vendor/
-resources/ffmpeg/
-build/entitlements.mas.plist
-build/embedded.provisionprofile
+apps/desktop/resources/ffmpeg/
+apps/desktop/build/entitlements.mas.plist
+apps/desktop/build/embedded.provisionprofile
 dist-mas/
 dist-sandbox/
 .DS_Store

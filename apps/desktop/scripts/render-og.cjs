@@ -4,7 +4,7 @@ const os = require('os')
 const path = require('path')
 const [screenshot, tagline, outPath] = process.argv.slice(-3)
 const fileUrl = (file) => `file://${path.resolve(file)}`
-const icon = fileUrl(path.join(__dirname, '../apps/web/public/icon.png'))
+const icon = fileUrl(path.join(__dirname, '../../web/public/icon.png'))
 const html = `<html><body style="margin:0;width:1200px;height:630px;overflow:hidden;background:#fff;font-family:ui-monospace,Menlo,monospace">
   <div style="position:absolute;left:72px;top:0;bottom:0;width:470px;display:flex;flex-direction:column;justify-content:center;gap:28px">
     <div style="display:flex;align-items:center;gap:20px"><img src="${icon}" width="88" height="88"><span style="font-size:44px;font-weight:500;color:#1f2937;letter-spacing:1px">Cuts</span></div>

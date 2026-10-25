@@ -4,7 +4,7 @@ set -eu
 FRAMES=$1
 LANG_CODE=$2
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-OUT="$ROOT/apps/web/public/screenshots"
+OUT="$ROOT/../web/public/screenshots"
 
 python3 - "$FRAMES" <<'PY'
 import json, sys
