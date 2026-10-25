@@ -13,7 +13,7 @@ import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
 import { withHistory } from './history'
 import { t } from './i18n'
-import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
+import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
@@ -67,7 +67,10 @@ export function App() {
   const [zoom, setZoom] = useState<Zoom>(null)
   const [viewStart, setViewStart] = useState(0)
 
-  const currentViewStart = nextViewStart(viewStart, time, duration, zoom)
+  const [heldView, setHeldView] = useState<{ time: number; zoom: Zoom } | null>(null)
+
+  const held = heldView?.time === time && heldView.zoom === zoom
+  const currentViewStart = held ? viewStart : nextViewStart(viewStart, time, duration, zoom)
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
@@ -237,6 +240,13 @@ export function App() {
     })
     return () => cancelAnimationFrame(frame)
   })
+
+  const pickClip = (clip: Clip) => {
+    if (clip.id === selectedId) return setSelectedId(null)
+    setSelectedId(clip.id)
+    setViewStart(viewStartForClip(clip, duration, zoom))
+    setHeldView({ time, zoom })
+  }
 
   const exporting = exportState.status === 'running'
 
@@ -426,7 +436,7 @@ export function App() {
                 time={time}
                 videoFades={clips.map((clip) => settingsOf(clip).videoFade)}
                 selectedId={selectedClip?.id ?? null}
-                onSelect={(clip) => setSelectedId(clip.id === selectedId ? null : clip.id)}
+                onSelect={pickClip}
                 onPlay={playClip}
                 loopingId={loopingId}
                 onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
