@@ -1,4 +1,5 @@
 import { DARK_SCREENSHOTS, type Content } from "@/content";
+import { splitKeys } from "@/keys";
 import { Download } from "./Download";
 import { Page } from "./Page";
 import { Screenshot } from "./Screenshot";
@@ -31,10 +32,21 @@ export function Home({ c }: { c: Content }) {
       </article>
       <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100">{c.home.featuresTitle}</h2>
-        <ul className="flex flex-col gap-3">
+        <ul className="grid gap-x-10 gap-y-4 sm:grid-cols-2">
           {c.home.features.map((feature) => (
-            <li key={feature} className="border-l-2 border-gray-300 dark:border-gray-700 pl-4 hover:border-gray-500 dark:hover:border-gray-400 sm:pl-6">
-              {feature}
+            <li key={feature} className="border-l-2 border-gray-300 dark:border-gray-700 pl-4 hover:border-gray-500 dark:hover:border-gray-400">
+              {splitKeys(feature).map((part, index) =>
+                "key" in part ? (
+                  <kbd
+                    key={index}
+                    className="mx-0.5 rounded-md border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-medium text-gray-800 shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  >
+                    {part.key}
+                  </kbd>
+                ) : (
+                  part.text
+                ),
+              )}
             </li>
           ))}
         </ul>

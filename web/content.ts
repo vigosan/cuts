@@ -50,7 +50,7 @@ export const content = {
       dropsAlt: "The timeline of a full session with the ten moments Cuts suggested, spread across the set",
       featuresTitle: "What it does",
       features: [
-        "Mark clips while you listen, with I and O, and play or pause with Space.",
+        "Mark clips while you listen, with [I] and [O], and play or pause with [Space].",
         "See the video frames and the audio waveform along the timeline, like in a video editor.",
         "Drag clips and their edges on the timeline, and zoom in to fine-tune to the second.",
         "Clips up to 59 seconds are carousel-ready. Longer ones are allowed for regular posts.",
@@ -148,7 +148,7 @@ export const content = {
       dropsAlt: "La línea de tiempo de una sesión entera con los diez momentos que sugirió Cuts, repartidos por todo el set",
       featuresTitle: "Qué hace",
       features: [
-        "Marca clips mientras escuchas, con I y O, y reproduce o pausa con la barra espaciadora.",
+        "Marca clips mientras escuchas, con [I] y [O], y reproduce o pausa con [Espacio].",
         "Ve los fotogramas del vídeo y la forma de onda del audio en la línea de tiempo, como en un editor de vídeo.",
         "Arrastra los clips y sus bordes en la línea de tiempo, y haz zoom para afinar al segundo.",
         "Los clips de hasta 59 segundos valen para carrusel. Los más largos se permiten para publicaciones normales.",
