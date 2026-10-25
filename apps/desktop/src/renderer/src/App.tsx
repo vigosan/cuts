@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import { DEFAULT_SETTINGS, type ClipSettings } from '@cuts/core/fades'
 import type { ExportResult } from '@shared/api'
@@ -150,34 +150,36 @@ export function App() {
     setExportState((s) => (s.status === 'done' || s.status === 'error' ? { status: 'idle' } : s))
   }, [clips, clipSettings, defaultSettings, format, baseName, folder])
 
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
+    if (e.metaKey || e.ctrlKey) return
+    const actions: Record<string, () => void> = {
+      i: markStart,
+      o: markEnd,
+      ' ': togglePlay,
+      ArrowLeft: () => seekTo(now() - SEEK_STEP),
+      ArrowRight: () => seekTo(now() + SEEK_STEP)
+    }
+    const frame = e.shiftKey ? 1 : 1 / fps
+    const byPosition: Record<string, () => void> = {
+      Comma: () => stepTo(now() - frame),
+      Period: () => stepTo(now() + frame),
+      KeyJ: () => seekTo(now() - SEEK_STEP),
+      KeyK: stopShuttle,
+      KeyL: shuttleForward
+    }
+    const action = byPosition[e.code] ?? actions[e.key.length === 1 ? e.key.toLowerCase() : e.key]
+    if (!action) return
+    e.preventDefault()
+    action()
+  })
+
   useEffect(() => {
     if (!videoPath) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
-      if (e.metaKey || e.ctrlKey) return
-      const actions: Record<string, () => void> = {
-        i: markStart,
-        o: markEnd,
-        ' ': togglePlay,
-        ArrowLeft: () => seekTo(now() - SEEK_STEP),
-        ArrowRight: () => seekTo(now() + SEEK_STEP)
-      }
-      const frame = e.shiftKey ? 1 : 1 / fps
-      const byPosition: Record<string, () => void> = {
-        Comma: () => stepTo(now() - frame),
-        Period: () => stepTo(now() + frame),
-        KeyJ: () => seekTo(now() - SEEK_STEP),
-        KeyK: stopShuttle,
-        KeyL: shuttleForward
-      }
-      const action = byPosition[e.code] ?? actions[e.key.length === 1 ? e.key.toLowerCase() : e.key]
-      if (!action) return
-      e.preventDefault()
-      action()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
+    const listener = (e: KeyboardEvent) => onKey(e)
+    window.addEventListener('keydown', listener)
+    return () => window.removeEventListener('keydown', listener)
+  }, [videoPath])
 
   useEffect(
     () =>
@@ -275,7 +277,8 @@ export function App() {
     if (path) load(path)
   }
 
-  useEffect(() => window.api.onMenuOpenVideo(() => void openVideo()))
+  const onMenuOpenVideo = useEffectEvent(() => void openVideo())
+  useEffect(() => window.api.onMenuOpenVideo(() => onMenuOpenVideo()), [])
 
   useEffect(
     () =>

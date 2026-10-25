@@ -484,6 +484,26 @@ describe('App', () => {
     expect(api.openVideo).toHaveBeenCalled()
   })
 
+  it('listens to the File menu once instead of on every frame of playback, so the IPC listeners never churn', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 10)
+    seek(video, 20)
+    seek(video, 30)
+    expect(api.onMenuOpenVideo).toHaveBeenCalledTimes(1)
+  })
+
+  it('listens to the keyboard once per video instead of on every frame of playback', async () => {
+    const listen = vi.spyOn(window, 'addEventListener')
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 10)
+    seek(video, 20)
+    seek(video, 30)
+    expect(listen.mock.calls.filter(([type]) => type === 'keydown')).toHaveLength(1)
+    listen.mockRestore()
+  })
+
   it('ignores opening another video while exporting, so the running export never reports onto a different video', async () => {
     vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
     vi.spyOn(window, 'confirm').mockReturnValue(true)
