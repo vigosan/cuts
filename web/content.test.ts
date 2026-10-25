@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { content, DOWNLOADS, FFMPEG_FILES, LANGS, SCREENSHOTS, VERSION } from "./content";
+import { content, DARK_SCREENSHOTS, DOWNLOADS, FFMPEG_FILES, LANGS, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -29,6 +29,12 @@ describe("site content", () => {
   it("has every screenshot the home page shows, in both languages", () => {
     for (const lang of LANGS) {
       for (const name of SCREENSHOTS) expect(existsSync(`public/screenshots/${lang}-${name}.png`), `${lang}-${name}`).toBe(true);
+    }
+  });
+
+  it("has the screenshots shown to visitors in dark mode, in both languages, so dark mode never shows a broken image", () => {
+    for (const lang of LANGS) {
+      for (const name of Object.values(DARK_SCREENSHOTS)) expect(existsSync(`public/screenshots/${lang}-${name}.png`), `${lang}-${name}`).toBe(true);
     }
   });
 

@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { CONTACT, content, type Content } from "@/content";
 
-export const link = "underline font-medium hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-400 rounded px-1";
+export const link = "underline font-medium hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-400 rounded px-1";
 
 type Route = keyof Content["routes"];
 
 export function Page({ c, current, children }: { c: Content; current: Route; children: React.ReactNode }) {
   return (
     <div
-      className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-12 text-gray-500 antialiased lg:gap-16 lg:py-16"
+      className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-12 text-gray-500 dark:text-gray-400 antialiased lg:gap-16 lg:py-16"
       style={{ fontFamily: "monospace" }}
     >
       <header className="flex items-center justify-between">
@@ -17,7 +17,7 @@ export function Page({ c, current, children }: { c: Content; current: Route; chi
           className="flex items-center gap-3 rounded focus:outline-none focus:ring-1 focus:ring-gray-400"
         >
           <img src="/icon.png" alt="" width={36} height={36} />
-          <span className="font-medium tracking-wide text-gray-800">Cuts</span>
+          <span className="font-medium tracking-wide text-gray-800 dark:text-gray-100">Cuts</span>
         </Link>
         <Link href={content[c.other].routes[current]} hrefLang={c.other} className={link}>
           {c.switchLabel}

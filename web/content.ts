@@ -6,6 +6,7 @@ export const CONTACT = "hello@vicent.io";
 export const UPDATED = "2026-10-25";
 export const VERSION = "1.0";
 export const SCREENSHOTS = ["overview", "drops", "timeline", "framing", "dark"] as const;
+export const DARK_SCREENSHOTS = { overview: "overview-dark", drops: "drops-dark", dark: "light" } as const;
 
 const RELEASES = "https://github.com/vigosan/cuts-releases/releases/latest/download";
 export const DOWNLOADS = {
