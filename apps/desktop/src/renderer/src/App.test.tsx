@@ -314,6 +314,22 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:17:30')
   })
 
+  it('moves the selected clip up and down the carousel with Option and the arrows, so reordering needs no mouse', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await userEvent.click(screen.getByTestId('clip-row-3'))
+    seek(video, 1000)
+    await userEvent.keyboard('{Alt>}{ArrowUp}{ArrowUp}{ArrowUp}{/Alt}')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:05:00')
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'true')
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}')
+    expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:05:00')
+    expect(video.currentTime).toBe(1000)
+  })
+
   it('drags a clip to the top of the carousel so it becomes the first exported file and the cover', async () => {
     render(<App />)
     const video = await loadVideo()

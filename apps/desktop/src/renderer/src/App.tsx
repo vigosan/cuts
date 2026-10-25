@@ -155,6 +155,12 @@ export function App() {
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
     if (e.metaKey || e.ctrlKey) return
+    if (e.altKey && selectedIndex !== -1 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault()
+      const to = selectedIndex + (e.key === 'ArrowUp' ? -1 : 1)
+      if (to >= 0 && to < clips.length) dispatch({ type: 'reorder', from: selectedIndex, to })
+      return
+    }
     const actions: Record<string, () => void> = {
       i: markStart,
       o: markEnd,
