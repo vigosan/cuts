@@ -9,7 +9,6 @@ export function Home({ c }: { c: Content }) {
         <h1 className="text-2xl font-medium text-balance text-gray-800">{c.home.tagline}</h1>
         <p className="max-w-xl text-pretty">{c.home.intro}</p>
         <Download home={c.home} />
-        <p className="text-sm text-gray-400">{c.home.stores}</p>
       </section>
       <img
         src={`/screenshots/${c.lang}-overview.png`}

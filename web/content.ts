@@ -37,10 +37,9 @@ export const content = {
     home: {
       tagline: "Cut your best moments into clips",
       intro:
-        "Cuts turns a long recording into short clips, ready to post. Drop in a video, listen, and mark where each clip starts and ends. Cuts exports them all at once, numbered in carousel order.",
+        "Cuts listens to your session, finds the drops and turns them into clips ready for your carousel. Fine-tune them, frame them for Instagram and export them all at once, numbered in order.",
       free: "Free",
-      stores: "Coming soon to the Mac App Store and the Microsoft Store.",
-      requirements: { mac: "macOS 13 or later · Apple silicon and Intel", windows: "Windows 10 or later · 64-bit", linux: "AppImage · x86_64" },
+      requirements: { mac: "macOS 13 or later", windows: "Windows 10 or later", linux: "AppImage x86_64" },
       download: { mac: "Download for Mac", windows: "Download for Windows", linux: "Download for Linux", also: "Also for" },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Version ${VERSION}`,
@@ -136,10 +135,9 @@ export const content = {
     home: {
       tagline: "Corta tus mejores momentos en clips",
       intro:
-        "Cuts convierte una grabación larga en clips cortos, listos para publicar. Arrastra un vídeo, escúchalo y marca dónde empieza y acaba cada clip. Cuts los exporta todos de una vez, numerados en el orden del carrusel.",
+        "Cuts escucha tu sesión, encuentra los subidones y los convierte en clips listos para el carrusel. Retócalos, encuádralos para Instagram y expórtalos todos de una vez, numerados en orden.",
       free: "Gratis",
-      stores: "Muy pronto en la Mac App Store y en Microsoft Store.",
-      requirements: { mac: "macOS 13 o posterior · Apple silicon e Intel", windows: "Windows 10 o posterior · 64 bits", linux: "AppImage · x86_64" },
+      requirements: { mac: "macOS 13 o posterior", windows: "Windows 10 o posterior", linux: "AppImage x86_64" },
       download: { mac: "Descargar para Mac", windows: "Descargar para Windows", linux: "Descargar para Linux", also: "También para" },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Versión ${VERSION}`,

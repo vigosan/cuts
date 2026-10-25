@@ -24,11 +24,7 @@ export function Download({ home }: { home: Content["home"] }) {
   const [os, setOs] = useState<OS | null>(null);
   useEffect(() => setOs(detectOS(navigator.userAgent)), []);
 
-  const meta = (
-    <span>
-      {home.version} · {home.free}
-    </span>
-  );
+  const meta = `${home.free} · ${home.version}`;
 
   if (!os) {
     return (
@@ -52,9 +48,11 @@ export function Download({ home }: { home: Content["home"] }) {
         <ArrowDown />
         {home.download[os]}
       </a>
-      <p className="text-xs text-gray-400">{home.requirements[os]}</p>
+      <p className="text-sm text-gray-400">
+        {meta} · {home.requirements[os]}
+      </p>
       <p className="text-sm">
-        {meta} · {home.download.also}{" "}
+        {home.download.also}{" "}
         {PLATFORMS.filter((platform) => platform !== os).map((platform, index) => (
           <span key={platform}>
             {index > 0 && " · "}
