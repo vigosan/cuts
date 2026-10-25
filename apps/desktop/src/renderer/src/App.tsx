@@ -16,11 +16,12 @@ import { t } from './i18n'
 import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/core/timeline-view'
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { useClipLoop } from './useClipLoop'
+import { useTransport } from './useTransport'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
 const DEFAULT_FPS = 30
-const MAX_SHUTTLE = 4
 const clipsHistory = withHistory(clipsReducer)
 const APP_FOLDER = 'Cuts'
 
@@ -43,7 +44,6 @@ export function App() {
   const [defaultSettings, setDefaultSettings] = useState<ClipSettings>(DEFAULT_SETTINGS)
   const [clipSettings, setClipSettings] = useState<Record<string, ClipSettings>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [loopingId, setLoopingId] = useState<string | null>(null)
 
   const settingsOf = (clip: Clip) => clipSettings[clip.id] ?? defaultSettings
   const selectedIndex = clips.findIndex((clip) => clip.id === selectedId)
@@ -59,8 +59,6 @@ export function App() {
   const [format, setFormat] = useState<OutputFormat>('original')
   const [restoredFor, setRestoredFor] = useState<string | null>(null)
   const openedPath = useRef<string | null>(null)
-  const shuttle = useRef(0)
-  const looping = useRef<string | null>(null)
   const [fps, setFps] = useState(DEFAULT_FPS)
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
   const shownSettings = selectedClip ? settingsOf(selectedClip) : defaultSettings
@@ -77,34 +75,7 @@ export function App() {
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
-  const now = () => videoRef.current?.currentTime ?? 0
-  const seekTo = (t: number) => {
-    if (videoRef.current) videoRef.current.currentTime = Math.max(0, Math.min(t, duration || t))
-  }
-  const togglePlay = () => {
-    const video = videoRef.current
-    if (!video) return
-    if (video.paused) void video.play()
-    else video.pause()
-  }
-  const stepTo = (t: number) => {
-    videoRef.current?.pause()
-    seekTo(t)
-  }
-  const shuttleForward = () => {
-    const video = videoRef.current
-    if (!video) return
-    shuttle.current = shuttle.current === 0 ? 1 : Math.min(shuttle.current * 2, MAX_SHUTTLE)
-    video.playbackRate = shuttle.current
-    if (shuttle.current === 1) void video.play()
-  }
-  const stopShuttle = () => {
-    const video = videoRef.current
-    if (!video) return
-    video.pause()
-    shuttle.current = 0
-    video.playbackRate = 1
-  }
+  const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(videoRef, duration)
   const markStart = () => dispatch({ type: 'markStart', time: now() })
   const markEnd = () => dispatch({ type: 'markEnd', time: now(), id: crypto.randomUUID() })
 
@@ -217,48 +188,7 @@ export function App() {
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
   }
 
-  const loopingClip = clips.find((clip) => clip.id === loopingId) ?? null
-
-  const loop = (id: string | null) => {
-    looping.current = id
-    setLoopingId(id)
-  }
-
-  const playClip = (clip: Clip) => {
-    if (loopingId === clip.id) {
-      videoRef.current?.pause()
-      loop(null)
-      return
-    }
-    loop(clip.id)
-    seekTo(clip.start)
-    void videoRef.current?.play()
-  }
-
-  const keepLooping = (video: HTMLVideoElement) => {
-    const index = clips.findIndex((clip) => clip.id === looping.current)
-    if (index < 0 || video.currentTime < clips[index].end) return
-    const next = clips[(index + 1) % clips.length]
-    loop(next.id)
-    video.currentTime = next.start
-  }
-
-  const seekFromTimeline = (t: number) => {
-    if (loopingClip && (t < loopingClip.start || t > loopingClip.end)) loop(null)
-    seekTo(t)
-  }
-
-  const onFrame = useEffectEvent((video: HTMLVideoElement) => keepLooping(video))
-  const isLooping = loopingClip !== null
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !isLooping || !playing) return
-    let frame = requestAnimationFrame(function check() {
-      onFrame(video)
-      frame = requestAnimationFrame(check)
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [isLooping, playing])
+  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, seekTo })
 
   const pickClip = (clip: Clip) => {
     if (clip.id === selectedId) return setSelectedId(null)
