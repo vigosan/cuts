@@ -58,6 +58,7 @@ export function App() {
   const [restoredFor, setRestoredFor] = useState<string | null>(null)
   const openedPath = useRef<string | null>(null)
   const shuttle = useRef(0)
+  const looping = useRef<string | null>(null)
   const [fps, setFps] = useState(DEFAULT_FPS)
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
   const shownSettings = selectedClip ? settingsOf(selectedClip) : defaultSettings
@@ -198,23 +199,32 @@ export function App() {
 
   const loopingClip = clips.find((clip) => clip.id === loopingId) ?? null
 
+  const loop = (id: string | null) => {
+    looping.current = id
+    setLoopingId(id)
+  }
+
   const playClip = (clip: Clip) => {
     if (loopingId === clip.id) {
       videoRef.current?.pause()
-      setLoopingId(null)
+      loop(null)
       return
     }
-    setLoopingId(clip.id)
+    loop(clip.id)
     seekTo(clip.start)
     void videoRef.current?.play()
   }
 
   const keepLooping = (video: HTMLVideoElement) => {
-    if (loopingClip && video.currentTime >= loopingClip.end) video.currentTime = loopingClip.start
+    const index = clips.findIndex((clip) => clip.id === looping.current)
+    if (index < 0 || video.currentTime < clips[index].end) return
+    const next = clips[(index + 1) % clips.length]
+    loop(next.id)
+    video.currentTime = next.start
   }
 
   const seekFromTimeline = (t: number) => {
-    if (loopingClip && (t < loopingClip.start || t > loopingClip.end)) setLoopingId(null)
+    if (loopingClip && (t < loopingClip.start || t > loopingClip.end)) loop(null)
     seekTo(t)
   }
 
@@ -311,7 +321,7 @@ export function App() {
                 onPlay={() => setPlaying(true)}
                 onPause={() => {
                   setPlaying(false)
-                  setLoopingId(null)
+                  loop(null)
                 }}
                 onError={() => setVideoError(true)}
               />

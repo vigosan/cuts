@@ -634,6 +634,24 @@ describe('App', () => {
     expect(video.currentTime).toBe(100)
   })
 
+  it('plays on into the next clip and back to the first, so the whole carousel can be heard in posting order', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    Object.assign(video, { play: vi.fn(async () => {}) })
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await userEvent.click(screen.getByTestId('clip-play-2'))
+    expect(video.currentTime).toBe(200)
+    seek(video, 250.1)
+    expect(video.currentTime).toBe(300)
+    expect(screen.getByTestId('clip-play-3')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('clip-play-2')).toHaveAttribute('aria-pressed', 'false')
+    seek(video, 350.1)
+    expect(video.currentTime).toBe(100)
+    expect(screen.getByTestId('clip-play-1')).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('stops looping when the clip button is pressed again or playback is paused', async () => {
     render(<App />)
     const video = await loadVideo()
