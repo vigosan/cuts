@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, LANGS, SCREENSHOTS, VERSION } from "./content";
+import { content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -67,5 +67,9 @@ describe("site content", () => {
       expect(url).toMatch(/^https:\/\/github\.com\/vigosan\/cuts-releases\/releases\/latest\/download\//);
       expect(workflow).toContain(url.split("/").pop());
     }
+  });
+
+  it("links to the public repository this site is built from, not the releases one, so visitors can read the source", () => {
+    expect(REPO).toBe("https://github.com/vigosan/cuts");
   });
 });

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CONTACT, content, type Content } from "@/content";
+import { CONTACT, content, REPO, type Content } from "@/content";
 import { ThemeToggle } from "./ThemeToggle";
 
 export const link = "underline font-medium hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-400 rounded px-1";
@@ -38,6 +38,9 @@ export function Page({ c, current, children }: { c: Content; current: Route; chi
         <Link href={c.routes.ffmpeg} className={link}>
           {c.footer.ffmpeg}
         </Link>
+        <a href={REPO} className={link}>
+          {c.footer.github}
+        </a>
         <span className="sm:ml-auto">
           {c.footer.by}{" "}
           <a href="https://vicent.io" className={link}>

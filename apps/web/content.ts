@@ -3,6 +3,7 @@ export type Lang = (typeof LANGS)[number];
 
 export const SITE_URL = "https://cuts.vicent.io";
 export const CONTACT = "hello@vicent.io";
+export const REPO = "https://github.com/vigosan/cuts";
 export const UPDATED = "2026-10-25";
 export const VERSION = "1.0";
 export const SCREENSHOTS = ["overview", "timeline", "framing", "dark"] as const;
@@ -125,7 +126,7 @@ export const content = {
         openh264: "OpenH264 license (BSD 2-Clause)",
       },
     },
-    footer: { privacy: "Privacy", support: "Support", ffmpeg: "FFmpeg", by: "Made by" },
+    footer: { privacy: "Privacy", support: "Support", ffmpeg: "FFmpeg", github: "GitHub", by: "Made by" },
   },
   es: {
     lang: "es",
@@ -226,7 +227,7 @@ export const content = {
         openh264: "Licencia de OpenH264 (BSD 2-Clause)",
       },
     },
-    footer: { privacy: "Privacidad", support: "Soporte", ffmpeg: "FFmpeg", by: "Hecho por" },
+    footer: { privacy: "Privacidad", support: "Soporte", ffmpeg: "FFmpeg", github: "GitHub", by: "Hecho por" },
   },
 } as const;
 
