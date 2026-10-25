@@ -26,7 +26,7 @@ function createWindow(): BrowserWindow {
     minHeight: 600,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#161617' : '#f5f4f2',
     title: 'Cuts',
-    titleBarStyle: 'hiddenInset',
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

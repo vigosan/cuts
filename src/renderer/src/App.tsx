@@ -284,7 +284,11 @@ export function App() {
   const canExport =
     clips.length > 0 && folder !== null && baseName.trim() !== ''
 
-  const fileName = videoPath?.split('/').pop()
+  const fileName = videoPath?.split(/[\\/]/).pop()
+
+  useEffect(() => {
+    document.title = fileName ?? 'Cuts'
+  }, [fileName])
 
   return (
     <div
@@ -299,11 +303,16 @@ export function App() {
         load(window.api.pathForFile(file))
       }}
     >
-      <header className="flex h-11 shrink-0 items-center justify-center px-24 text-sm [-webkit-app-region:drag]">
-        <span className="truncate font-medium text-ink-2" title={videoPath ?? undefined}>
-          {fileName ?? 'Cuts'}
-        </span>
-      </header>
+      {window.api.platform === 'darwin' && (
+        <header
+          data-testid="titlebar"
+          className="flex h-11 shrink-0 items-center justify-center px-24 text-sm [-webkit-app-region:drag]"
+        >
+          <span className="truncate font-medium text-ink-2" title={videoPath ?? undefined}>
+            {fileName ?? 'Cuts'}
+          </span>
+        </header>
+      )}
 
       {!videoPath ? (
         <main className="flex flex-1 items-center justify-center p-8">
@@ -514,6 +523,7 @@ export function App() {
               onReveal={window.api.reveal}
               onCancel={window.api.cancelExport}
               onShare={window.api.share}
+              canShare={window.api.platform === 'darwin'}
             />
           </aside>
         </main>

@@ -56,4 +56,14 @@ describe('menuTemplate', () => {
     expect(undo).toHaveBeenCalled()
     expect(redo).toHaveBeenCalled()
   })
+
+  it('leaves out the macOS app menu on Windows and Linux, and quits from the File menu as those systems expect', () => {
+    const template = menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {} }, 'win32')
+    const roles = flatten(template).map((e) => e.role)
+    expect(template.map((e) => e.label)).not.toContain('Cuts')
+    expect(roles).not.toContain('services')
+    expect(roles).not.toContain('hide')
+    expect(roles).not.toContain('zoom')
+    expect(template.find((e) => e.label === 'File')!.submenu!.map((e) => e.role)).toContain('quit')
+  })
 })

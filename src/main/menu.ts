@@ -12,25 +12,30 @@ export type MenuActions = {
   redo: () => void
 }
 
-export function menuTemplate(t: Messages, appName: string, actions: MenuActions): MenuEntry[] {
+export function menuTemplate(t: Messages, appName: string, actions: MenuActions, platform: NodeJS.Platform = process.platform): MenuEntry[] {
+  const mac = platform === 'darwin'
+  const appMenu: MenuEntry = {
+    label: appName,
+    submenu: [
+      { role: 'about', label: t.menuAbout(appName) },
+      separator,
+      { role: 'services', label: t.menuServices },
+      separator,
+      { role: 'hide', label: t.menuHide(appName) },
+      { role: 'hideOthers', label: t.menuHideOthers },
+      { role: 'unhide', label: t.menuShowAll },
+      separator,
+      { role: 'quit', label: t.menuQuit(appName) }
+    ]
+  }
   return [
-    {
-      label: appName,
-      submenu: [
-        { role: 'about', label: t.menuAbout(appName) },
-        separator,
-        { role: 'services', label: t.menuServices },
-        separator,
-        { role: 'hide', label: t.menuHide(appName) },
-        { role: 'hideOthers', label: t.menuHideOthers },
-        { role: 'unhide', label: t.menuShowAll },
-        separator,
-        { role: 'quit', label: t.menuQuit(appName) }
-      ]
-    },
+    ...(mac ? [appMenu] : []),
     {
       label: t.menuFile,
-      submenu: [{ label: t.menuOpenVideo, accelerator: 'CmdOrCtrl+O', click: actions.openVideo }]
+      submenu: [
+        { label: t.menuOpenVideo, accelerator: 'CmdOrCtrl+O', click: actions.openVideo },
+        ...(mac ? [] : [separator, { role: 'quit', label: t.menuQuit(appName) } as MenuEntry])
+      ]
     },
     {
       label: t.menuEdit,
@@ -48,7 +53,7 @@ export function menuTemplate(t: Messages, appName: string, actions: MenuActions)
       label: t.menuWindow,
       submenu: [
         { role: 'minimize', label: t.menuMinimize },
-        { role: 'zoom', label: t.menuZoom },
+        ...(mac ? [{ role: 'zoom', label: t.menuZoom } as MenuEntry] : []),
         separator,
         { role: 'close', label: t.menuClose }
       ]

@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'ele
 import type { Api, ExportProgress } from '../shared/api'
 
 const api: Api = {
+  platform: process.platform,
   pathForFile: (file) => webUtils.getPathForFile(file),
   openVideo: () => ipcRenderer.invoke('open-video'),
   chooseFolder: (current) => ipcRenderer.invoke('choose-folder', current),

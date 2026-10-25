@@ -9,6 +9,7 @@ const VIDEO = '/Users/vicent/Movies/2026-10-22 22-33-13.mov'
 
 function makeApi(): Api {
   return {
+    platform: 'darwin',
     pathForFile: vi.fn(() => VIDEO),
     openVideo: vi.fn(async () => VIDEO),
     chooseFolder: vi.fn(async () => '/Users/vicent/Movies/Instagram'),
@@ -807,6 +808,35 @@ describe('App', () => {
     expect(api.exportClips).toHaveBeenCalledTimes(1)
     await userEvent.click(screen.getByTestId('reveal'))
     expect(api.reveal).toHaveBeenCalledWith('/Movies/Cuts/x/x-1.mp4')
+  })
+
+  it('opens the folder with the clips instead of sharing them on Windows and Linux, which have no share menu', async () => {
+    api.platform = 'win32'
+    vi.mocked(api.exportClips).mockResolvedValue({ ok: true, files: ['C:\\Videos\\Cuts\\x\\x-1.mp4'] })
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.showInFolder)
+    expect(screen.queryByTestId('reveal')).toBeNull()
+    await userEvent.click(screen.getByTestId('export'))
+    expect(api.reveal).toHaveBeenCalledWith('C:\\Videos\\Cuts\\x\\x-1.mp4')
+    expect(api.share).not.toHaveBeenCalled()
+  })
+
+  it('draws its own title bar only on macOS, where the window controls sit inside it', async () => {
+    render(<App />)
+    await loadVideo()
+    expect(screen.getByTestId('titlebar')).toHaveTextContent('2026-10-22 22-33-13.mov')
+  })
+
+  it('names the window after the video on Windows and Linux, whose native title bar shows it', async () => {
+    api.platform = 'linux'
+    vi.mocked(api.openVideo).mockResolvedValue('C:\\Users\\vicent\\Videos\\set.mov')
+    render(<App />)
+    await loadVideo()
+    expect(screen.queryByTestId('titlebar')).toBeNull()
+    expect(document.title).toBe('set.mov')
   })
 
   it('offers Export again after any change, so shared files always match what is on screen', async () => {

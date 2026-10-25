@@ -22,6 +22,7 @@ type Props = {
   onReveal: (path: string) => void
   onCancel: () => void
   onShare: (files: string[]) => void
+  canShare: boolean
 }
 
 const field =
@@ -82,7 +83,7 @@ export function ExportPanel(p: Props) {
         data-testid="export"
         className={`relative h-10 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition-colors ${running ? 'cursor-default' : 'hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3'}`}
         disabled={!p.canExport || running}
-        onClick={() => (p.state.status === 'done' ? p.onShare(p.state.files) : p.onExport())}
+        onClick={() => (p.state.status === 'done' ? (p.canShare ? p.onShare(p.state.files) : p.onReveal(p.state.files[0])) : p.onExport())}
       >
         {running && (
           <span
@@ -95,7 +96,9 @@ export function ExportPanel(p: Props) {
           {p.state.status === 'running'
             ? t.exportingClip(Math.min(finished + 1, p.state.progress.length), p.state.progress.length)
             : p.state.status === 'done'
-              ? t.share
+              ? p.canShare
+                ? t.share
+                : t.showInFolder
               : t.exportClips(p.clipCount)}
         </span>
       </button>
@@ -112,14 +115,19 @@ export function ExportPanel(p: Props) {
         )}
         {p.state.status === 'done' && (
           <span data-testid="export-done" className="text-ok">
-            {t.exportedClips(p.state.files.length)} ·{' '}
-            <button
-              data-testid="reveal"
-              className="cursor-pointer font-medium underline-offset-2 hover:underline"
-              onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
-            >
-              {t.showInFinder}
-            </button>
+            {t.exportedClips(p.state.files.length)}
+            {p.canShare && (
+              <>
+                {' '}·{' '}
+                <button
+                  data-testid="reveal"
+                  className="cursor-pointer font-medium underline-offset-2 hover:underline"
+                  onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
+                >
+                  {t.showInFinder}
+                </button>
+              </>
+            )}
           </span>
         )}
         {p.state.status === 'error' && (

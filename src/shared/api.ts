@@ -25,6 +25,7 @@ export type ExportResult = { ok: true; files: string[] } | { ok: false; error: s
 export type ExportProgress = { index: number; ratio: number }
 
 export type Api = {
+  platform: NodeJS.Platform
   pathForFile(file: File): string
   openVideo(): Promise<string | null>
   chooseFolder(current: string | null): Promise<string | null>
