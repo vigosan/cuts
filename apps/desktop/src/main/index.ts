@@ -52,7 +52,16 @@ app.whenReady().then(() => {
   const command = (name: 'undo' | 'redo') => () => mainWindow()?.webContents.send('menu-command', name)
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name, { openVideo, openUrl: (url) => void shell.openExternal(url), undo: command('undo'), redo: command('redo') })))
   app.setAboutPanelOptions({ credits: t.aboutCredits })
-  handleMediaProtocol()
+  const openedVideos = new Set<string>()
+  const opened = (path: string) => {
+    if (!openedVideos.has(path)) throw new Error('This video was not opened in Cuts')
+    return path
+  }
+  handleMediaProtocol((path) => openedVideos.has(path))
+  ipcMain.on('allow-video', (event, path: string) => {
+    openedVideos.add(path)
+    event.returnValue = null
+  })
 
   ipcMain.handle('open-video', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
@@ -60,7 +69,9 @@ app.whenReady().then(() => {
       properties: ['openFile'],
       filters: [{ name: t.videoFilter, extensions: ['mov', 'mp4', 'm4v', 'mkv', 'webm'] }]
     })
-    return result.canceled ? null : result.filePaths[0]
+    if (result.canceled) return null
+    openedVideos.add(result.filePaths[0])
+    return result.filePaths[0]
   })
 
   ipcMain.handle('choose-folder', async (event, current: string | null) => {
@@ -109,17 +120,17 @@ app.whenReady().then(() => {
   const bundledFfmpeg = () => findFfmpeg(existsSync, bundledFfmpegPath(process.platform, process.resourcesPath, process.execPath), !process.mas)
 
   ipcMain.handle('thumbnail', async (_event, path: string, time: number) => {
-    const jpeg = await captureFfmpeg(bundledFfmpeg()!, thumbnailArgs(path, time, THUMBNAIL_HEIGHT))
+    const jpeg = await captureFfmpeg(bundledFfmpeg()!, thumbnailArgs(opened(path), time, THUMBNAIL_HEIGHT))
     return `data:image/jpeg;base64,${jpeg.toString('base64')}`
   })
 
   ipcMain.handle('frame-rate', async (_event, path: string) =>
-    parseFrameRate(await readFfmpegInfo(bundledFfmpeg()!, path)) ?? DEFAULT_FRAME_RATE
+    parseFrameRate(await readFfmpegInfo(bundledFfmpeg()!, opened(path))) ?? DEFAULT_FRAME_RATE
   )
 
   let lastWaveform: { path: string; peaks: Promise<Float32Array> } | null = null
   const readWaveform = async (path: string) => {
-    const raw = await captureFfmpeg(bundledFfmpeg()!, waveformArgs(path))
+    const raw = await captureFfmpeg(bundledFfmpeg()!, waveformArgs(opened(path)))
     const even = raw.byteLength - (raw.byteLength % 2)
     return peaksFromSamples(new Int16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + even)))
   }

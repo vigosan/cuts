@@ -20,24 +20,27 @@ export function registerMediaScheme(): void {
   ])
 }
 
-export function handleMediaProtocol(): void {
-  protocol.handle(MEDIA_SCHEME, async (request) => {
-    const path = pathFromMediaUrl(request.url)
-    const { size } = await stat(path)
-    const range = parseRange(request.headers.get('range'), size)
-    if (range === 'invalid') {
-      return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } })
+export async function mediaResponse(request: Request, allowed: (path: string) => boolean): Promise<Response> {
+  const path = pathFromMediaUrl(request.url)
+  if (!allowed(path)) return new Response(null, { status: 403 })
+  const { size } = await stat(path)
+  const range = parseRange(request.headers.get('range'), size)
+  if (range === 'invalid') {
+    return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } })
+  }
+  const { start, end } = range ?? { start: 0, end: size - 1 }
+  const body = Readable.toWeb(createReadStream(path, { start, end })) as ReadableStream
+  return new Response(body, {
+    status: range ? 206 : 200,
+    headers: {
+      'Accept-Ranges': 'bytes',
+      'Content-Length': String(end - start + 1),
+      'Content-Type': CONTENT_TYPES[extname(path).toLowerCase()] ?? 'application/octet-stream',
+      ...(range ? { 'Content-Range': `bytes ${start}-${end}/${size}` } : {})
     }
-    const { start, end } = range ?? { start: 0, end: size - 1 }
-    const body = Readable.toWeb(createReadStream(path, { start, end })) as ReadableStream
-    return new Response(body, {
-      status: range ? 206 : 200,
-      headers: {
-        'Accept-Ranges': 'bytes',
-        'Content-Length': String(end - start + 1),
-        'Content-Type': CONTENT_TYPES[extname(path).toLowerCase()] ?? 'application/octet-stream',
-        ...(range ? { 'Content-Range': `bytes ${start}-${end}/${size}` } : {})
-      }
-    })
   })
+}
+
+export function handleMediaProtocol(allowed: (path: string) => boolean): void {
+  protocol.handle(MEDIA_SCHEME, (request) => mediaResponse(request, allowed))
 }

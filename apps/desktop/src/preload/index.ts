@@ -3,7 +3,11 @@ import type { Api, ExportProgress } from '../shared/api'
 
 const api: Api = {
   platform: process.platform,
-  pathForFile: (file) => webUtils.getPathForFile(file),
+  pathForFile: (file) => {
+    const path = webUtils.getPathForFile(file)
+    ipcRenderer.sendSync('allow-video', path)
+    return path
+  },
   openVideo: () => ipcRenderer.invoke('open-video'),
   chooseFolder: (current) => ipcRenderer.invoke('choose-folder', current),
   moviesDir: () => ipcRenderer.invoke('movies-dir'),
