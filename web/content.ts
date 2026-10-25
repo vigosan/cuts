@@ -7,6 +7,15 @@ export const UPDATED = "2026-10-25";
 export const VERSION = "1.0";
 export const SCREENSHOTS = ["overview", "timeline", "framing", "dark"] as const;
 
+export const FFMPEG_FILES = {
+  source: "/ffmpeg/ffmpeg-9.0.2.tar.xz",
+  build: "/ffmpeg/BUILD-FFmpeg.txt",
+  buildWindows: "/ffmpeg/BUILD-FFmpeg-windows.txt",
+  buildLinux: "/ffmpeg/BUILD-FFmpeg-linux.txt",
+  license: "/ffmpeg/LICENSE-FFmpeg.txt",
+  openh264: "/ffmpeg/LICENSE-OpenH264.txt",
+} as const;
+
 export const content = {
   en: {
     lang: "en",
@@ -85,9 +94,17 @@ export const content = {
       title: "FFmpeg",
       body: [
         "Cuts includes FFmpeg, built from the official source code without any GPL or non-free components, and licensed under the GNU Lesser General Public License version 2.1.",
+        "On Linux, Cuts encodes H.264 with OpenH264, built from Cisco's official source code and licensed under the BSD 2-Clause license.",
         "The exact source code and build details used for the app are available here:",
       ],
-      links: { source: "FFmpeg 9.0.2 source code", build: "Build details", license: "License (LGPL v2.1)" },
+      links: {
+        source: "FFmpeg 9.0.2 source code",
+        build: "Build details for Mac",
+        buildWindows: "Build details for Windows",
+        buildLinux: "Build details for Linux",
+        license: "License (LGPL v2.1)",
+        openh264: "OpenH264 license (BSD 2-Clause)",
+      },
     },
     footer: { privacy: "Privacy", support: "Support", ffmpeg: "FFmpeg", by: "Made by" },
   },
@@ -168,9 +185,17 @@ export const content = {
       title: "FFmpeg",
       body: [
         "Cuts incluye FFmpeg, compilado desde el código oficial sin componentes GPL ni non-free, con licencia GNU Lesser General Public License versión 2.1.",
+        "En Linux, Cuts codifica H.264 con OpenH264, compilado desde el código oficial de Cisco, con licencia BSD 2-Clause.",
         "El código fuente exacto y los detalles de compilación que usa la app están aquí:",
       ],
-      links: { source: "Código fuente de FFmpeg 9.0.2", build: "Detalles de compilación", license: "Licencia (LGPL v2.1)" },
+      links: {
+        source: "Código fuente de FFmpeg 9.0.2",
+        build: "Detalles de compilación para Mac",
+        buildWindows: "Detalles de compilación para Windows",
+        buildLinux: "Detalles de compilación para Linux",
+        license: "Licencia (LGPL v2.1)",
+        openh264: "Licencia de OpenH264 (BSD 2-Clause)",
+      },
     },
     footer: { privacy: "Privacidad", support: "Soporte", ffmpeg: "FFmpeg", by: "Hecho por" },
   },

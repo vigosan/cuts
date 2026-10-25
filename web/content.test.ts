@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { content, LANGS, SCREENSHOTS, VERSION } from "./content";
+import { content, FFMPEG_FILES, LANGS, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -38,5 +38,10 @@ describe("site content", () => {
 
   it("shows the framing and dark mode screenshots too", () => {
     expect(SCREENSHOTS).toEqual(["overview", "timeline", "framing", "dark"]);
+  });
+
+  it("publishes the source, build details and licenses of every bundled FFmpeg, as the LGPL and BSD licenses require", () => {
+    for (const href of Object.values(FFMPEG_FILES)) expect(existsSync(`public${href}`), href).toBe(true);
+    expect(Object.keys(content.en.ffmpeg.links)).toEqual(Object.keys(FFMPEG_FILES));
   });
 });

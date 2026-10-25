@@ -1,4 +1,4 @@
-import type { Content } from "@/content";
+import { FFMPEG_FILES, type Content } from "@/content";
 import { link, Page, Paragraph } from "./Page";
 
 export function Privacy({ c }: { c: Content }) {
@@ -34,11 +34,7 @@ export function Support({ c }: { c: Content }) {
 }
 
 export function Ffmpeg({ c }: { c: Content }) {
-  const files = [
-    { href: "/ffmpeg/ffmpeg-9.0.2.tar.xz", label: c.ffmpeg.links.source },
-    { href: "/ffmpeg/BUILD-FFmpeg.txt", label: c.ffmpeg.links.build },
-    { href: "/ffmpeg/LICENSE-FFmpeg.txt", label: c.ffmpeg.links.license },
-  ];
+  const files = Object.entries(FFMPEG_FILES).map(([key, href]) => ({ href, label: c.ffmpeg.links[key as keyof typeof FFMPEG_FILES] }));
   return (
     <Page c={c} current="ffmpeg">
       <article className="flex flex-col gap-6">
