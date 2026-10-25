@@ -134,13 +134,15 @@ export function ClipList({
                 {fades && <FadeOutIcon data-testid={`clip-fade-out-${n}`} />}
               </span>
             </span>
-            <span
-              data-testid={`clip-duration-${n}`}
-              title={over ? t.overLimit(MAX_CLIP_SECONDS) : undefined}
-              className="flex items-center gap-1.5 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-ink tabular-nums"
-            >
-              {over && <span className="size-1.5 rounded-full bg-warn" />}
-              {formatDuration(clipDuration(clip))}
+            <span className="flex w-[4.5rem] shrink-0 justify-end">
+              <span
+                data-testid={`clip-duration-${n}`}
+                title={over ? t.overLimit(MAX_CLIP_SECONDS) : undefined}
+                className="relative flex w-full items-center justify-center rounded-full bg-accent-soft py-0.5 text-xs font-medium text-ink tabular-nums"
+              >
+                {over && <span className="absolute left-2.5 size-1.5 rounded-full bg-warn" />}
+                {formatDuration(clipDuration(clip))}
+              </span>
             </span>
             <button
               data-testid={`clip-play-${n}`}
