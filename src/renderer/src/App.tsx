@@ -140,6 +140,10 @@ export function App() {
   }, [videoPath, restoredFor, clips, clipSettings, defaultSettings, format, baseName])
 
   useEffect(() => {
+    setExportState((s) => (s.status === 'done' || s.status === 'error' ? { status: 'idle' } : s))
+  }, [clips, clipSettings, defaultSettings, format, baseName, folder])
+
+  useEffect(() => {
     if (!videoPath) return
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement && e.target.type === 'text') return

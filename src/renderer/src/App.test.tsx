@@ -655,7 +655,54 @@ describe('App', () => {
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
     await act(() => userEvent.click(screen.getByTestId('export')))
-    await userEvent.click(await screen.findByTestId('share'))
+    await userEvent.click(screen.getByTestId('export'))
     expect(api.share).toHaveBeenCalledWith(['/Movies/Cuts/x/x-1.mp4', '/Movies/Cuts/x/x-2.mp4'])
+  })
+
+  it('shows the progress inside the export button, so the panel never changes height while exporting', async () => {
+    let report: (progress: { index: number; ratio: number }) => void = () => {}
+    vi.mocked(api.onExportProgress).mockImplementation((callback) => {
+      report = callback
+      return () => {}
+    })
+    vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    const status = screen.getByTestId('export-status')
+    await userEvent.click(screen.getByTestId('export'))
+    act(() => report({ index: 0, ratio: 1 }))
+    const button = screen.getByTestId('export')
+    expect(button).toHaveTextContent('Exporting 2 of 2')
+    expect(button).toContainElement(screen.getByTestId('export-progress'))
+    expect(screen.getByTestId('export-progress')).toHaveStyle({ width: '50%' })
+    expect(screen.getByTestId('export-status')).toBe(status)
+    expect(status).toContainElement(screen.getByTestId('export-cancel'))
+  })
+
+  it('turns the export button into Share once the clips are ready, because sending them to the phone is the next step', async () => {
+    vi.mocked(api.exportClips).mockResolvedValue({ ok: true, files: ['/Movies/Cuts/x/x-1.mp4'] })
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.share)
+    expect(screen.getByTestId('export-status')).toHaveTextContent(t.exportedClips(1))
+    await userEvent.click(screen.getByTestId('export'))
+    expect(api.share).toHaveBeenCalledWith(['/Movies/Cuts/x/x-1.mp4'])
+    expect(api.exportClips).toHaveBeenCalledTimes(1)
+    await userEvent.click(screen.getByTestId('reveal'))
+    expect(api.reveal).toHaveBeenCalledWith('/Movies/Cuts/x/x-1.mp4')
+  })
+
+  it('offers Export again after any change, so shared files always match what is on screen', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.share)
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
   })
 })

@@ -33,6 +33,7 @@ export function ExportPanel(p: Props) {
     p.state.status === 'running'
       ? p.state.progress.reduce((a, b) => a + b, 0) / Math.max(1, p.state.progress.length)
       : 0
+  const finished = p.state.status === 'running' ? p.state.progress.filter((r) => r >= 1).length : 0
   const folderName = p.folder?.split('/').filter(Boolean).slice(-2).join('/')
 
   return (
@@ -79,57 +80,60 @@ export function ExportPanel(p: Props) {
 
       <button
         data-testid="export"
-        className="h-10 rounded-xl bg-accent text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3"
+        className={`relative h-10 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition-colors ${running ? 'cursor-default' : 'hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3'}`}
         disabled={!p.canExport || running}
-        onClick={p.onExport}
+        onClick={() => (p.state.status === 'done' ? p.onShare(p.state.files) : p.onExport())}
       >
-        {running ? t.exporting : t.exportClips(p.clipCount)}
+        {running && (
+          <span
+            data-testid="export-progress"
+            className="absolute inset-y-0 left-0 bg-on-accent/20 transition-[width]"
+            style={{ width: `${overall * 100}%` }}
+          />
+        )}
+        <span className="relative">
+          {p.state.status === 'running'
+            ? t.exportingClip(Math.min(finished + 1, p.state.progress.length), p.state.progress.length)
+            : p.state.status === 'done'
+              ? t.share
+              : t.exportClips(p.clipCount)}
+        </span>
       </button>
 
-      {running && (
-        <div className="flex items-center gap-3">
-          <div data-testid="export-progress" className="h-1.5 flex-1 overflow-hidden rounded-full bg-sunken">
-            <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${overall * 100}%` }} />
-          </div>
+      <p data-testid="export-status" className="h-4 truncate text-center text-xs leading-4 text-ink-3">
+        {p.state.status === 'running' && (
           <button
             data-testid="export-cancel"
-            className="rounded-md px-2 py-0.5 text-xs text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+            className="cursor-pointer text-ink-2 underline-offset-2 hover:text-ink hover:underline"
             onClick={p.onCancel}
           >
             {t.cancelExport}
           </button>
-        </div>
-      )}
-      {p.state.status === 'idle' && p.baseName && p.clipCount > 0 && p.folder && (
-        <p className="truncate text-center text-xs text-ink-3" title={`${p.folder}/${p.baseName}-1.mp4`}>
-          {p.baseName}-1.mp4
-          {p.clipCount > 1 ? ` … ${p.baseName}-${p.clipCount}.mp4` : ''}
-        </p>
-      )}
-      {p.state.status === 'done' && (
-        <p data-testid="export-done" className="text-center text-sm text-ok">
-          {t.exportedClips(p.state.files.length)} ·{' '}
-          <button
-            className="cursor-pointer font-medium underline-offset-2 hover:underline"
-            onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
-          >
-            {t.showInFinder}
-          </button>{' '}
-          ·{' '}
-          <button
-            data-testid="share"
-            className="cursor-pointer font-medium underline-offset-2 hover:underline"
-            onClick={() => p.state.status === 'done' && p.onShare(p.state.files)}
-          >
-            {t.share}
-          </button>
-        </p>
-      )}
-      {p.state.status === 'error' && (
-        <p data-testid="export-error" className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
-          {p.state.error}
-        </p>
-      )}
+        )}
+        {p.state.status === 'done' && (
+          <span data-testid="export-done" className="text-ok">
+            {t.exportedClips(p.state.files.length)} ·{' '}
+            <button
+              data-testid="reveal"
+              className="cursor-pointer font-medium underline-offset-2 hover:underline"
+              onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
+            >
+              {t.showInFinder}
+            </button>
+          </span>
+        )}
+        {p.state.status === 'error' && (
+          <span data-testid="export-error" className="text-warn" title={p.state.error}>
+            {p.state.error}
+          </span>
+        )}
+        {p.state.status === 'idle' && p.baseName && p.clipCount > 0 && p.folder && (
+          <span title={`${p.folder}/${p.baseName}-1.mp4`}>
+            {p.baseName}-1.mp4
+            {p.clipCount > 1 ? ` … ${p.baseName}-${p.clipCount}.mp4` : ''}
+          </span>
+        )}
+      </p>
     </section>
   )
 }
