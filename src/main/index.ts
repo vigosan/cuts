@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { mkdir, realpath, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell } from 'electron'
 import type { ExportRequest, Session } from '../shared/api'
 import { messagesFor, resolveLocale } from '../shared/i18n'
 import { exportClips } from './export'
@@ -128,6 +128,11 @@ app.whenReady().then(() => {
   ipcMain.on('save-session', (_event, videoPath: string, session: Session) => void saveSession(sessionsDir, videoPath, session))
 
   ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')).catch(() => app.getPath('videos')))
+
+  ipcMain.on('share', (event, files: string[]) => {
+    const win = BrowserWindow.fromWebContents(event.sender) ?? undefined
+    new ShareMenu({ filePaths: files }).popup({ window: win })
+  })
 
   ipcMain.on('reveal', (_event, path: string) => shell.showItemInFolder(path))
 

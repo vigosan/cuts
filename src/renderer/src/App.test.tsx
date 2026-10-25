@@ -17,6 +17,7 @@ function makeApi(): Api {
     onExportProgress: vi.fn(() => () => {}),
     reveal: vi.fn(),
     cancelExport: vi.fn(),
+    share: vi.fn(),
     loadSession: vi.fn(async () => null),
     frameRate: vi.fn(async () => 50),
     saveSession: vi.fn(),
@@ -645,5 +646,16 @@ describe('App', () => {
     expect(screen.getByTestId('clip-play-1')).toHaveAttribute('aria-pressed', 'false')
     seek(video, 150.1)
     expect(video.currentTime).toBe(150.1)
+  })
+
+  it('shares the exported clips through the macOS share menu, so they reach Photos or AirDrop in one click', async () => {
+    vi.mocked(api.exportClips).mockResolvedValue({ ok: true, files: ['/Movies/Cuts/x/x-1.mp4', '/Movies/Cuts/x/x-2.mp4'] })
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    await userEvent.click(await screen.findByTestId('share'))
+    expect(api.share).toHaveBeenCalledWith(['/Movies/Cuts/x/x-1.mp4', '/Movies/Cuts/x/x-2.mp4'])
   })
 })

@@ -444,6 +444,7 @@ export function App() {
               onExport={runExport}
               onReveal={window.api.reveal}
               onCancel={window.api.cancelExport}
+              onShare={window.api.share}
             />
           </aside>
         </main>

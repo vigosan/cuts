@@ -21,6 +21,7 @@ type Props = {
   onExport: () => void
   onReveal: (path: string) => void
   onCancel: () => void
+  onShare: (files: string[]) => void
 }
 
 const field =
@@ -113,6 +114,14 @@ export function ExportPanel(p: Props) {
             onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
           >
             {t.showInFinder}
+          </button>{' '}
+          ·{' '}
+          <button
+            data-testid="share"
+            className="font-medium underline-offset-2 hover:underline"
+            onClick={() => p.state.status === 'done' && p.onShare(p.state.files)}
+          >
+            {t.share}
           </button>
         </p>
       )}

@@ -33,6 +33,7 @@ export type Api = {
   onExportProgress(callback: (progress: ExportProgress) => void): () => void
   reveal(path: string): void
   cancelExport(): void
+  share(files: string[]): void
   onMenuOpenVideo(callback: () => void): () => void
   onMenuCommand(callback: (command: 'undo' | 'redo') => void): () => void
   thumbnail(path: string, time: number): Promise<string>
