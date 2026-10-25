@@ -356,10 +356,10 @@ describe('App', () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 383, 419)
-    seek(video, 473)
     await userEvent.click(screen.getByTestId('clip-set-end-1'))
     expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:06:59')
+    seek(video, 473)
     await userEvent.click(screen.getByTestId('clip-set-end-1'))
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:07:53')
   })
@@ -620,17 +620,15 @@ describe('App', () => {
     expect(video.currentTime).toBe(95)
   })
 
-  it('brings the clip picked in the list into view, centered when it fits the zoom, without moving the playhead', async () => {
+  it('jumps to the clip picked in the list and centers it on the timeline when it fits the zoom', async () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 1000, 1060)
     await markClip(video, 3000, 3030)
     await userEvent.click(screen.getByTestId('zoom-120'))
     await userEvent.click(screen.getByTestId('clip-row-1'))
+    expect(video.currentTime).toBe(1000)
     expect(screen.getByTestId('view-start')).toHaveTextContent('00:16:10')
-    expect(video.currentTime).toBe(3030)
-    seek(video, 2000)
-    expect(screen.getByTestId('view-start')).toHaveTextContent('00:32:20')
   })
 
   it('plays a clip on loop from its row, the way Instagram plays carousel videos', async () => {

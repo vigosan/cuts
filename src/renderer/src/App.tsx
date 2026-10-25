@@ -67,10 +67,7 @@ export function App() {
   const [zoom, setZoom] = useState<Zoom>(null)
   const [viewStart, setViewStart] = useState(0)
 
-  const [heldView, setHeldView] = useState<{ time: number; zoom: Zoom } | null>(null)
-
-  const held = heldView?.time === time && heldView.zoom === zoom
-  const currentViewStart = held ? viewStart : nextViewStart(viewStart, time, duration, zoom)
+  const currentViewStart = nextViewStart(viewStart, time, duration, zoom)
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
@@ -245,7 +242,8 @@ export function App() {
     if (clip.id === selectedId) return setSelectedId(null)
     setSelectedId(clip.id)
     setViewStart(viewStartForClip(clip, duration, zoom))
-    setHeldView({ time, zoom })
+    setTime(clip.start)
+    seekFromTimeline(clip.start)
   }
 
   const exporting = exportState.status === 'running'
