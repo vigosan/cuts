@@ -19,7 +19,7 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 ## 2. Construir y subir
 
 1. `APPLE_TEAM_ID=TKAZA7ZPZ2 make mas`
-2. Resultado: `apps/desktop/dist/mas-universal/Cuts-1.1.0-universal.pkg`.
+2. Resultado: `apps/desktop/dist/mas-universal/Cuts-mac.pkg`.
 3. Abrir Transporter, arrastrar el `.pkg` y pulsar "Entregar".
 4. Esperar el correo de Apple de que la compilación se ha procesado (de 10 a 30 minutos).
 
@@ -49,7 +49,7 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 
 - Publicar (si elegiste "Manualmente").
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
-- Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`.
+- Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
 ## Novedades de la 1.1
 
@@ -57,20 +57,26 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 
 Cuts recuerda tu trabajo: al volver a abrir un vídeo, sus clips y ajustes siguen donde los dejaste.
 
+- ✦ Sugerir momentos: Cuts encuentra los drops de la sesión (el bajón y la vuelta de la mezcla) y propone hasta 10 clips repartidos por toda la grabación.
 - Deshacer y rehacer con ⌘Z y ⇧⌘Z.
 - Ajuste fino con el teclado: coma y punto avanzan un fotograma (con Mayúsculas, un segundo), J retrocede 5 segundos, K para y L avanza rápido.
 - Escucha el carrusel entero: pulsa ▶ en un clip y se reproducen todos en orden, en bucle.
 - Encuadre por clip en 4:5, 1:1 y 9:16: arrastra el recuadro para elegir qué queda en el plano, o encaja el vídeo entero sobre un fondo desenfocado.
 - Comparte los clips exportados con Fotos, AirDrop o Mensajes en un clic.
 - El progreso de la exportación se ve en el propio botón.
+- Con zoom, arrastra la línea de tiempo para moverte adelante y atrás; al elegir un clip en la lista, el vídeo salta a él.
+- Borra todos los clips de una vez (y recupéralos con ⌘Z).
 
 ### English
 
 Cuts remembers your work: open a video again and its clips and settings are right where you left them.
 
+- ✦ Suggest moments: Cuts finds the drops in your session (the breakdown and the mix coming back) and suggests up to 10 clips spread across the whole recording.
 - Undo and redo with ⌘Z and ⇧⌘Z.
 - Fine-tune with the keyboard: comma and period step one frame (one second with Shift), J jumps back 5 seconds, K stops and L fast-forwards.
 - Hear the whole carousel: press ▶ on a clip and every clip plays in order, on a loop.
 - Framing per clip in 4:5, 1:1 and 9:16: drag the frame to choose what stays in shot, or fit the whole video over a blurred background.
 - Share exported clips to Photos, AirDrop or Messages in one click.
 - Export progress now shows right in the button.
+- When zoomed in, drag the timeline to move back and forth; pick a clip in the list and the video jumps to it.
+- Delete all clips at once (and bring them back with ⌘Z).
