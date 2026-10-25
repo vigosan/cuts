@@ -5,12 +5,11 @@ import { Page } from "./Page";
 export function Home({ c }: { c: Content }) {
   return (
     <Page c={c} current="home">
-      <section className="flex flex-col items-center gap-6 py-4 text-center lg:py-8">
-        <img src="/icon.png" alt="" width={112} height={112} className="drop-shadow-xl" />
-        <h1 className="text-3xl font-medium text-balance text-gray-800 sm:text-4xl">{c.home.tagline}</h1>
+      <section className="flex flex-col items-center gap-6 text-center">
+        <h1 className="text-2xl font-medium text-balance text-gray-800">{c.home.tagline}</h1>
         <p className="max-w-xl text-pretty">{c.home.intro}</p>
         <Download home={c.home} />
-        <p className="text-xs text-gray-400">{c.home.stores}</p>
+        <p className="text-sm text-gray-400">{c.home.stores}</p>
       </section>
       <img
         src={`/screenshots/${c.lang}-overview.png`}

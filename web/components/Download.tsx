@@ -8,8 +8,8 @@ import { link } from "./Page";
 const PLATFORMS: OS[] = ["mac", "windows", "linux"];
 
 const base =
-  "inline-flex items-center gap-3 rounded-xl px-6 py-3 font-medium transition focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2";
-const button = `${base} bg-gray-800 text-white shadow-lg shadow-gray-800/20 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-xl`;
+  "inline-flex items-center gap-3 rounded-lg px-4 py-2 font-medium transition focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2";
+const button = `${base} bg-gray-800 text-white hover:bg-gray-700`;
 const outline = `${base} border border-gray-300 text-gray-800 hover:border-gray-500`;
 
 function ArrowDown() {
@@ -32,7 +32,7 @@ export function Download({ home }: { home: Content["home"] }) {
 
   if (!os) {
     return (
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-3">
         <div className="flex flex-wrap justify-center gap-3">
           {PLATFORMS.map((platform) => (
             <a key={platform} href={DOWNLOADS[platform]} className={outline}>
@@ -47,7 +47,7 @@ export function Download({ home }: { home: Content["home"] }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-2">
       <a data-testid="download" href={DOWNLOADS[os]} className={button}>
         <ArrowDown />
         {home.download[os]}
