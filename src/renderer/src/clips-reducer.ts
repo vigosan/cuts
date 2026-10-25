@@ -2,8 +2,10 @@ import type { Clip } from '@shared/clips'
 
 export type ClipsState = { clips: Clip[]; pendingStart: number | null }
 
-export type ClipsAction =
-  | { type: 'markStart'; time: number }
+type Meta = { transient?: boolean; resetHistory?: boolean }
+
+export type ClipsAction = Meta &
+  (  | { type: 'markStart'; time: number }
   | { type: 'markEnd'; time: number }
   | { type: 'remove'; id: string }
   | { type: 'setStart'; id: string; time: number }
@@ -12,6 +14,7 @@ export type ClipsAction =
   | { type: 'reorder'; from: number; to: number }
   | { type: 'restore'; clips: Clip[] }
   | { type: 'reset' }
+  )
 
 export const initialClipsState: ClipsState = { clips: [], pendingStart: null }
 

@@ -28,6 +28,7 @@ type Props = {
   onSelect: (clip: Clip) => void
   onSeek: (time: number) => void
   onClipChange: (clip: Clip) => void
+  onDragStart: () => void
 }
 
 export function Timeline({
@@ -42,7 +43,8 @@ export function Timeline({
   onSelect,
   pendingStart,
   onSeek,
-  onClipChange
+  onClipChange,
+  onDragStart
 }: Props) {
   const justDragged = useRef(false)
   const barRef = useRef<HTMLDivElement>(null)
@@ -88,6 +90,7 @@ export function Timeline({
     let moved = false
     const onMove = (move: PointerEvent) => {
       if (!moved && Math.abs(move.clientX - originX) < DRAG_THRESHOLD_PX) return
+      if (!moved) onDragStart()
       moved = true
       const next = dragClip(clip, mode, ((move.clientX - originX) / bar.width) * viewSpan, duration)
       onClipChange(next)

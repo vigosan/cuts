@@ -11,11 +11,13 @@ import { CropFrame } from './components/CropFrame'
 import { FilmIcon, PauseIcon, PlayIcon } from './components/icons'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
+import { withHistory } from './history'
 import { t } from './i18n'
 import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
+const clipsHistory = withHistory(clipsReducer)
 const APP_FOLDER = 'Cuts'
 
 function zoomLabel(span: Zoom): string {
@@ -27,7 +29,8 @@ export function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoPath, setVideoPath] = useState<string | null>(null)
   const [videoError, setVideoError] = useState(false)
-  const [{ clips, pendingStart }, dispatch] = useReducer(clipsReducer, initialClipsState)
+  const [history, dispatch] = useReducer(clipsHistory, { past: [], present: initialClipsState, future: [] })
+  const { clips, pendingStart } = history.present
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -87,13 +90,13 @@ export function App() {
     setViewStart(0)
     setClipSettings({})
     setSelectedId(null)
-    dispatch({ type: 'reset' })
+    dispatch({ type: 'reset', resetHistory: true })
     setRestoredFor(null)
     openedPath.current = path
     void window.api.loadSession(path).then((session) => {
       if (openedPath.current !== path) return
       if (session) {
-        dispatch({ type: 'restore', clips: session.clips })
+        dispatch({ type: 'restore', clips: session.clips, resetHistory: true })
         setClipSettings(session.clipSettings)
         setDefaultSettings(session.defaultSettings)
         setFormat(session.format)
@@ -172,6 +175,16 @@ export function App() {
   }
 
   useEffect(() => window.api.onMenuOpenVideo(() => void openVideo()))
+
+  useEffect(
+    () =>
+      window.api.onMenuCommand((command) => {
+        const target = document.activeElement
+        if (target instanceof HTMLInputElement && target.type === 'text') document.execCommand(command)
+        else dispatch({ type: command })
+      }),
+    []
+  )
 
   const canExport =
     clips.length > 0 && folder !== null && baseName.trim() !== ''
@@ -316,7 +329,8 @@ export function App() {
                 selectedId={selectedClip?.id ?? null}
                 onSelect={(clip) => setSelectedId(clip.id)}
                 onSeek={seekTo}
-                onClipChange={(clip) => dispatch({ type: 'replace', clip })}
+                onDragStart={() => dispatch({ type: 'checkpoint' })}
+                onClipChange={(clip) => dispatch({ type: 'replace', clip, transient: true })}
               />
 
             </div>

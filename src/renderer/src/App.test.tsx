@@ -24,12 +24,17 @@ function makeApi(): Api {
     onMenuOpenVideo: vi.fn((callback: () => void) => {
       menuOpenVideo = callback
       return () => {}
+    }),
+    onMenuCommand: vi.fn((callback: (command: 'undo' | 'redo') => void) => {
+      menuCommand = callback
+      return () => {}
     })
   }
 }
 
 let api: Api
 let menuOpenVideo: () => void
+let menuCommand: (command: 'undo' | 'redo') => void
 
 beforeEach(() => {
   api = makeApi()
@@ -541,5 +546,42 @@ describe('App', () => {
     await waitFor(() =>
       expect(api.saveSession).toHaveBeenLastCalledWith(VIDEO, expect.objectContaining({ clips: [expect.objectContaining({ start: 100, end: 150 })] }))
     )
+  })
+
+  it('undoes and redoes deleting a clip from the Edit menu', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('clip-delete-1'))
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+    await act(async () => menuCommand('undo'))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
+    await act(async () => menuCommand('redo'))
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+  })
+
+  it('undoes a whole drag on the timeline in one step', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 1000, 1050)
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(screen.getByTestId('clip-block-1'), { clientX: 1020 })
+    for (const x of [1060, 1100, 1220]) fireEvent.pointerMove(window, { clientX: x })
+    fireEvent.pointerUp(window, { clientX: 1220 })
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:20:00')
+    await act(async () => menuCommand('undo'))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:16:40')
+  })
+
+  it('starts a fresh history for each video, so Command-Z never brings back clips from another one', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await act(async () => menuOpenVideo())
+    await act(async () => menuCommand('undo'))
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+    vi.mocked(window.confirm).mockRestore()
   })
 })

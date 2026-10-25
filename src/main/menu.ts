@@ -5,7 +5,12 @@ export type MenuEntry = Omit<MenuItemConstructorOptions, 'submenu'> & { submenu?
 
 const separator: MenuEntry = { type: 'separator' }
 
-export type MenuActions = { openVideo: () => void; openUrl: (url: string) => void }
+export type MenuActions = {
+  openVideo: () => void
+  openUrl: (url: string) => void
+  undo: () => void
+  redo: () => void
+}
 
 export function menuTemplate(t: Messages, appName: string, actions: MenuActions): MenuEntry[] {
   return [
@@ -30,8 +35,8 @@ export function menuTemplate(t: Messages, appName: string, actions: MenuActions)
     {
       label: t.menuEdit,
       submenu: [
-        { role: 'undo', label: t.menuUndo },
-        { role: 'redo', label: t.menuRedo },
+        { label: t.menuUndo, accelerator: 'CmdOrCtrl+Z', click: actions.undo },
+        { label: t.menuRedo, accelerator: 'Shift+CmdOrCtrl+Z', click: actions.redo },
         separator,
         { role: 'cut', label: t.menuCut },
         { role: 'copy', label: t.menuCopy },

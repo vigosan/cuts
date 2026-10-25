@@ -40,14 +40,16 @@ function createWindow(): BrowserWindow {
 
 app.whenReady().then(() => {
   const t = messagesFor(resolveLocale(app.getPreferredSystemLanguages()))
+  const mainWindow = () => BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
   const openVideo = () => {
-    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    const win = mainWindow()
     if (!win) return
     if (win.isMinimized()) win.restore()
     win.focus()
     win.webContents.send('menu-open-video')
   }
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name, { openVideo, openUrl: (url) => void shell.openExternal(url) })))
+  const command = (name: 'undo' | 'redo') => () => mainWindow()?.webContents.send('menu-command', name)
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate(t, app.name, { openVideo, openUrl: (url) => void shell.openExternal(url), undo: command('undo'), redo: command('redo') })))
   app.setAboutPanelOptions({ credits: t.aboutCredits })
   handleMediaProtocol()
 

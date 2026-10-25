@@ -18,6 +18,11 @@ const api: Api = {
   waveform: (path) => ipcRenderer.invoke('waveform', path),
   loadSession: (videoPath) => ipcRenderer.invoke('load-session', videoPath),
   saveSession: (videoPath, session) => ipcRenderer.send('save-session', videoPath, session),
+  onMenuCommand: (callback) => {
+    const listener = (_event: IpcRendererEvent, command: 'undo' | 'redo') => callback(command)
+    ipcRenderer.on('menu-command', listener)
+    return () => ipcRenderer.removeListener('menu-command', listener)
+  },
   onMenuOpenVideo: (callback) => {
     const listener = () => callback()
     ipcRenderer.on('menu-open-video', listener)
