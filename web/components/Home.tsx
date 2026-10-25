@@ -5,14 +5,13 @@ import { Page } from "./Page";
 export function Home({ c }: { c: Content }) {
   return (
     <Page c={c} current="home">
-      <article className="flex flex-col gap-6">
-        <h1 className="text-2xl font-medium text-gray-800">{c.home.tagline}</h1>
-        <p>{c.home.intro}</p>
-        <p className="text-gray-800">
-          {c.home.availability} <span className="text-gray-500">· {c.home.version}</span>
-        </p>
+      <section className="flex flex-col items-center gap-6 py-4 text-center lg:py-8">
+        <img src="/icon.png" alt="" width={112} height={112} className="drop-shadow-xl" />
+        <h1 className="text-3xl font-medium text-balance text-gray-800 sm:text-4xl">{c.home.tagline}</h1>
+        <p className="max-w-xl text-pretty">{c.home.intro}</p>
         <Download home={c.home} />
-      </article>
+        <p className="text-xs text-gray-400">{c.home.stores}</p>
+      </section>
       <img
         src={`/screenshots/${c.lang}-overview.png`}
         alt={c.home.screenshotAlt}

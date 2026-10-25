@@ -32,7 +32,7 @@ describe("site content", () => {
     }
   });
 
-  it("shows the app version next to the availability in both languages, so visitors know which release the page describes", () => {
+  it("shows the app version next to the download in both languages, so visitors know which release they get", () => {
     for (const lang of LANGS) expect(content[lang].home.version).toContain(VERSION);
   });
 
