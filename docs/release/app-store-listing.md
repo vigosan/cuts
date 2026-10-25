@@ -29,7 +29,7 @@ Drop in a video, listen, and mark where each clip starts and ends. Drag clips on
 • See the video frames and the audio waveform along the timeline
 • Clips of up to 59 seconds are flagged as carousel-ready; longer ones are allowed for regular posts
 • Fades to black or white and smooth audio fades, per clip
-• Original size, or 4:5, 1:1 and 9:16 crops at 1080 px
+• Original size, or 4:5, 1:1 and 9:16 at 1080 px: choose what stays in shot, or fit the whole frame over a blurred background
 • The first clip starts on a real frame, so your carousel cover is never black
 • Exports every clip at once, numbered in order, to Movies › Cuts
 • Everything happens on your Mac. No account, no uploads, no tracking.
@@ -44,7 +44,7 @@ Arrastra un vídeo, escúchalo y marca dónde empieza y acaba cada clip. Arrastr
 • Ve los fotogramas del vídeo y la forma de onda del audio en la línea de tiempo
 • Los clips de hasta 59 segundos se marcan como aptos para carrusel; los más largos se permiten para publicaciones normales
 • Fundidos a negro o a blanco y fundidos de audio suaves, en cada clip
-• Tamaño original, o recortes 4:5, 1:1 y 9:16 a 1080 px
+• Tamaño original, o 4:5, 1:1 y 9:16 a 1080 px: elige qué queda en el plano, o encaja el vídeo entero sobre un fondo desenfocado
 • El primer clip empieza con imagen, así la portada del carrusel nunca sale negra
 • Exporta todos los clips de una vez, numerados en orden, en Películas › Cuts
 • Todo ocurre en tu Mac. Sin cuentas, sin subidas, sin rastreo.
