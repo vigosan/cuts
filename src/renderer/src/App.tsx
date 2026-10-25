@@ -67,7 +67,10 @@ export function App() {
   const [zoom, setZoom] = useState<Zoom>(null)
   const [viewStart, setViewStart] = useState(0)
 
-  const currentViewStart = nextViewStart(viewStart, time, duration, zoom)
+  const [panned, setPanned] = useState<{ time: number; zoom: Zoom } | null>(null)
+
+  const keepPanned = panned?.time === time && panned.zoom === zoom
+  const currentViewStart = keepPanned ? viewStart : nextViewStart(viewStart, time, duration, zoom)
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
@@ -418,6 +421,10 @@ export function App() {
                 onSeek={seekFromTimeline}
                 onDragStart={() => dispatch({ type: 'checkpoint' })}
                 onClipChange={(clip) => dispatch({ type: 'replace', clip, transient: true })}
+                onPan={(start) => {
+                  setViewStart(Math.min(Math.max(0, start), duration - viewSpan))
+                  setPanned({ time, zoom })
+                }}
               />
 
             </div>

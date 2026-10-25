@@ -233,6 +233,28 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:20:50')
   })
 
+  it('drags the zoomed timeline back and forth without moving the playhead, to look around before jumping', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 1000)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:15:40')
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 1200, top: 0, height: 32, right: 1200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(timeline, { clientX: 900 })
+    fireEvent.pointerMove(window, { clientX: 300 })
+    fireEvent.pointerUp(window, { clientX: 300 })
+    fireEvent.click(timeline, { clientX: 300 })
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:16:40')
+    expect(video.currentTime).toBe(1000)
+    fireEvent.pointerDown(timeline, { clientX: 300 })
+    fireEvent.pointerMove(window, { clientX: 1200 })
+    fireEvent.pointerUp(window, { clientX: 1200 })
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:15:10')
+    seek(video, 2000)
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:32:20')
+  })
+
   it('zooms the timeline to 2 minutes around the playhead for second-accurate dragging', async () => {
     render(<App />)
     const video = await loadVideo()

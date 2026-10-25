@@ -29,6 +29,7 @@ type Props = {
   onSeek: (time: number) => void
   onClipChange: (clip: Clip) => void
   onDragStart: () => void
+  onPan: (viewStart: number) => void
 }
 
 export function Timeline({
@@ -44,7 +45,8 @@ export function Timeline({
   pendingStart,
   onSeek,
   onClipChange,
-  onDragStart
+  onDragStart,
+  onPan
 }: Props) {
   const justDragged = useRef(false)
   const barRef = useRef<HTMLDivElement>(null)
@@ -109,9 +111,34 @@ export function Timeline({
     window.addEventListener('pointerup', onUp)
   }
 
+  const startPan = (e: ReactPointerEvent<HTMLElement>) => {
+    if (viewSpan >= duration) return
+    const bar = e.currentTarget.getBoundingClientRect()
+    const originX = e.clientX
+    const originStart = viewStart
+    let moved = false
+    const onMove = (move: PointerEvent) => {
+      if (!moved && Math.abs(move.clientX - originX) < DRAG_THRESHOLD_PX) return
+      moved = true
+      onPan(originStart - ((move.clientX - originX) / bar.width) * viewSpan)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      if (!moved) return
+      justDragged.current = true
+      setTimeout(() => {
+        justDragged.current = false
+      }, 0)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
   return (
     <div
       ref={barRef}
+      onPointerDown={startPan}
       data-testid="timeline"
       title={t.timelineHelp}
       className="relative h-22 w-full cursor-pointer touch-none select-none overflow-hidden rounded-lg bg-sunken"
