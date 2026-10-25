@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Api } from '@shared/api'
+import type { Api, ExportResult } from '@shared/api'
 import { App } from './App'
 import { t } from './i18n'
 
@@ -914,6 +914,18 @@ describe('App', () => {
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(screen.getByTestId('export')).toHaveTextContent(t.share)
     await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
+  })
+
+  it('offers Export again when something changed while exporting, so a share never sends outdated clips', async () => {
+    let finish: (result: ExportResult) => void = () => {}
+    vi.mocked(api.exportClips).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('export'))
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    await act(async () => finish({ ok: true, files: ['/Movies/Cuts/x/x-1.mp4'] }))
     expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
   })
 })

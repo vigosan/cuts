@@ -65,7 +65,7 @@ export function App() {
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
   const shownSettings = selectedClip ? settingsOf(selectedClip) : defaultSettings
   const target = formatSize(format)
-  const [exportState, setExportState] = useState<ExportState>({ status: 'idle' })
+  const [lastExport, setExportState] = useState<ExportState>({ status: 'idle' })
   const [zoom, setZoom] = useState<Zoom>(null)
   const [viewStart, setViewStart] = useState(0)
 
@@ -146,9 +146,11 @@ export function App() {
     return () => clearTimeout(timer)
   }, [videoPath, restoredFor, clips, clipSettings, defaultSettings, format, baseName])
 
-  useEffect(() => {
-    setExportState((s) => (s.status === 'done' || s.status === 'error' ? { status: 'idle' } : s))
-  }, [clips, clipSettings, defaultSettings, format, baseName, folder])
+  const exportInputs = [clips, clipSettings, defaultSettings, format, baseName, folder]
+  const [exportedWith, setExportedWith] = useState(exportInputs)
+  const outdated = exportedWith.some((input, index) => input !== exportInputs[index])
+  const exportState: ExportState =
+    outdated && (lastExport.status === 'done' || lastExport.status === 'error') ? { status: 'idle' } : lastExport
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
@@ -195,6 +197,7 @@ export function App() {
 
   const runExport = async () => {
     if (!videoPath || !destination) return
+    setExportedWith(exportInputs)
     setExportState({ status: 'running', progress: clips.map(() => 0) })
     const result = await window.api
       .exportClips({
