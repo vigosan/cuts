@@ -1,0 +1,5 @@
+FFmpeg 9.0.2, built from https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+SHA-256 of the source tarball: 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+Static x86_64 Linux binary, linked with OpenH264 2.6.0 (BSD 2-Clause) built from https://github.com/cisco/openh264/archive/refs/tags/v2.6.0.tar.gz
+SHA-256 of the OpenH264 source tarball: 558544ad358283a7ab2930d69a9ceddf913f4a51ee9bf1bfb9e377322af81a69
+configure line: ./configure --arch=x86_64 --enable-static --disable-shared --disable-autodetect --disable-network --disable-doc --disable-ffplay --disable-ffprobe --disable-debug --enable-libopenh264 --enable-zlib --pkg-config-flags=--static --extra-ldflags=-static
