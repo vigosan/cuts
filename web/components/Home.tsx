@@ -21,6 +21,13 @@ export function Home({ c }: { c: Content }) {
       <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800">{c.home.dropsTitle}</h2>
         <p>{c.home.dropsText}</p>
+        <img
+          src={`/screenshots/${c.lang}-drops.png`}
+          alt={c.home.dropsAlt}
+          width={2039}
+          height={322}
+          className="w-full rounded-lg border border-gray-200"
+        />
       </article>
       <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800">{c.home.featuresTitle}</h2>

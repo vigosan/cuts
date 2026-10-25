@@ -36,8 +36,8 @@ describe("site content", () => {
     for (const lang of LANGS) expect(content[lang].home.version).toContain(VERSION);
   });
 
-  it("shows the framing and dark mode screenshots too", () => {
-    expect(SCREENSHOTS).toEqual(["overview", "timeline", "framing", "dark"]);
+  it("shows the drop suggestions, framing and dark mode screenshots too", () => {
+    expect(SCREENSHOTS).toEqual(["overview", "drops", "timeline", "framing", "dark"]);
   });
 
   it("publishes the source, build details and licenses of every bundled FFmpeg, as the LGPL and BSD licenses require", () => {
