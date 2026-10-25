@@ -19,6 +19,10 @@ export function Home({ c }: { c: Content }) {
         className="w-full rounded-lg border border-gray-200"
       />
       <article className="flex flex-col gap-6">
+        <h2 className="text-lg font-medium text-gray-800">{c.home.dropsTitle}</h2>
+        <p>{c.home.dropsText}</p>
+      </article>
+      <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800">{c.home.featuresTitle}</h2>
         <ul className="flex flex-col gap-3">
           {c.home.features.map((feature) => (
