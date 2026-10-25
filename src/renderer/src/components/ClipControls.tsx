@@ -1,17 +1,17 @@
 import { FADE_OPTIONS } from '@shared/clips'
-import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type ClipFade, type VideoFade } from '@shared/fades'
+import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type ClipSettings, type VideoFade } from '@shared/fades'
 import { t } from '../i18n'
 import { ImageIcon, SpeakerIcon } from './icons'
 
 type Props = {
-  fade: ClipFade
-  onChange: (change: Partial<ClipFade>) => void
+  settings: ClipSettings
+  onChange: (change: Partial<ClipSettings>) => void
 }
 
 const field =
   'h-8 w-full rounded-lg bg-sunken px-2.5 text-sm text-ink placeholder:text-ink-3 transition-colors hover:bg-sunken/80'
 
-export function FadeControls({ fade, onChange }: Props) {
+export function ClipControls({ settings, onChange }: Props) {
   return (
     <section data-testid="fade-controls" className="px-4 pb-4">
       <div className="grid grid-cols-[1fr_1fr_4.5rem] gap-2">
@@ -23,7 +23,7 @@ export function FadeControls({ fade, onChange }: Props) {
             aria-label={t.imageFade}
             title={t.imageFade}
             className={`${field} pl-7`}
-            value={fade.videoFade}
+            value={settings.videoFade}
             onChange={(e) => onChange({ videoFade: e.target.value as VideoFade })}
           >
             {VIDEO_FADES.map((id) => (
@@ -40,7 +40,7 @@ export function FadeControls({ fade, onChange }: Props) {
             aria-label={t.audioFade}
             title={t.audioFade}
             className={`${field} pl-7`}
-            value={fade.audioFade}
+            value={settings.audioFade}
             onChange={(e) => onChange({ audioFade: e.target.value as AudioFade })}
           >
             {AUDIO_FADES.map((id) => (
@@ -55,8 +55,8 @@ export function FadeControls({ fade, onChange }: Props) {
           aria-label={t.fadeLength}
           title={t.fadeLength}
           className={`${field} disabled:opacity-40`}
-          value={fade.fadeSeconds}
-          disabled={fade.videoFade === 'none' && fade.audioFade === 'none'}
+          value={settings.fadeSeconds}
+          disabled={settings.videoFade === 'none' && settings.audioFade === 'none'}
           onChange={(e) => onChange({ fadeSeconds: Number(e.target.value) })}
         >
           {FADE_OPTIONS.map((seconds) => (

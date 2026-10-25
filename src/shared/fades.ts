@@ -10,3 +10,7 @@ export const AUDIO_FADES: AudioFade[] = ['natural', 'linear', 'none']
 export type ClipFade = { videoFade: VideoFade; audioFade: AudioFade; fadeSeconds: number }
 
 export const DEFAULT_FADE: ClipFade = { videoFade: 'black', audioFade: 'natural', fadeSeconds: FADE_SECONDS }
+
+export type ClipSettings = ClipFade
+
+export const DEFAULT_SETTINGS: ClipSettings = DEFAULT_FADE
