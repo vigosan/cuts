@@ -6,7 +6,7 @@ type Meta = { transient?: boolean; resetHistory?: boolean }
 
 export type ClipsAction = Meta &
   (  | { type: 'markStart'; time: number }
-  | { type: 'markEnd'; time: number }
+  | { type: 'markEnd'; time: number; id: string }
   | { type: 'remove'; id: string }
   | { type: 'setStart'; id: string; time: number }
   | { type: 'setEnd'; id: string; time: number }
@@ -39,7 +39,7 @@ export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState
     case 'markEnd':
       if (state.pendingStart === null || action.time <= state.pendingStart) return state
       return {
-        clips: [...state.clips, { id: crypto.randomUUID(), start: state.pendingStart, end: action.time }],
+        clips: [...state.clips, { id: action.id, start: state.pendingStart, end: action.time }],
         pendingStart: null
       }
     case 'remove':

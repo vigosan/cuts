@@ -106,7 +106,7 @@ export function App() {
     video.playbackRate = 1
   }
   const markStart = () => dispatch({ type: 'markStart', time: now() })
-  const markEnd = () => dispatch({ type: 'markEnd', time: now() })
+  const markEnd = () => dispatch({ type: 'markEnd', time: now(), id: crypto.randomUUID() })
 
   const load = (path: string) => {
     setVideoPath(path)
