@@ -1,4 +1,4 @@
-.PHONY: install dev test typecheck build app ffmpeg icon mas web web-dev
+.PHONY: install dev test typecheck lint build app ffmpeg icon mas web web-dev
 
 DESKTOP := apps/desktop
 
@@ -14,6 +14,9 @@ test: ffmpeg
 
 typecheck:
 	npm run typecheck --workspaces
+
+lint:
+	npm run lint
 
 build:
 	cd $(DESKTOP) && npm run build
