@@ -41,6 +41,7 @@ export function App() {
   const [defaultSettings, setDefaultSettings] = useState<ClipSettings>(DEFAULT_SETTINGS)
   const [clipSettings, setClipSettings] = useState<Record<string, ClipSettings>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [loopingId, setLoopingId] = useState<string | null>(null)
 
   const settingsOf = (clip: Clip) => clipSettings[clip.id] ?? defaultSettings
   const selectedIndex = clips.findIndex((clip) => clip.id === selectedId)
@@ -191,10 +192,37 @@ export function App() {
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
   }
 
+  const loopingClip = clips.find((clip) => clip.id === loopingId) ?? null
+
   const playClip = (clip: Clip) => {
+    if (loopingId === clip.id) {
+      videoRef.current?.pause()
+      setLoopingId(null)
+      return
+    }
+    setLoopingId(clip.id)
     seekTo(clip.start)
     void videoRef.current?.play()
   }
+
+  const keepLooping = (video: HTMLVideoElement) => {
+    if (loopingClip && video.currentTime >= loopingClip.end) video.currentTime = loopingClip.start
+  }
+
+  const seekFromTimeline = (t: number) => {
+    if (loopingClip && (t < loopingClip.start || t > loopingClip.end)) setLoopingId(null)
+    seekTo(t)
+  }
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !loopingClip || !playing) return
+    let frame = requestAnimationFrame(function check() {
+      keepLooping(video)
+      frame = requestAnimationFrame(check)
+    })
+    return () => cancelAnimationFrame(frame)
+  })
 
   const exporting = exportState.status === 'running'
 
@@ -268,13 +296,19 @@ export function App() {
                 src={mediaUrl(videoPath)}
                 className="max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none"
                 onClick={togglePlay}
-                onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
+                onTimeUpdate={(e) => {
+                  keepLooping(e.currentTarget)
+                  setTime(e.currentTarget.currentTime)
+                }}
                 onLoadedMetadata={(e) => {
                   setDuration(e.currentTarget.duration)
                   setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })
                 }}
                 onPlay={() => setPlaying(true)}
-                onPause={() => setPlaying(false)}
+                onPause={() => {
+                  setPlaying(false)
+                  setLoopingId(null)
+                }}
                 onError={() => setVideoError(true)}
               />
               {target && videoSize && shownSettings.framing === 'crop' && (
@@ -359,7 +393,7 @@ export function App() {
                 pendingStart={pendingStart}
                 selectedId={selectedClip?.id ?? null}
                 onSelect={(clip) => setSelectedId(clip.id)}
-                onSeek={seekTo}
+                onSeek={seekFromTimeline}
                 onDragStart={() => dispatch({ type: 'checkpoint' })}
                 onClipChange={(clip) => dispatch({ type: 'replace', clip, transient: true })}
               />
@@ -380,6 +414,7 @@ export function App() {
                 selectedId={selectedClip?.id ?? null}
                 onSelect={(clip) => setSelectedId(clip.id === selectedId ? null : clip.id)}
                 onPlay={playClip}
+                loopingId={loopingId}
                 onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
                 onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}
                 onDelete={(clip) => dispatch({ type: 'remove', id: clip.id })}

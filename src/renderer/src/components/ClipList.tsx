@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { clipDuration, formatDuration, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@shared/clips'
 import type { VideoFade } from '@shared/fades'
 import { t } from '../i18n'
-import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PlayIcon } from './icons'
+import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PauseIcon, PlayIcon } from './icons'
 
 type Props = {
   clips: Clip[]
   time: number
   videoFades: VideoFade[]
   selectedId: string | null
+  loopingId: string | null
   onSelect: (clip: Clip) => void
   onPlay: (clip: Clip) => void
   onSetStart: (clip: Clip) => void
@@ -22,7 +23,19 @@ const iconButton =
 const timeButton =
   'rounded-md px-1 tabular-nums transition-colors hover:bg-accent-soft hover:text-accent disabled:pointer-events-none'
 
-export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay, onSetStart, onSetEnd, onDelete, onReorder }: Props) {
+export function ClipList({
+  clips,
+  time,
+  videoFades,
+  selectedId,
+  loopingId,
+  onSelect,
+  onPlay,
+  onSetStart,
+  onSetEnd,
+  onDelete,
+  onReorder
+}: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
 
@@ -129,9 +142,15 @@ export function ClipList({ clips, time, videoFades, selectedId, onSelect, onPlay
               {over && <span className="size-1.5 rounded-full bg-warn" />}
               {formatDuration(clipDuration(clip))}
             </span>
-            <button data-testid={`clip-play-${n}`} className={iconButton} title={t.playClip}
-              aria-label={t.playClip} onClick={() => onPlay(clip)}>
-              <PlayIcon className="size-3.5" />
+            <button
+              data-testid={`clip-play-${n}`}
+              className={`${iconButton} ${clip.id === loopingId ? 'bg-sunken text-ink' : ''}`}
+              title={clip.id === loopingId ? t.stopLoop : t.playClip}
+              aria-label={clip.id === loopingId ? t.stopLoop : t.playClip}
+              aria-pressed={clip.id === loopingId}
+              onClick={() => onPlay(clip)}
+            >
+              {clip.id === loopingId ? <PauseIcon className="size-3.5" /> : <PlayIcon className="size-3.5" />}
             </button>
             <button data-testid={`clip-delete-${n}`} className={iconButton} title={t.deleteClip}
               aria-label={t.deleteClip} onClick={() => onDelete(clip)}>
