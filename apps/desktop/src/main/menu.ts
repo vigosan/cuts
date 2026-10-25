@@ -1,5 +1,5 @@
 import type { MenuItemConstructorOptions } from 'electron'
-import type { Messages } from '../shared/i18n'
+import type { Messages } from '@cuts/core/i18n'
 
 export type MenuEntry = Omit<MenuItemConstructorOptions, 'submenu'> & { submenu?: MenuEntry[] }
 

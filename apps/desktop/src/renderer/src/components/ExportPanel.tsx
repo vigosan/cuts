@@ -1,4 +1,4 @@
-import { FORMATS, type OutputFormat } from '@shared/formats'
+import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import { t } from '../i18n'
 import { FolderIcon } from './icons'
 

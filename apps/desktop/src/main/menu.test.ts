@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { messagesFor } from '../shared/i18n'
+import { messagesFor } from '@cuts/core/i18n'
 import { menuTemplate, type MenuEntry } from './menu'
 
 const flatten = (entries: MenuEntry[]): MenuEntry[] => entries.flatMap((e) => [e, ...flatten(e.submenu ?? [])])

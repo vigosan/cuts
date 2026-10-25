@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { ExportRequest } from '../shared/api'
-import { messagesFor } from '../shared/i18n'
+import { messagesFor } from '@cuts/core/i18n'
 import { exportClips, type ExportDeps } from './export'
 
 const t = messagesFor('en')

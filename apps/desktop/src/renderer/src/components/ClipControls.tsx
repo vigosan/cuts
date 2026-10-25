@@ -1,6 +1,6 @@
-import { FADE_OPTIONS } from '@shared/clips'
-import { formatSize, type OutputFormat } from '@shared/formats'
-import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type ClipSettings, type VideoFade } from '@shared/fades'
+import { FADE_OPTIONS } from '@cuts/core/clips'
+import { formatSize, type OutputFormat } from '@cuts/core/formats'
+import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type ClipSettings, type VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
 import { ImageIcon, SpeakerIcon } from './icons'
 

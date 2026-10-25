@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { clipDuration, formatDuration, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@shared/clips'
-import type { VideoFade } from '@shared/fades'
+import { clipDuration, formatDuration, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
+import type { VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
 import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PauseIcon, PlayIcon } from './icons'
 

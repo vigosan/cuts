@@ -3,17 +3,17 @@
 DESKTOP := apps/desktop
 
 install:
-	cd $(DESKTOP) && npm install
+	npm install
 	cd $(DESKTOP) && npx install-electron
 
 dev:
 	cd $(DESKTOP) && npm run dev
 
 test: ffmpeg
-	cd $(DESKTOP) && npm test
+	npm test --workspaces
 
 typecheck:
-	cd $(DESKTOP) && npm run typecheck
+	npm run typecheck --workspaces
 
 build:
 	cd $(DESKTOP) && npm run build

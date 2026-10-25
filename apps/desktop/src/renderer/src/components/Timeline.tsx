@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import type { Clip } from '@shared/clips'
-import type { ClipFade } from '@shared/fades'
-import { dragClip, type DragMode } from '../drag-clip'
-import { filmstripTiles, uncoveredRanges, waveformColumns } from '../filmstrip'
+import type { Clip } from '@cuts/core/clips'
+import type { ClipFade } from '@cuts/core/fades'
+import { dragClip, type DragMode } from '@cuts/core/drag-clip'
+import { filmstripTiles, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
 import { t } from '../i18n'
 import { useThumbnails, useWaveform } from '../useVideoPreview'
 

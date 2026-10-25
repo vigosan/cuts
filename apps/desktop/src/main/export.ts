@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { ExportProgress, ExportRequest, ExportResult } from '../shared/api'
-import { clipDuration, outputFileName } from '../shared/clips'
-import type { Messages } from '../shared/i18n'
+import { clipDuration, outputFileName } from '@cuts/core/clips'
+import type { Messages } from '@cuts/core/i18n'
 import { buildFfmpegArgs } from './ffmpeg-args'
 
 export type ExportDeps = {

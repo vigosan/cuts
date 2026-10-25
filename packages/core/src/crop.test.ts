@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cropBox, dragCrop, videoBox } from './framing'
+import { cropBox, dragCrop, videoBox } from './crop'
 
 describe('videoBox', () => {
   it('finds where a 16:9 video is drawn inside a taller player, centred with bars above and below', () => {

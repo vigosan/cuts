@@ -48,10 +48,11 @@ apps/desktop/           app de escritorio (Electron)
   src/main/             proceso principal: ventana, menú, FFmpeg, exportación, sesiones
   src/preload/          puente seguro entre el proceso principal y la interfaz
   src/renderer/         interfaz en React
-  src/shared/           tipos, formatos, fundidos, textos (i18n) compartidos
+  src/shared/           tipos de la comunicación entre procesos y URLs del vídeo
   scripts/              compilar FFmpeg, icono, capturas, prueba local del sandbox
   build/                icono, entitlements y perfil de la Mac App Store
 apps/web/               web cuts.vicent.io (Next.js, desplegada en Vercel)
+packages/core/          lógica sin interfaz: clips, fundidos, formatos, encuadre, sugerencias, deshacer, textos (i18n)
 docs/                   publicación en la Mac App Store, privacidad, idiomas
 ```
 

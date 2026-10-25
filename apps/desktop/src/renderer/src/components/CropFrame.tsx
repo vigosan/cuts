@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { cropBox, dragCrop, videoBox } from '../framing'
+import { cropBox, dragCrop, videoBox } from '@cuts/core/crop'
 import { t } from '../i18n'
 
 type Zone = { cropX: number; cropY: number }

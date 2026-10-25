@@ -1,6 +1,6 @@
-import type { Clip } from './clips'
-import type { ClipSettings } from './fades'
-import type { OutputFormat } from './formats'
+import type { Clip } from '@cuts/core/clips'
+import type { ClipSettings } from '@cuts/core/fades'
+import type { OutputFormat } from '@cuts/core/formats'
 
 export type ExportClip = Clip & ClipSettings
 

@@ -63,7 +63,6 @@ jobs:
         with:
           node-version: lts/*
           cache: npm
-          cache-dependency-path: apps/desktop/package-lock.json
       - name: Tag matches package.json version
         shell: bash
         run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./package.json').version")"
@@ -74,8 +73,11 @@ jobs:
       - if: matrix.target != 'windows'
         run: chmod +x resources/ffmpeg/ffmpeg
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
+        working-directory: .
+      - run: npm run typecheck --workspaces
+        working-directory: .
+      - run: npm test --workspaces
+        working-directory: .
       - run: npm run build
       - if: matrix.target == 'mac'
         run: |

@@ -1,7 +1,7 @@
 import { posix, win32 } from 'node:path'
-import type { AudioFade, VideoFade } from '../shared/fades'
-import type { ClipFraming } from '../shared/framing'
-import { formatSize, type OutputFormat } from '../shared/formats'
+import type { AudioFade, VideoFade } from '@cuts/core/fades'
+import type { ClipFraming } from '@cuts/core/framing'
+import { formatSize, type OutputFormat } from '@cuts/core/formats'
 
 export type CutOptions = ClipFraming & {
   input: string

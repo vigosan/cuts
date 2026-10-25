@@ -1,4 +1,4 @@
-import type { Clip } from '@shared/clips'
+import type { Clip } from './clips'
 
 type Moment = { start: number; end: number }
 
