@@ -98,3 +98,20 @@ export function TrashIcon({ className = 'size-4' }: IconProps) {
     </svg>
   )
 }
+
+export function SparkleIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={`${base} ${className}`}>
+      <path d="M8 1.5c.3 2.9 1.6 4.2 4.5 4.5-2.9.3-4.2 1.6-4.5 4.5-.3-2.9-1.6-4.2-4.5-4.5 2.9-.3 4.2-1.6 4.5-4.5Z" />
+      <path d="M12.5 9.5c.15 1.4.8 2.05 2 2.2-1.2.15-1.85.8-2 2.2-.15-1.4-.8-2.05-2-2.2 1.2-.15 1.85-.8 2-2.2Z" />
+    </svg>
+  )
+}
+
+export function SpinnerIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden className={`${base} animate-spin ${className}`}>
+      <path d="M8 2a6 6 0 1 0 6 6" />
+    </svg>
+  )
+}

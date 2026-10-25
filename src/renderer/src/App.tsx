@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { defaultBaseName, formatTime, type Clip } from '@shared/clips'
+import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@shared/clips'
 import { DEFAULT_SETTINGS, type ClipSettings } from '@shared/fades'
 import type { ExportResult } from '@shared/api'
 import { formatSize, type OutputFormat } from '@shared/formats'
@@ -8,15 +8,17 @@ import { ClipList } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
-import { FilmIcon, PauseIcon, PlayIcon, TrashIcon } from './components/icons'
+import { FilmIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
 import { withHistory } from './history'
 import { t } from './i18n'
 import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from './timeline-view'
+import { suggestMoments } from './suggest'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
+const PEAKS_PER_SECOND = 50
 const DEFAULT_FPS = 30
 const MAX_SHUTTLE = 4
 const clipsHistory = withHistory(clipsReducer)
@@ -67,6 +69,7 @@ export function App() {
   const [zoom, setZoom] = useState<Zoom>(null)
   const [viewStart, setViewStart] = useState(0)
 
+  const [suggesting, setSuggesting] = useState(false)
   const [panned, setPanned] = useState<{ time: number; zoom: Zoom } | null>(null)
 
   const keepPanned = panned?.time === time && panned.zoom === zoom
@@ -247,6 +250,14 @@ export function App() {
     setViewStart(viewStartForClip(clip, duration, zoom))
     setTime(clip.start)
     seekFromTimeline(clip.start)
+  }
+
+  const suggest = async (path: string) => {
+    setSuggesting(true)
+    const peaks = await window.api.waveform(path).finally(() => setSuggesting(false))
+    if (openedPath.current !== path) return
+    const moments = suggestMoments({ peaks, peaksPerSecond: PEAKS_PER_SECOND, duration, clipLength: MAX_CLIP_SECONDS, existing: clips })
+    dispatch({ type: 'restore', clips: [...clips, ...moments.map((moment) => ({ id: crypto.randomUUID(), ...moment }))] })
   }
 
   const exporting = exportState.status === 'running'
@@ -433,23 +444,36 @@ export function App() {
           <aside className="flex shrink-0 flex-col overflow-hidden rounded-2xl bg-surface lg:w-[23rem]">
             <div className="flex h-12 items-center justify-between px-4 pt-3">
               <h2 className="text-sm font-semibold">{t.carousel}</h2>
-              {clips.length > 0 && (
-                <span className="flex items-center gap-2">
-                  <button
-                    data-testid="clear-clips"
-                    className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
-                    title={t.clearClips}
-                    aria-label={t.clearClips}
-                    onClick={() => {
-                      dispatch({ type: 'reset' })
-                      setSelectedId(null)
-                    }}
-                  >
-                    <TrashIcon className="size-3.5" />
-                  </button>
-                  <span className="text-xs text-ink-3">{clips.length}</span>
-                </span>
-              )}
+              <span className="flex items-center gap-1">
+                <button
+                  data-testid="suggest"
+                  className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink disabled:hover:bg-transparent"
+                  title={t.suggestMoments}
+                  aria-label={t.suggestMoments}
+                  aria-busy={suggesting}
+                  disabled={suggesting}
+                  onClick={() => void suggest(videoPath)}
+                >
+                  {suggesting ? <SpinnerIcon className="size-3.5" /> : <SparkleIcon className="size-3.5" />}
+                </button>
+                {clips.length > 0 && (
+                  <>
+                    <button
+                      data-testid="clear-clips"
+                      className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+                      title={t.clearClips}
+                      aria-label={t.clearClips}
+                      onClick={() => {
+                        dispatch({ type: 'reset' })
+                        setSelectedId(null)
+                      }}
+                    >
+                      <TrashIcon className="size-3.5" />
+                    </button>
+                    <span className="ml-1 text-xs text-ink-3">{clips.length}</span>
+                  </>
+                )}
+              </span>
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
               <ClipList

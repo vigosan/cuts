@@ -117,10 +117,21 @@ app.whenReady().then(() => {
     parseFrameRate(await readFfmpegInfo(bundledFfmpeg()!, path)) ?? DEFAULT_FRAME_RATE
   )
 
-  ipcMain.handle('waveform', async (_event, path: string) => {
+  let lastWaveform: { path: string; peaks: Promise<Float32Array> } | null = null
+  const readWaveform = async (path: string) => {
     const raw = await captureFfmpeg(bundledFfmpeg()!, waveformArgs(path))
     const even = raw.byteLength - (raw.byteLength % 2)
     return peaksFromSamples(new Int16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + even)))
+  }
+  ipcMain.handle('waveform', (_event, path: string) => {
+    if (lastWaveform?.path !== path) {
+      const peaks = readWaveform(path)
+      peaks.catch(() => {
+        if (lastWaveform?.peaks === peaks) lastWaveform = null
+      })
+      lastWaveform = { path, peaks }
+    }
+    return lastWaveform.peaks
   })
 
   const sessionsDir = join(app.getPath('userData'), 'sessions')

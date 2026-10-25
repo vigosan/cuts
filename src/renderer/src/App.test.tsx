@@ -653,6 +653,43 @@ describe('App', () => {
     expect(screen.getByTestId('view-start')).toHaveTextContent('00:16:10')
   })
 
+  it('suggests the drops of the session as clips, with 30 s of build-up before each one and 29 s of the mix after it', async () => {
+    const peaks = new Float32Array(4880 * 50)
+    for (let i = 0; i < peaks.length; i++) {
+      const second = Math.floor(i / 50)
+      peaks[i] = second >= 980 && second < 1000 ? 0.02 : second >= 1000 && second < 1030 ? 0.3 : 0.2
+    }
+    let finish: (value: Float32Array) => void = () => {}
+    vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    await loadVideo()
+    await userEvent.click(screen.getByTestId('suggest'))
+    expect(screen.getByTestId('suggest')).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByTestId('suggest')).toHaveAccessibleName(t.suggestMoments)
+    await act(async () => finish(peaks))
+    expect(screen.getByTestId('suggest')).toHaveAttribute('aria-busy', 'false')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:16:10')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:17:09')
+    expect(screen.queryByTestId('clip-row-2')).not.toBeInTheDocument()
+    await act(async () => menuCommand('undo'))
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+  })
+
+  it('drops suggestions that arrive after another video was opened, so they never land on the wrong video', async () => {
+    let finish: (value: Float32Array) => void = () => {}
+    vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    await loadVideo()
+    await userEvent.click(screen.getByTestId('suggest'))
+    vi.mocked(api.openVideo).mockResolvedValue('/Users/vicent/Movies/other.mov')
+    await act(async () => menuOpenVideo())
+    const peaks = new Float32Array(4880 * 50).fill(0.2)
+    peaks.fill(0.02, 980 * 50, 1000 * 50)
+    peaks.fill(0.3, 1000 * 50, 1030 * 50)
+    await act(async () => finish(peaks))
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+  })
+
   it('removes every clip at once and brings them back with undo, so starting over is one click and never a loss', async () => {
     render(<App />)
     const video = await loadVideo()
