@@ -5,9 +5,6 @@ directories:
 files:
   - out/**
   - package.json
-extraFiles:
-  - from: resources/ffmpeg/ffmpeg
-    to: Helpers/ffmpeg
 extraResources:
   - from: resources/ffmpeg/LICENSE-FFmpeg.txt
     to: LICENSE-FFmpeg.txt
@@ -16,6 +13,12 @@ extraResources:
 mac:
   target: dir
   icon: build/icon.icns
+  artifactName: Cuts-mac.${ext}
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extraFiles:
+    - from: resources/ffmpeg/ffmpeg
+      to: Helpers/ffmpeg
   x64ArchFiles: Contents/Helpers/ffmpeg
   category: public.app-category.video
   electronLanguages:
@@ -35,6 +38,27 @@ mac:
     - es_419_FEMININE
     - es_419_MASCULINE
     - es_419_NEUTER
+win:
+  target: nsis
+  icon: build/icon.png
+  artifactName: Cuts-windows.${ext}
+  extraFiles:
+    - from: resources/ffmpeg/ffmpeg.exe
+      to: ffmpeg.exe
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+linux:
+  target: AppImage
+  icon: build/icon.png
+  category: AudioVideo
+  artifactName: Cuts-linux.${ext}
+  extraFiles:
+    - from: resources/ffmpeg/ffmpeg
+      to: ffmpeg
+  extraResources:
+    - from: resources/ffmpeg/LICENSE-OpenH264.txt
+      to: LICENSE-OpenH264.txt
 mas:
   type: distribution
   hardenedRuntime: false

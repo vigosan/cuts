@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  ffmpeg:
+    strategy:
+      matrix:
+        include:
+          - target: mac
+            os: macos-latest
+          - target: linux
+            os: ubuntu-latest
+          - target: windows
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: resources/ffmpeg
+          key: ffmpeg-${{ matrix.target }}-${{ hashFiles('scripts/build-ffmpeg.sh') }}
+      - if: steps.cache.outputs.cache-hit != 'true' && matrix.target != 'mac'
+        run: sudo apt-get update && sudo apt-get install -y pkg-config zlib1g-dev mingw-w64
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: ./scripts/build-ffmpeg.sh ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.target }}
+          path: resources/ffmpeg
+
+  build:
+    needs: ffmpeg
+    strategy:
+      matrix:
+        include:
+          - target: mac
+            os: macos-latest
+            args: --mac dmg --universal -c.forceCodeSigning=true
+            artifact: dist/Cuts-mac.dmg
+          - target: linux
+            os: ubuntu-latest
+            args: --linux AppImage --x64
+            artifact: dist/Cuts-linux.AppImage
+          - target: windows
+            os: windows-latest
+            args: --win nsis --x64
+            artifact: dist/Cuts-windows.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - name: Tag matches package.json version
+        shell: bash
+        run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./package.json').version")"
+      - uses: actions/download-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.target }}
+          path: resources/ffmpeg
+      - if: matrix.target != 'windows'
+        run: chmod +x resources/ffmpeg/ffmpeg
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - if: matrix.target == 'mac'
+        run: |
+          test -n "$APPLE_API_KEY_BASE64" && test -n "$APPLE_API_KEY_ID" && test -n "$APPLE_API_ISSUER" || { echo "Missing notarization secrets" >&2; exit 1; }
+          echo "$APPLE_API_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/apple-api-key.p8"
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      - run: npx electron-builder ${{ matrix.args }} --publish never
+        env:
+          CSC_LINK: ${{ matrix.target == 'mac' && secrets.MAC_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.target == 'mac' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
+          APPLE_API_KEY: ${{ matrix.target == 'mac' && format('{0}/apple-api-key.p8', runner.temp) || '' }}
+          APPLE_API_KEY_ID: ${{ matrix.target == 'mac' && secrets.APPLE_API_KEY_ID || '' }}
+          APPLE_API_ISSUER: ${{ matrix.target == 'mac' && secrets.APPLE_API_ISSUER || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.target }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: app-*
+          merge-multiple: true
+      - run: gh release create "$GITHUB_REF_NAME" --repo vigosan/cuts-releases --title "Cuts ${GITHUB_REF_NAME#v}" --notes "" Cuts-mac.dmg Cuts-windows.exe Cuts-linux.AppImage
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
