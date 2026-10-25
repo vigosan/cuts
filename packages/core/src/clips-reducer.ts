@@ -13,6 +13,7 @@ export type ClipsAction = Meta &
   | { type: 'replace'; clip: Clip }
   | { type: 'reorder'; from: number; to: number }
   | { type: 'restore'; clips: Clip[] }
+  | { type: 'add'; clips: Clip[] }
   | { type: 'reset' }
   )
 
@@ -28,6 +29,8 @@ function updateClip(state: ClipsState, id: string, change: (clip: Clip) => Clip)
     })
   }
 }
+
+const overlaps = (a: Clip, b: Clip) => a.start < b.end && b.start < a.end
 
 export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState {
   switch (action.type) {
@@ -55,6 +58,11 @@ export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState
     }
     case 'restore':
       return { clips: action.clips, pendingStart: null }
+    case 'add':
+      return {
+        ...state,
+        clips: [...state.clips, ...action.clips.filter((clip) => !state.clips.some((other) => overlaps(clip, other)))]
+      }
     case 'reset':
       return initialClipsState
   }

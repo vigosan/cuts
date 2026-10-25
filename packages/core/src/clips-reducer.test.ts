@@ -34,6 +34,18 @@ describe('clipsReducer', () => {
     expect(state.clips.map((c) => c.start)).toEqual([500, 100])
   })
 
+  it('adds clips after the current ones, skipping those that overlap a clip marked meanwhile', () => {
+    const marked = run(initialClipsState, { type: 'markStart', time: 100 }, { type: 'markEnd', time: 150 })
+    const state = clipsReducer(marked, {
+      type: 'add',
+      clips: [
+        { id: 'a', start: 140, end: 199 },
+        { id: 'b', start: 300, end: 359 }
+      ]
+    })
+    expect(state.clips.map((c) => c.id)).toEqual([marked.clips[0].id, 'b'])
+  })
+
   it('removes a clip', () => {
     const added = run(initialClipsState, { type: 'markStart', time: 10 }, { type: 'markEnd', time: 20 })
     const state = clipsReducer(added, { type: 'remove', id: added.clips[0].id })

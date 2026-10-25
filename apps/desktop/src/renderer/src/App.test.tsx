@@ -689,6 +689,21 @@ describe('App', () => {
     expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
   })
 
+  it('keeps the clips marked while the suggestions are being read, since reading a whole session takes seconds', async () => {
+    let finish: (value: Float32Array) => void = () => {}
+    vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    const video = await loadVideo()
+    await userEvent.click(screen.getByTestId('suggest'))
+    await markClip(video, 2000, 2030)
+    const peaks = new Float32Array(4880 * 50).fill(0.2)
+    peaks.fill(0.02, 980 * 50, 1000 * 50)
+    peaks.fill(0.3, 1000 * 50, 1030 * 50)
+    await act(async () => finish(peaks))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:33:20')
+    expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:16:10')
+  })
+
   it('drops suggestions that arrive after another video was opened, so they never land on the wrong video', async () => {
     let finish: (value: Float32Array) => void = () => {}
     vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))

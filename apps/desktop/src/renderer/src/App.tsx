@@ -257,7 +257,7 @@ export function App() {
     const peaks = await window.api.waveform(path).finally(() => setSuggesting(false))
     if (openedPath.current !== path) return
     const moments = suggestMoments({ peaks, peaksPerSecond: PEAKS_PER_SECOND, duration, clipLength: MAX_CLIP_SECONDS, existing: clips })
-    dispatch({ type: 'restore', clips: [...clips, ...moments.map((moment) => ({ id: crypto.randomUUID(), ...moment }))] })
+    dispatch({ type: 'add', clips: moments.map((moment) => ({ id: crypto.randomUUID(), ...moment })) })
   }
 
   const exporting = exportState.status === 'running'
