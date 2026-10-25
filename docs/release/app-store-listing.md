@@ -72,4 +72,4 @@ Hechas: `docs/release/screenshots/` contiene 3 escenas por idioma a 2880×1800 (
 >
 > Permissions: the app only reads the video the user opens and writes to the Movies folder or the folder the user chooses. No permission dialogs appear.
 >
-> The app bundles FFmpeg (LGPL v2.1) as a helper tool at Contents/Helpers/ffmpeg. It inherits the app sandbox and only runs during an export; it is stopped when the app quits. The login helper included by the Electron Mac App Store build is not used.
+> The app bundles FFmpeg (LGPL v2.1) as a helper tool at Contents/Helpers/ffmpeg. It inherits the app sandbox and only runs while generating previews or exporting; it is stopped when the app quits. The login helper included by the Electron Mac App Store build is not used.
