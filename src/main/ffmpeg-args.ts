@@ -1,7 +1,8 @@
 import type { AudioFade, VideoFade } from '../shared/fades'
+import type { ClipFraming } from '../shared/framing'
 import { formatSize, type OutputFormat } from '../shared/formats'
 
-export type CutOptions = {
+export type CutOptions = ClipFraming & {
   input: string
   output: string
   start: number
@@ -23,11 +24,24 @@ function fadeFilters(prefix: string, duration: number, seconds: number, options 
   ]
 }
 
-function cropFilters(format: OutputFormat): string[] {
-  const size = formatSize(format)
+function framingFilters(o: CutOptions): string[] {
+  const size = formatSize(o.format)
   if (!size) return []
   const { width: w, height: h } = size
-  return [`crop='min(iw,ih*${w}/${h})':'min(ih,iw*${h}/${w})'`, `scale=${w}:${h}`, 'setsar=1']
+  if (o.framing === 'fit') {
+    return [
+      'split=2[bg][fg];' +
+        `[bg]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},gblur=sigma=40,colorlevels=romax=0.7:gomax=0.7:bomax=0.7[b];` +
+        `[fg]scale=${w}:${h}:force_original_aspect_ratio=decrease[f];` +
+        '[b][f]overlay=(W-w)/2:(H-h)/2',
+      'setsar=1'
+    ]
+  }
+  return [
+    `crop='min(iw,ih*${w}/${h})':'min(ih,iw*${h}/${w})':'(iw-ow)*${num(o.cropX)}':'(ih-oh)*${num(o.cropY)}'`,
+    `scale=${w}:${h}`,
+    'setsar=1'
+  ]
 }
 
 export function buildFfmpegArgs(o: CutOptions): string[] {
@@ -36,7 +50,7 @@ export function buildFfmpegArgs(o: CutOptions): string[] {
     o.videoFade === 'none'
       ? []
       : fadeFilters('fade', duration, o.fadeSeconds, o.videoFade === 'white' ? ':color=white' : '').slice(o.videoFadeIn ? 0 : 1)
-  const video = [...cropFilters(o.format), ...videoFades]
+  const video = [...framingFilters(o), ...videoFades]
   const audio =
     o.audioFade === 'none' ? [] : fadeFilters('afade', duration, o.fadeSeconds, o.audioFade === 'natural' ? ':curve=qsin' : '')
   return [

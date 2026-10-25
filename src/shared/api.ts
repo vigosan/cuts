@@ -1,8 +1,8 @@
 import type { Clip } from './clips'
-import type { ClipFade } from './fades'
+import type { ClipSettings } from './fades'
 import type { OutputFormat } from './formats'
 
-export type ExportClip = Clip & ClipFade
+export type ExportClip = Clip & ClipSettings
 
 export type ExportRequest = {
   input: string

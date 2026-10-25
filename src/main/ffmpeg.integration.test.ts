@@ -39,7 +39,7 @@ describe('runFfmpeg with real ffmpeg', () => {
   it('exports the marked span at the chosen Instagram size with fades, reporting progress', async () => {
     const output = join(dir, 'clip-1.mp4')
     const progress: number[] = []
-    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 1, end: 3, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, videoFadeIn: true, format: '4:5' }), (s) =>
+    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 1, end: 3, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, videoFadeIn: true, framing: 'crop', cropX: 0.5, cropY: 0.5, format: '4:5' }), (s) =>
       progress.push(s)
     )
     const result = probe(output)
@@ -50,15 +50,21 @@ describe('runFfmpeg with real ffmpeg', () => {
     expect(progress.length).toBeGreaterThan(0)
   })
 
+  it('exports the full frame over a blurred background at the Instagram size', async () => {
+    const output = join(dir, 'fit.mp4')
+    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 0, end: 2, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, videoFadeIn: true, framing: 'fit', cropX: 0.5, cropY: 0.5, format: '9:16' }), () => {})
+    expect(probe(output)).toMatchObject({ width: 1080, height: 1920 })
+  })
+
   it('keeps the original resolution when no format is chosen', async () => {
     const output = join(dir, 'clip-2.mp4')
-    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 0, end: 2, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, format: 'original' }), () => {})
+    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 0, end: 2, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, framing: 'crop', cropX: 0.5, cropY: 0.5, format: 'original' }), () => {})
     expect(probe(output)).toMatchObject({ width: 320, height: 180 })
   })
 
   it('rejects with ffmpeg error output when the cut fails', async () => {
     await expect(
-      runFfmpeg(ffmpeg, buildFfmpegArgs({ input: join(dir, 'missing.mov'), output: join(dir, 'x.mp4'), start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, format: 'original' }), () => {})
+      runFfmpeg(ffmpeg, buildFfmpegArgs({ input: join(dir, 'missing.mov'), output: join(dir, 'x.mp4'), start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, framing: 'crop', cropX: 0.5, cropY: 0.5, format: 'original' }), () => {})
     ).rejects.toThrow(/No such file/)
   })
 
@@ -85,7 +91,7 @@ describe('runFfmpeg with real ffmpeg', () => {
     await expect(exporting).rejects.toThrow()
     expect(existsSync(output)).toBe(false)
     const again = join(dir, 'after-cancel.mp4')
-    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output: again, start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, format: 'original' }), () => {})
+    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output: again, start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, framing: 'crop', cropX: 0.5, cropY: 0.5, format: 'original' }), () => {})
     expect(existsSync(again)).toBe(true)
   })
 
@@ -105,7 +111,7 @@ describe('runFfmpeg with real ffmpeg', () => {
     stopAllFfmpeg()
     const output = join(dir, 'after-quit.mp4')
     await expect(
-      runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, format: 'original' }), () => {})
+      runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 0, end: 1, videoFade: 'none', audioFade: 'none', fadeSeconds: 1, videoFadeIn: true, framing: 'crop', cropX: 0.5, cropY: 0.5, format: 'original' }), () => {})
     ).rejects.toThrow()
     expect(existsSync(output)).toBe(false)
   })

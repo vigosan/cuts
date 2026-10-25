@@ -10,6 +10,9 @@ const base = {
   audioFade: 'none' as const,
   fadeSeconds: 1,
   videoFadeIn: true,
+  framing: 'crop' as const,
+  cropX: 0.5,
+  cropY: 0.5,
   format: 'original' as const
 }
 
@@ -84,8 +87,29 @@ describe('buildFfmpegArgs', () => {
   it('center-crops and scales to the Instagram size before fading', () => {
     const args = buildFfmpegArgs({ ...base, videoFade: 'black', format: '4:5' })
     expect(valueAfter(args, '-vf')).toBe(
-      "crop='min(iw,ih*1080/1350)':'min(ih,iw*1350/1080)',scale=1080:1350,setsar=1,fade=t=in:st=0:d=1,fade=t=out:st=58:d=1"
+      "crop='min(iw,ih*1080/1350)':'min(ih,iw*1350/1080)':'(iw-ow)*0.5':'(ih-oh)*0.5',scale=1080:1350,setsar=1,fade=t=in:st=0:d=1,fade=t=out:st=58:d=1"
     )
+  })
+
+  it('crops the zone chosen by the user, here the left edge of a 16:9 shot', () => {
+    const args = buildFfmpegArgs({ ...base, format: '9:16', cropX: 0 })
+    expect(valueAfter(args, '-vf')).toBe(
+      "crop='min(iw,ih*1080/1920)':'min(ih,iw*1920/1080)':'(iw-ow)*0':'(ih-oh)*0.5',scale=1080:1920,setsar=1"
+    )
+  })
+
+  it('fits the whole frame over a blurred, darker copy of itself when the clip uses the full framing', () => {
+    const args = buildFfmpegArgs({ ...base, format: '4:5', framing: 'fit', videoFade: 'black' })
+    expect(valueAfter(args, '-vf')).toBe(
+      'split=2[bg][fg];' +
+        '[bg]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,gblur=sigma=40,colorlevels=romax=0.7:gomax=0.7:bomax=0.7[b];' +
+        '[fg]scale=1080:1350:force_original_aspect_ratio=decrease[f];' +
+        '[b][f]overlay=(W-w)/2:(H-h)/2,setsar=1,fade=t=in:st=0:d=1,fade=t=out:st=58:d=1'
+    )
+  })
+
+  it('ignores the framing for the original format, which keeps the whole frame as it is', () => {
+    expect(buildFfmpegArgs({ ...base, framing: 'fit', cropX: 0 })).not.toContain('-vf')
   })
 
   it('writes an H.264/AAC mp4 that starts playing immediately on Instagram', () => {

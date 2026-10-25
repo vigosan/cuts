@@ -38,6 +38,8 @@ async function loadVideo() {
   await userEvent.click(screen.getByTestId('open-video'))
   const video = screen.getByTestId('video') as HTMLVideoElement
   Object.defineProperty(video, 'duration', { configurable: true, value: 4880 })
+  Object.defineProperty(video, 'videoWidth', { configurable: true, value: 1280 })
+  Object.defineProperty(video, 'videoHeight', { configurable: true, value: 720 })
   fireEvent(video, new Event('loadedmetadata'))
   return video
 }
@@ -470,5 +472,44 @@ describe('App', () => {
     await userEvent.click(screen.getByTestId('export'))
     await userEvent.click(await screen.findByTestId('export-cancel'))
     expect(api.cancelExport).toHaveBeenCalled()
+  })
+
+  it('offers the framing choice only for Instagram formats, since the original keeps the whole frame', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    expect(screen.queryByTestId('framing-fit')).not.toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    expect(screen.getByTestId('framing-crop')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('framing-fit')).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('exports the selected clip with the whole frame over a blurred background, leaving the others cropped', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    await userEvent.click(screen.getByTestId('framing-fit'))
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips.map((c) => c.framing)).toEqual(['crop', 'fit'])
+  })
+
+  it('moves the crop zone by dragging the frame over the video, to keep the part that matters in shot', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.selectOptions(screen.getByTestId('format'), '9:16')
+    const frame = await screen.findByTestId('crop-frame')
+    fireEvent.pointerDown(frame, { clientX: 100, clientY: 10 })
+    fireEvent.pointerMove(window, { clientX: 40, clientY: 10 })
+    fireEvent.pointerUp(window, { clientX: 40, clientY: 10 })
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips[0].cropX).toBeLessThan(0.5)
   })
 })

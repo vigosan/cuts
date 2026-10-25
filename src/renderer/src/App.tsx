@@ -2,11 +2,12 @@ import { useEffect, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, type Clip } from '@shared/clips'
 import { DEFAULT_SETTINGS, type ClipSettings } from '@shared/fades'
 import type { ExportResult } from '@shared/api'
-import type { OutputFormat } from '@shared/formats'
+import { formatSize, type OutputFormat } from '@shared/formats'
 import { mediaUrl } from '@shared/media-url'
 import { ClipList } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
+import { CropFrame } from './components/CropFrame'
 import { FilmIcon, PauseIcon, PlayIcon } from './components/icons'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from './clips-reducer'
@@ -47,6 +48,9 @@ export function App() {
     }
   }
   const [format, setFormat] = useState<OutputFormat>('original')
+  const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
+  const shownSettings = selectedClip ? settingsOf(selectedClip) : defaultSettings
+  const target = formatSize(format)
   const [exportState, setExportState] = useState<ExportState>({ status: 'idle' })
   const [zoom, setZoom] = useState<Zoom>(null)
   const [viewStart, setViewStart] = useState(0)
@@ -73,6 +77,7 @@ export function App() {
     setVideoError(false)
     setTime(0)
     setDuration(0)
+    setVideoSize(null)
     setBaseName(defaultBaseName(path))
     if (!folder) void window.api.moviesDir().then((dir) => setFolder(`${dir}/${APP_FOLDER}`))
     setExportState({ status: 'idle' })
@@ -195,11 +200,24 @@ export function App() {
                 className="max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none"
                 onClick={togglePlay}
                 onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
-                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onLoadedMetadata={(e) => {
+                  setDuration(e.currentTarget.duration)
+                  setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })
+                }}
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
                 onError={() => setVideoError(true)}
               />
+              {target && videoSize && shownSettings.framing === 'crop' && (
+                <CropFrame
+                  videoWidth={videoSize.width}
+                  videoHeight={videoSize.height}
+                  targetWidth={target.width}
+                  targetHeight={target.height}
+                  zone={shownSettings}
+                  onChange={changeSettings}
+                />
+              )}
               {videoError && (
                 <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">
                   {t.videoUnplayable}
@@ -300,7 +318,8 @@ export function App() {
             </div>
             {clips.length > 0 && (
               <ClipControls
-                settings={selectedClip ? settingsOf(selectedClip) : defaultSettings}
+                settings={shownSettings}
+                format={format}
                 onChange={changeSettings}
               />
             )}
