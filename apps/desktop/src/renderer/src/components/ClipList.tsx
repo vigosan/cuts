@@ -67,7 +67,7 @@ export function ClipList({
             key={clip.id}
             data-testid={`clip-row-${n}`}
             data-over-limit={over}
-            aria-selected={selected}
+            aria-current={selected}
             onClick={(e) => {
               if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip)
             }}

@@ -186,7 +186,7 @@ export function Timeline({
             data-testid={`clip-block-${index + 1}`}
             data-fade-in={fades[index].videoFade !== 'none' && index > 0}
             data-fade-out={fades[index].videoFade !== 'none'}
-            aria-selected={clip.id === selectedId}
+            aria-current={clip.id === selectedId}
             className={`group absolute inset-y-0.5 min-w-3 cursor-grab rounded-md shadow-[0_0_0_1px_rgb(0_0_0/0.5)] active:cursor-grabbing ${selected ? 'z-10 border-[3px] border-white' : 'border-2 border-white/70 hover:border-white'}`}
             style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
             onClick={(e) => e.stopPropagation()}
