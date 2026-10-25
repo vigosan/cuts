@@ -4,6 +4,14 @@ import type { OutputFormat } from './formats'
 
 export type ExportClip = Clip & ClipSettings
 
+export type Session = {
+  clips: Clip[]
+  clipSettings: Record<string, ClipSettings>
+  defaultSettings: ClipSettings
+  format: OutputFormat
+  baseName: string
+}
+
 export type ExportRequest = {
   input: string
   folder: string
@@ -27,5 +35,7 @@ export type Api = {
   cancelExport(): void
   onMenuOpenVideo(callback: () => void): () => void
   thumbnail(path: string, time: number): Promise<string>
+  loadSession(videoPath: string): Promise<Session | null>
+  saveSession(videoPath: string, session: Session): void
   waveform(path: string): Promise<Float32Array>
 }

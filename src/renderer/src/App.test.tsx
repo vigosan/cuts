@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Api } from '@shared/api'
@@ -17,6 +17,8 @@ function makeApi(): Api {
     onExportProgress: vi.fn(() => () => {}),
     reveal: vi.fn(),
     cancelExport: vi.fn(),
+    loadSession: vi.fn(async () => null),
+    saveSession: vi.fn(),
     thumbnail: vi.fn(async (_path: string, time: number) => `data:image/jpeg;base64,${time}`),
     waveform: vi.fn(async () => new Float32Array(4880 * 50).fill(0.5)),
     onMenuOpenVideo: vi.fn((callback: () => void) => {
@@ -511,5 +513,33 @@ describe('App', () => {
     await act(() => userEvent.click(screen.getByTestId('export')))
     const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
     expect(clips[0].cropX).toBeLessThan(0.5)
+  })
+
+  it('brings back the clips and settings saved for a video when it is opened again', async () => {
+    vi.mocked(api.loadSession).mockResolvedValue({
+      clips: [{ id: 'saved', start: 584, end: 643 }],
+      clipSettings: {},
+      defaultSettings: { videoFade: 'white', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5 },
+      format: '4:5',
+      baseName: 'set-22-oct'
+    })
+    render(<App />)
+    await loadVideo()
+    expect(await screen.findByTestId('clip-row-1')).toHaveTextContent('00:09:44')
+    expect(screen.getByTestId('format')).toHaveValue('4:5')
+    expect(screen.getByTestId('base-name')).toHaveValue('set-22-oct')
+    expect(screen.getByTestId('fade-video')).toHaveValue('white')
+    expect(api.loadSession).toHaveBeenCalledWith(VIDEO)
+  })
+
+  it('saves the work for this video as it changes, and never overwrites it before it is restored', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await waitFor(() => expect(api.saveSession).toHaveBeenCalled())
+    vi.mocked(api.saveSession).mockClear()
+    await markClip(video, 100, 150)
+    await waitFor(() =>
+      expect(api.saveSession).toHaveBeenLastCalledWith(VIDEO, expect.objectContaining({ clips: [expect.objectContaining({ start: 100, end: 150 })] }))
+    )
   })
 })

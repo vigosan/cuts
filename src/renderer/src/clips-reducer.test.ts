@@ -79,4 +79,10 @@ describe('clipsReducer', () => {
     expect(clipsReducer(added, { type: 'reorder', from: 2, to: 0 }).clips.map((c) => c.start)).toEqual([50, 10, 30])
     expect(clipsReducer(added, { type: 'reorder', from: 0, to: 2 }).clips.map((c) => c.start)).toEqual([30, 50, 10])
   })
+
+  it('restores the clips saved for a video, dropping any half-marked clip', () => {
+    const pending = clipsReducer(initialClipsState, { type: 'markStart', time: 5 })
+    const clips = [{ id: 'a', start: 10, end: 20 }]
+    expect(clipsReducer(pending, { type: 'restore', clips })).toEqual({ clips, pendingStart: null })
+  })
 })

@@ -15,6 +15,7 @@ import { t } from './i18n'
 import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
+const SAVE_DELAY_MS = 300
 const APP_FOLDER = 'Cuts'
 
 function zoomLabel(span: Zoom): string {
@@ -48,6 +49,8 @@ export function App() {
     }
   }
   const [format, setFormat] = useState<OutputFormat>('original')
+  const [restoredFor, setRestoredFor] = useState<string | null>(null)
+  const openedPath = useRef<string | null>(null)
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
   const shownSettings = selectedClip ? settingsOf(selectedClip) : defaultSettings
   const target = formatSize(format)
@@ -85,7 +88,29 @@ export function App() {
     setClipSettings({})
     setSelectedId(null)
     dispatch({ type: 'reset' })
+    setRestoredFor(null)
+    openedPath.current = path
+    void window.api.loadSession(path).then((session) => {
+      if (openedPath.current !== path) return
+      if (session) {
+        dispatch({ type: 'restore', clips: session.clips })
+        setClipSettings(session.clipSettings)
+        setDefaultSettings(session.defaultSettings)
+        setFormat(session.format)
+        setBaseName(session.baseName)
+      }
+      setRestoredFor(path)
+    })
   }
+
+  useEffect(() => {
+    if (!videoPath || restoredFor !== videoPath) return
+    const timer = setTimeout(
+      () => window.api.saveSession(videoPath, { clips, clipSettings, defaultSettings, format, baseName }),
+      SAVE_DELAY_MS
+    )
+    return () => clearTimeout(timer)
+  }, [videoPath, restoredFor, clips, clipSettings, defaultSettings, format, baseName])
 
   useEffect(() => {
     if (!videoPath) return

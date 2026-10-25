@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, realpath, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron'
-import type { ExportRequest } from '../shared/api'
+import type { ExportRequest, Session } from '../shared/api'
 import { messagesFor, resolveLocale } from '../shared/i18n'
 import { exportClips } from './export'
 import { findFfmpeg } from './ffmpeg-args'
@@ -10,6 +10,7 @@ import { cancelFfmpeg, captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { existingAncestor } from './paths'
+import { loadSession, saveSession } from './sessions'
 import { peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
 
 registerMediaScheme()
@@ -114,6 +115,10 @@ app.whenReady().then(() => {
     const even = raw.byteLength - (raw.byteLength % 2)
     return peaksFromSamples(new Int16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + even)))
   })
+
+  const sessionsDir = join(app.getPath('userData'), 'sessions')
+  ipcMain.handle('load-session', (_event, videoPath: string) => loadSession(sessionsDir, videoPath))
+  ipcMain.on('save-session', (_event, videoPath: string, session: Session) => void saveSession(sessionsDir, videoPath, session))
 
   ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')).catch(() => app.getPath('videos')))
 

@@ -10,6 +10,7 @@ export type ClipsAction =
   | { type: 'setEnd'; id: string; time: number }
   | { type: 'replace'; clip: Clip }
   | { type: 'reorder'; from: number; to: number }
+  | { type: 'restore'; clips: Clip[] }
   | { type: 'reset' }
 
 export const initialClipsState: ClipsState = { clips: [], pendingStart: null }
@@ -49,6 +50,8 @@ export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState
       clips.splice(action.to, 0, moved)
       return { ...state, clips }
     }
+    case 'restore':
+      return { clips: action.clips, pendingStart: null }
     case 'reset':
       return initialClipsState
   }
