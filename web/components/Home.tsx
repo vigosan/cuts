@@ -7,7 +7,9 @@ export function Home({ c }: { c: Content }) {
       <article className="flex flex-col gap-6">
         <h1 className="text-2xl font-medium text-gray-800">{c.home.tagline}</h1>
         <p>{c.home.intro}</p>
-        <p className="text-gray-800">{c.home.availability}</p>
+        <p className="text-gray-800">
+          {c.home.availability} <span className="text-gray-500">· {c.home.version}</span>
+        </p>
       </article>
       <img
         src={`/screenshots/${c.lang}-overview.png`}
@@ -34,6 +36,28 @@ export function Home({ c }: { c: Content }) {
           alt={c.home.timelineAlt}
           width={2039}
           height={322}
+          className="w-full rounded-lg border border-gray-200"
+        />
+      </article>
+      <article className="flex flex-col gap-6">
+        <h2 className="text-lg font-medium text-gray-800">{c.home.framingTitle}</h2>
+        <p>{c.home.framingText}</p>
+        <img
+          src={`/screenshots/${c.lang}-framing.png`}
+          alt={c.home.framingAlt}
+          width={1600}
+          height={1000}
+          className="w-full rounded-lg border border-gray-200"
+        />
+      </article>
+      <article className="flex flex-col gap-6">
+        <h2 className="text-lg font-medium text-gray-800">{c.home.darkTitle}</h2>
+        <p>{c.home.darkText}</p>
+        <img
+          src={`/screenshots/${c.lang}-dark.png`}
+          alt={c.home.darkAlt}
+          width={1600}
+          height={1000}
           className="w-full rounded-lg border border-gray-200"
         />
       </article>

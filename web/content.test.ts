@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { content, LANGS, SCREENSHOTS } from "./content";
+import { content, LANGS, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -30,5 +30,13 @@ describe("site content", () => {
     for (const lang of LANGS) {
       for (const name of SCREENSHOTS) expect(existsSync(`public/screenshots/${lang}-${name}.png`), `${lang}-${name}`).toBe(true);
     }
+  });
+
+  it("shows the app version next to the availability in both languages, so visitors know which release the page describes", () => {
+    for (const lang of LANGS) expect(content[lang].home.version).toContain(VERSION);
+  });
+
+  it("shows the framing and dark mode screenshots too", () => {
+    expect(SCREENSHOTS).toEqual(["overview", "timeline", "framing", "dark"]);
   });
 });

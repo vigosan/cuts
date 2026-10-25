@@ -4,7 +4,8 @@ export type Lang = (typeof LANGS)[number];
 export const SITE_URL = "https://cuts.vicent.io";
 export const CONTACT = "hello@vicent.io";
 export const UPDATED = "2026-10-25";
-export const SCREENSHOTS = ["overview", "timeline"] as const;
+export const VERSION = "1.0";
+export const SCREENSHOTS = ["overview", "timeline", "framing", "dark"] as const;
 
 export const content = {
   en: {
@@ -22,6 +23,7 @@ export const content = {
       intro:
         "Cuts turns a long recording into short clips, ready to post. Drop in a video, listen, and mark where each clip starts and ends. Cuts exports them all at once, numbered in carousel order.",
       availability: "Coming soon to the Mac App Store.",
+      version: `Version ${VERSION}`,
       featuresTitle: "What it does",
       features: [
         "Mark clips while you listen, with I and O, and play or pause with Space.",
@@ -40,6 +42,12 @@ export const content = {
       timelineText:
         "Frames and the waveform show where every moment is. The clip you select stays clear, with edges you can drag and its fades drawn at each end.",
       timelineAlt: "Close-up of the timeline: video frames, audio waveform and a selected clip with its edges",
+      framingTitle: "Framed for Instagram",
+      framingText: "In 4:5, 1:1 or 9:16, drag the frame over the video to choose what stays in shot, clip by clip.",
+      framingAlt: "Cuts in 4:5 format with the crop frame over the video",
+      darkTitle: "Light or dark",
+      darkText: "Cuts follows your Mac's appearance.",
+      darkAlt: "Cuts in dark mode",
     },
     privacy: {
       title: "Privacy policy",
@@ -98,6 +106,7 @@ export const content = {
       intro:
         "Cuts convierte una grabación larga en clips cortos, listos para publicar. Arrastra un vídeo, escúchalo y marca dónde empieza y acaba cada clip. Cuts los exporta todos de una vez, numerados en el orden del carrusel.",
       availability: "Muy pronto en la Mac App Store.",
+      version: `Versión ${VERSION}`,
       featuresTitle: "Qué hace",
       features: [
         "Marca clips mientras escuchas, con I y O, y reproduce o pausa con la barra espaciadora.",
@@ -116,6 +125,12 @@ export const content = {
       timelineText:
         "Los fotogramas y la forma de onda te enseñan dónde está cada momento. El clip que seleccionas se ve limpio, con bordes que puedes arrastrar y sus fundidos dibujados en cada extremo.",
       timelineAlt: "Detalle de la línea de tiempo: fotogramas, forma de onda y un clip seleccionado con sus bordes",
+      framingTitle: "Encuadrado para Instagram",
+      framingText: "En 4:5, 1:1 o 9:16, arrastra el recuadro sobre el vídeo para elegir qué queda en el plano, clip a clip.",
+      framingAlt: "Cuts en formato 4:5 con el recuadro de recorte sobre el vídeo",
+      darkTitle: "Claro u oscuro",
+      darkText: "Cuts sigue la apariencia de tu Mac.",
+      darkAlt: "Cuts en modo oscuro",
     },
     privacy: {
       title: "Política de privacidad",
