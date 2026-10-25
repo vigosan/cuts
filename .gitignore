@@ -10,3 +10,4 @@ build/entitlements.mas.plist
 build/embedded.provisionprofile
 dist-mas/
 dist-sandbox/
+.DS_Store
