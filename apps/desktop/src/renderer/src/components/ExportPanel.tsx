@@ -1,3 +1,4 @@
+import { outputFileName, safeBaseName } from '@cuts/core/clips'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import { t } from '../i18n'
 import { FolderIcon } from './icons'
@@ -13,6 +14,7 @@ type Props = {
   canExport: boolean
   baseName: string
   folder: string | null
+  destination: string | null
   format: OutputFormat
   state: ExportState
   onBaseName: (value: string) => void
@@ -36,6 +38,7 @@ export function ExportPanel(p: Props) {
       : 0
   const finished = p.state.status === 'running' ? p.state.progress.filter((r) => r >= 1).length : 0
   const folderName = p.folder?.split(/[\\/]/).filter(Boolean).slice(-2).join('/')
+  const fileName = (index: number) => outputFileName(safeBaseName(p.baseName), index)
 
   return (
     <section className="flex flex-col gap-3 border-t border-line p-4">
@@ -135,10 +138,10 @@ export function ExportPanel(p: Props) {
             {p.state.error}
           </span>
         )}
-        {p.state.status === 'idle' && p.baseName && p.clipCount > 0 && p.folder && (
-          <span title={`${p.folder}/${p.baseName}-1.mp4`}>
-            {p.baseName}-1.mp4
-            {p.clipCount > 1 ? ` … ${p.baseName}-${p.clipCount}.mp4` : ''}
+        {p.state.status === 'idle' && p.baseName && p.clipCount > 0 && p.destination && (
+          <span data-testid="export-preview" title={`${p.destination}/${fileName(0)}`}>
+            {fileName(0)}
+            {p.clipCount > 1 ? ` … ${fileName(p.clipCount - 1)}` : ''}
           </span>
         )}
       </p>

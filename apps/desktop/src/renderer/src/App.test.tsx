@@ -411,6 +411,17 @@ describe('App', () => {
     )
   })
 
+  it('previews the exact file names and folder the export will write, so what is promised is what lands on disk', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.clear(screen.getByTestId('base-name'))
+    await userEvent.type(screen.getByTestId('base-name'), 'set 22:30')
+    const preview = await screen.findByTestId('export-preview')
+    expect(preview).toHaveTextContent('set 22-30-1.mp4')
+    expect(preview).toHaveAttribute('title', '/Users/vicent/Movies/Cuts/2026-10-22 22-33-13/set 22-30-1.mp4')
+  })
+
   it('names the clips and the default folder after the video on Windows, whose paths use backslashes', async () => {
     vi.mocked(api.openVideo).mockResolvedValue('C:\\Users\\vicent\\Videos\\set.mov')
     vi.mocked(api.moviesDir).mockResolvedValue('C:\\Users\\vicent\\Videos')

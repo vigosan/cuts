@@ -189,13 +189,15 @@ export function App() {
     []
   )
 
+  const destination = videoPath && folder ? `${folder}/${defaultBaseName(videoPath)}` : null
+
   const runExport = async () => {
-    if (!videoPath || !folder) return
+    if (!videoPath || !destination) return
     setExportState({ status: 'running', progress: clips.map(() => 0) })
     const result = await window.api
       .exportClips({
         input: videoPath,
-        folder: `${folder}/${defaultBaseName(videoPath)}`,
+        folder: destination,
         baseName,
         format,
         clips: clips.map((clip) => ({ ...clip, ...settingsOf(clip) }))
@@ -512,6 +514,7 @@ export function App() {
               canExport={canExport}
               baseName={baseName}
               folder={folder}
+              destination={destination}
               format={format}
               state={exportState}
               onBaseName={setBaseName}
