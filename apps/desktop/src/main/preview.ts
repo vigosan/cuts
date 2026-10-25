@@ -1,5 +1,6 @@
+import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+
 export const WAVEFORM_SAMPLE_RATE = 2000
-export const PEAKS_PER_SECOND = 50
 
 export function thumbnailArgs(input: string, time: number, height: number): string[] {
   return [

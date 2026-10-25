@@ -5,7 +5,8 @@ import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { buildFfmpegArgs, findFfmpeg } from './ffmpeg-args'
 import { cancelFfmpeg, captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
-import { peaksFromSamples, thumbnailArgs, waveformArgs, PEAKS_PER_SECOND } from './preview'
+import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
 
 const ffmpeg = findFfmpeg(existsSync, join(__dirname, '../../resources/ffmpeg', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'))!
 const dir = mkdtempSync(join(tmpdir(), 'cuts-'))

@@ -2,14 +2,13 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import type { Clip } from '@cuts/core/clips'
 import type { ClipFade } from '@cuts/core/fades'
 import { dragClip, type DragMode } from '@cuts/core/drag-clip'
-import { filmstripTiles, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
+import { filmstripTiles, PEAKS_PER_SECOND, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
 import { t } from '../i18n'
 import { useThumbnails, useWaveform } from '../useVideoPreview'
 
 const DRAG_THRESHOLD_PX = 3
 const TILE_WIDTH_PX = 96
 const ROOMY_CLIP_PX = 28
-const PEAKS_PER_SECOND = 50
 
 function fadeRamp(seconds: number, clipLength: number): string {
   return `max(6px, ${(seconds / clipLength) * 100}%)`

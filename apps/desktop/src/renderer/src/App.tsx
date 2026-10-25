@@ -15,10 +15,10 @@ import { withHistory } from '@cuts/core/history'
 import { t } from './i18n'
 import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/core/timeline-view'
 import { suggestMoments } from '@cuts/core/suggest'
+import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
-const PEAKS_PER_SECOND = 50
 const DEFAULT_FPS = 30
 const MAX_SHUTTLE = 4
 const clipsHistory = withHistory(clipsReducer)
