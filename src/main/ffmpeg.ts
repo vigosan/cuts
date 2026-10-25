@@ -3,13 +3,21 @@ import { rmSync } from 'node:fs'
 import { parseProgressSeconds } from './ffmpeg-args'
 
 const running = new Map<ChildProcess, string>()
+const cancelled = new Set<ChildProcess>()
 let stopping = false
 const capturing = new Set<ChildProcess>()
 
+function removeUnlessLocked(output: string): void {
+  try {
+    rmSync(output, { force: true })
+  } catch {}
+}
+
 export function cancelFfmpeg(): void {
   for (const [child, output] of running) {
+    cancelled.add(child)
     child.kill('SIGKILL')
-    rmSync(output, { force: true })
+    removeUnlessLocked(output)
   }
 }
 
@@ -35,6 +43,7 @@ export function runFfmpeg(ffmpeg: string, args: string[], onSeconds: (seconds: n
     child.on('error', reject)
     child.on('exit', () => running.delete(child))
     child.on('close', (code) => {
+      if (cancelled.delete(child)) rmSync(args.at(-1)!, { force: true })
       if (code === 0) resolve()
       else reject(new Error(stderr.trim().split('\n').slice(-3).join('\n') || `ffmpeg exited with ${code}`))
     })
