@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { content, DARK_SCREENSHOTS, DOWNLOADS, FFMPEG_FILES, LANGS, SCREENSHOTS, VERSION } from "./content";
+import { content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, LANGS, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -46,8 +46,14 @@ describe("site content", () => {
     for (const lang of LANGS) expect(content[lang].home.version).toContain(VERSION);
   });
 
-  it("shows the drop suggestions, framing and dark mode screenshots too", () => {
-    expect(SCREENSHOTS).toEqual(["overview", "drops", "timeline", "framing", "dark"]);
+  it("shows the framing and dark mode screenshots too", () => {
+    expect(SCREENSHOTS).toEqual(["overview", "timeline", "framing", "dark"]);
+  });
+
+  it("has the drop suggestion video and its poster in both languages, so the section is never empty", () => {
+    for (const lang of LANGS) {
+      for (const file of Object.values(DROPS_VIDEO)) expect(existsSync(`public/screenshots/${lang}-${file}`), `${lang}-${file}`).toBe(true);
+    }
   });
 
   it("publishes the source, build details and licenses of every bundled FFmpeg, as the LGPL and BSD licenses require", () => {

@@ -1,6 +1,7 @@
-import { DARK_SCREENSHOTS, type Content } from "@/content";
+import { DARK_SCREENSHOTS, DROPS_VIDEO, type Content } from "@/content";
 import { splitKeys } from "@/keys";
 import { Download } from "./Download";
+import { LoopVideo } from "./LoopVideo";
 import { Page } from "./Page";
 import { Screenshot } from "./Screenshot";
 
@@ -22,12 +23,12 @@ export function Home({ c }: { c: Content }) {
       <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100">{c.home.dropsTitle}</h2>
         <p>{c.home.dropsText}</p>
-        <Screenshot
-          src={`/screenshots/${c.lang}-drops.png`}
-          dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.drops}.png`}
-          alt={c.home.dropsAlt}
-          width={2039}
-          height={322}
+        <LoopVideo
+          src={`/screenshots/${c.lang}-${DROPS_VIDEO.video}`}
+          poster={`/screenshots/${c.lang}-${DROPS_VIDEO.poster}`}
+          label={c.home.dropsAlt}
+          width={1440}
+          height={900}
         />
       </article>
       <article className="flex flex-col gap-6">
