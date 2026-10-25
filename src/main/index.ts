@@ -6,16 +6,17 @@ import type { ExportRequest, Session } from '../shared/api'
 import { messagesFor, resolveLocale } from '../shared/i18n'
 import { exportClips } from './export'
 import { findFfmpeg } from './ffmpeg-args'
-import { cancelFfmpeg, captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
+import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { existingAncestor } from './paths'
 import { loadSession, saveSession } from './sessions'
-import { peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
+import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
 
 registerMediaScheme()
 
 const THUMBNAIL_HEIGHT = 96
+const DEFAULT_FRAME_RATE = 30
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -111,6 +112,10 @@ app.whenReady().then(() => {
     const jpeg = await captureFfmpeg(bundledFfmpeg()!, thumbnailArgs(path, time, THUMBNAIL_HEIGHT))
     return `data:image/jpeg;base64,${jpeg.toString('base64')}`
   })
+
+  ipcMain.handle('frame-rate', async (_event, path: string) =>
+    parseFrameRate(await readFfmpegInfo(bundledFfmpeg()!, path)) ?? DEFAULT_FRAME_RATE
+  )
 
   ipcMain.handle('waveform', async (_event, path: string) => {
     const raw = await captureFfmpeg(bundledFfmpeg()!, waveformArgs(path))

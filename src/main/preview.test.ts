@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PEAKS_PER_SECOND, peaksFromSamples, thumbnailArgs, waveformArgs, WAVEFORM_SAMPLE_RATE } from './preview'
+import { parseFrameRate, PEAKS_PER_SECOND, peaksFromSamples, thumbnailArgs, waveformArgs, WAVEFORM_SAMPLE_RATE } from './preview'
 
 const valueAfter = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
 
@@ -36,5 +36,16 @@ describe('peaksFromSamples', () => {
     expect(peaks).toHaveLength(2)
     expect(peaks[0]).toBeCloseTo(0.5, 2)
     expect(peaks[1]).toBeCloseTo(1, 2)
+  })
+})
+
+describe('parseFrameRate', () => {
+  it('reads the frame rate from the video stream line ffmpeg prints', () => {
+    expect(parseFrameRate('Stream #0:0: Video: h264 (High), yuv420p, 1280x720, 5000 kb/s, 60 fps, 60 tbr, 600 tbn')).toBe(60)
+    expect(parseFrameRate('Stream #0:0: Video: h264, 1920x1080, 29.97 fps, 29.97 tbr')).toBe(29.97)
+  })
+
+  it('returns null when there is no video stream', () => {
+    expect(parseFrameRate('Stream #0:0: Audio: aac, 48000 Hz, stereo')).toBeNull()
   })
 })

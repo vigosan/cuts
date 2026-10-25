@@ -16,6 +16,7 @@ const api: Api = {
   cancelExport: () => ipcRenderer.send('cancel-export'),
   thumbnail: (path, time) => ipcRenderer.invoke('thumbnail', path, time),
   waveform: (path) => ipcRenderer.invoke('waveform', path),
+  frameRate: (path) => ipcRenderer.invoke('frame-rate', path),
   loadSession: (videoPath) => ipcRenderer.invoke('load-session', videoPath),
   saveSession: (videoPath, session) => ipcRenderer.send('save-session', videoPath, session),
   onMenuCommand: (callback) => {

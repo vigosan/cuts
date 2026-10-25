@@ -17,6 +17,8 @@ import { nextViewStart, ZOOM_LEVELS, type Zoom } from './timeline-view'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
+const DEFAULT_FPS = 30
+const MAX_SHUTTLE = 4
 const clipsHistory = withHistory(clipsReducer)
 const APP_FOLDER = 'Cuts'
 
@@ -54,6 +56,8 @@ export function App() {
   const [format, setFormat] = useState<OutputFormat>('original')
   const [restoredFor, setRestoredFor] = useState<string | null>(null)
   const openedPath = useRef<string | null>(null)
+  const shuttle = useRef(0)
+  const [fps, setFps] = useState(DEFAULT_FPS)
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
   const shownSettings = selectedClip ? settingsOf(selectedClip) : defaultSettings
   const target = formatSize(format)
@@ -75,6 +79,24 @@ export function App() {
     if (video.paused) void video.play()
     else video.pause()
   }
+  const stepTo = (t: number) => {
+    videoRef.current?.pause()
+    seekTo(t)
+  }
+  const shuttleForward = () => {
+    const video = videoRef.current
+    if (!video) return
+    shuttle.current = shuttle.current === 0 ? 1 : Math.min(shuttle.current * 2, MAX_SHUTTLE)
+    video.playbackRate = shuttle.current
+    if (shuttle.current === 1) void video.play()
+  }
+  const stopShuttle = () => {
+    const video = videoRef.current
+    if (!video) return
+    video.pause()
+    shuttle.current = 0
+    video.playbackRate = 1
+  }
   const markStart = () => dispatch({ type: 'markStart', time: now() })
   const markEnd = () => dispatch({ type: 'markEnd', time: now() })
 
@@ -93,6 +115,7 @@ export function App() {
     dispatch({ type: 'reset', resetHistory: true })
     setRestoredFor(null)
     openedPath.current = path
+    void window.api.frameRate(path).then((rate) => openedPath.current === path && setFps(rate))
     void window.api.loadSession(path).then((session) => {
       if (openedPath.current !== path) return
       if (session) {
@@ -126,7 +149,15 @@ export function App() {
         ArrowLeft: () => seekTo(now() - SEEK_STEP),
         ArrowRight: () => seekTo(now() + SEEK_STEP)
       }
-      const action = actions[e.key.length === 1 ? e.key.toLowerCase() : e.key]
+      const frame = e.shiftKey ? 1 : 1 / fps
+      const byPosition: Record<string, () => void> = {
+        Comma: () => stepTo(now() - frame),
+        Period: () => stepTo(now() + frame),
+        KeyJ: () => seekTo(now() - SEEK_STEP),
+        KeyK: stopShuttle,
+        KeyL: shuttleForward
+      }
+      const action = byPosition[e.code] ?? actions[e.key.length === 1 ? e.key.toLowerCase() : e.key]
       if (!action) return
       e.preventDefault()
       action()

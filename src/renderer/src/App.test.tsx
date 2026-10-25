@@ -18,6 +18,7 @@ function makeApi(): Api {
     reveal: vi.fn(),
     cancelExport: vi.fn(),
     loadSession: vi.fn(async () => null),
+    frameRate: vi.fn(async () => 50),
     saveSession: vi.fn(),
     thumbnail: vi.fn(async (_path: string, time: number) => `data:image/jpeg;base64,${time}`),
     waveform: vi.fn(async () => new Float32Array(4880 * 50).fill(0.5)),
@@ -583,5 +584,38 @@ describe('App', () => {
     await act(async () => menuCommand('undo'))
     expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
     vi.mocked(window.confirm).mockRestore()
+  })
+
+  it('steps one frame with comma and period, and one second with Shift, to place cuts precisely', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 100)
+    await waitFor(() => expect(api.frameRate).toHaveBeenCalledWith(VIDEO))
+    fireEvent.keyDown(window, { key: '.', code: 'Period' })
+    expect(video.currentTime).toBeCloseTo(100.02)
+    fireEvent.keyDown(window, { key: ',', code: 'Comma' })
+    fireEvent.keyDown(window, { key: ',', code: 'Comma' })
+    expect(video.currentTime).toBeCloseTo(99.98)
+    fireEvent.keyDown(window, { key: ':', code: 'Period', shiftKey: true })
+    expect(video.currentTime).toBeCloseTo(100.98)
+  })
+
+  it('shuttles with J, K and L like a video editor', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    const play = vi.fn(async () => {})
+    const pause = vi.fn()
+    Object.assign(video, { play, pause })
+    seek(video, 100)
+    fireEvent.keyDown(window, { key: 'l', code: 'KeyL' })
+    expect(play).toHaveBeenCalled()
+    expect(video.playbackRate).toBe(1)
+    fireEvent.keyDown(window, { key: 'l', code: 'KeyL' })
+    expect(video.playbackRate).toBe(2)
+    fireEvent.keyDown(window, { key: 'k', code: 'KeyK' })
+    expect(pause).toHaveBeenCalled()
+    expect(video.playbackRate).toBe(1)
+    fireEvent.keyDown(window, { key: 'j', code: 'KeyJ' })
+    expect(video.currentTime).toBe(95)
   })
 })

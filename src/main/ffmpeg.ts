@@ -60,3 +60,19 @@ export function captureFfmpeg(ffmpeg: string, args: string[]): Promise<Buffer> {
     })
   })
 }
+
+export function readFfmpegInfo(ffmpeg: string, input: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ffmpeg, ['-hide_banner', '-i', input])
+    capturing.add(child)
+    let stderr = ''
+    child.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString()
+    })
+    child.on('error', reject)
+    child.on('close', () => {
+      capturing.delete(child)
+      resolve(stderr)
+    })
+  })
+}

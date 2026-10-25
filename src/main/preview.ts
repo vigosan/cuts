@@ -39,3 +39,8 @@ export function peaksFromSamples(samples: Int16Array): Float32Array {
   }
   return peaks
 }
+
+export function parseFrameRate(ffmpegOutput: string): number | null {
+  const match = /Video:.*?(\d+(?:\.\d+)?) fps/.exec(ffmpegOutput)
+  return match ? Number(match[1]) : null
+}

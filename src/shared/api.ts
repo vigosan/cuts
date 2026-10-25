@@ -39,4 +39,5 @@ export type Api = {
   loadSession(videoPath: string): Promise<Session | null>
   saveSession(videoPath: string, session: Session): void
   waveform(path: string): Promise<Float32Array>
+  frameRate(path: string): Promise<number>
 }
