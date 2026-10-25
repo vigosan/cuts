@@ -7,6 +7,13 @@ export const UPDATED = "2026-10-25";
 export const VERSION = "1.0";
 export const SCREENSHOTS = ["overview", "timeline", "framing", "dark"] as const;
 
+const RELEASES = "https://github.com/vigosan/cuts-releases/releases/latest/download";
+export const DOWNLOADS = {
+  mac: `${RELEASES}/Cuts-mac.dmg`,
+  windows: `${RELEASES}/Cuts-windows.exe`,
+  linux: `${RELEASES}/Cuts-linux.AppImage`,
+} as const;
+
 export const FFMPEG_FILES = {
   source: "/ffmpeg/ffmpeg-9.0.2.tar.xz",
   build: "/ffmpeg/BUILD-FFmpeg.txt",
@@ -25,13 +32,15 @@ export const content = {
     meta: {
       title: "Cuts — cut your best moments into clips",
       description:
-        "A Mac app to mark the best moments of a long video and export them as short clips, ready for an Instagram carousel.",
+        "An app for Mac, Windows and Linux to mark the best moments of a long video and export them as short clips, ready for an Instagram carousel.",
     },
     home: {
       tagline: "Cut your best moments into clips",
       intro:
         "Cuts turns a long recording into short clips, ready to post. Drop in a video, listen, and mark where each clip starts and ends. Cuts exports them all at once, numbered in carousel order.",
-      availability: "Coming soon to the Mac App Store.",
+      availability: "Free. Coming soon to the Mac App Store and the Microsoft Store.",
+      download: { mac: "Download for Mac", windows: "Download for Windows", linux: "Download for Linux", also: "Also for" },
+      platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Version ${VERSION}`,
       featuresTitle: "What it does",
       features: [
@@ -45,7 +54,7 @@ export const content = {
         "Reorder clips by dragging. The order in the list is the order you post.",
       ],
       privacyTitle: "Private by design",
-      privacy: "Everything happens on your Mac. No account, no uploads, no tracking.",
+      privacy: "Everything happens on your computer. No account, no uploads, no tracking.",
       screenshotAlt: "Cuts with a long video, six clips marked and one selected",
       timelineTitle: "A timeline like a video editor",
       timelineText:
@@ -55,7 +64,7 @@ export const content = {
       framingText: "In 4:5, 1:1 or 9:16, drag the frame over the video to choose what stays in shot, clip by clip.",
       framingAlt: "Cuts in 4:5 format with the crop frame over the video",
       darkTitle: "Light or dark",
-      darkText: "Cuts follows your Mac's appearance.",
+      darkText: "Cuts follows your system's light or dark appearance.",
       darkAlt: "Cuts in dark mode",
     },
     privacy: {
@@ -66,8 +75,8 @@ export const content = {
           heading: "The app",
           body: [
             "Cuts does not collect, store or share any personal data. It has no accounts, analytics, advertising or third-party SDKs, and it does not connect to the internet.",
-            "Your videos never leave your Mac. Cuts reads the video you open and writes the exported clips to the folder you choose, by default Movies › Cuts.",
-            "So you can pick up where you left off, Cuts saves on your Mac the clips you mark in each video: their times, order and settings. This stays on your Mac, is never sent anywhere, and is deleted when you remove all the clips of a video or uninstall the app.",
+            "Your videos never leave your computer. Cuts reads the video you open and writes the exported clips to the folder you choose, by default Cuts inside your Movies or Videos folder.",
+            "So you can pick up where you left off, Cuts saves on your computer the clips you mark in each video: their times, order and settings. This stays on your computer, is never sent anywhere, and is deleted when you remove all the clips of a video or uninstall the app.",
             "To remove everything Cuts creates, delete the exported clips and uninstall the app.",
           ],
         },
@@ -86,8 +95,8 @@ export const content = {
     support: {
       title: "Support",
       body: [
-        `For help, bug reports or feature ideas, write to ${CONTACT}. Please include your macOS version and, if you can, the file type of the video you were using.`,
-        "Clips are saved by default to Movies › Cuts › the name of your video. You can choose another folder from the Folder field before exporting.",
+        `For help, bug reports or feature ideas, write to ${CONTACT}. Please include your system and its version (macOS, Windows or Linux) and, if you can, the file type of the video you were using.`,
+        "Clips are saved by default to Cuts › the name of your video, inside your Movies folder on Mac or your Videos folder on Windows and Linux. You can choose another folder from the Folder field before exporting.",
       ],
     },
     ffmpeg: {
@@ -116,13 +125,15 @@ export const content = {
     meta: {
       title: "Cuts — corta tus mejores momentos en clips",
       description:
-        "Una app para Mac que marca los mejores momentos de un vídeo largo y los exporta como clips cortos, listos para un carrusel de Instagram.",
+        "Una app para Mac, Windows y Linux que marca los mejores momentos de un vídeo largo y los exporta como clips cortos, listos para un carrusel de Instagram.",
     },
     home: {
       tagline: "Corta tus mejores momentos en clips",
       intro:
         "Cuts convierte una grabación larga en clips cortos, listos para publicar. Arrastra un vídeo, escúchalo y marca dónde empieza y acaba cada clip. Cuts los exporta todos de una vez, numerados en el orden del carrusel.",
-      availability: "Muy pronto en la Mac App Store.",
+      availability: "Gratis. Muy pronto en la Mac App Store y en Microsoft Store.",
+      download: { mac: "Descargar para Mac", windows: "Descargar para Windows", linux: "Descargar para Linux", also: "También para" },
+      platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Versión ${VERSION}`,
       featuresTitle: "Qué hace",
       features: [
@@ -136,7 +147,7 @@ export const content = {
         "Ordena los clips arrastrándolos. El orden de la lista es el orden en que publicas.",
       ],
       privacyTitle: "Privada por diseño",
-      privacy: "Todo ocurre en tu Mac. Sin cuentas, sin subidas, sin rastreo.",
+      privacy: "Todo ocurre en tu ordenador. Sin cuentas, sin subidas, sin rastreo.",
       screenshotAlt: "Cuts con un vídeo largo, seis clips marcados y uno seleccionado",
       timelineTitle: "Una línea de tiempo como la de un editor de vídeo",
       timelineText:
@@ -146,7 +157,7 @@ export const content = {
       framingText: "En 4:5, 1:1 o 9:16, arrastra el recuadro sobre el vídeo para elegir qué queda en el plano, clip a clip.",
       framingAlt: "Cuts en formato 4:5 con el recuadro de recorte sobre el vídeo",
       darkTitle: "Claro u oscuro",
-      darkText: "Cuts sigue la apariencia de tu Mac.",
+      darkText: "Cuts sigue la apariencia clara u oscura de tu sistema.",
       darkAlt: "Cuts en modo oscuro",
     },
     privacy: {
@@ -157,8 +168,8 @@ export const content = {
           heading: "La app",
           body: [
             "Cuts no recopila, guarda ni comparte ningún dato personal. No tiene cuentas, analítica, publicidad ni SDK de terceros, y no se conecta a internet.",
-            "Tus vídeos nunca salen de tu Mac. Cuts lee el vídeo que abres y guarda los clips en la carpeta que elijas, por defecto Películas › Cuts.",
-            "Para que puedas seguir donde lo dejaste, Cuts guarda en tu Mac los clips que marcas en cada vídeo: sus tiempos, su orden y sus ajustes. Esto se queda en tu Mac, nunca se envía a ningún sitio y se borra cuando eliminas todos los clips de un vídeo o desinstalas la app.",
+            "Tus vídeos nunca salen de tu ordenador. Cuts lee el vídeo que abres y guarda los clips en la carpeta que elijas, por defecto Cuts dentro de tu carpeta Películas o Vídeos.",
+            "Para que puedas seguir donde lo dejaste, Cuts guarda en tu ordenador los clips que marcas en cada vídeo: sus tiempos, su orden y sus ajustes. Esto se queda en tu ordenador, nunca se envía a ningún sitio y se borra cuando eliminas todos los clips de un vídeo o desinstalas la app.",
             "Para borrar todo lo que crea Cuts, elimina los clips exportados y desinstala la app.",
           ],
         },
@@ -177,8 +188,8 @@ export const content = {
     support: {
       title: "Soporte",
       body: [
-        `Para ayuda, errores o ideas, escribe a ${CONTACT}. Indica tu versión de macOS y, si puedes, el tipo de archivo del vídeo que usabas.`,
-        "Los clips se guardan por defecto en Películas › Cuts › el nombre de tu vídeo. Puedes elegir otra carpeta en el campo Carpeta antes de exportar.",
+        `Para ayuda, errores o ideas, escribe a ${CONTACT}. Indica tu sistema y su versión (macOS, Windows o Linux) y, si puedes, el tipo de archivo del vídeo que usabas.`,
+        "Los clips se guardan por defecto en Cuts › el nombre de tu vídeo, dentro de tu carpeta Películas en Mac o Vídeos en Windows y Linux. Puedes elegir otra carpeta en el campo Carpeta antes de exportar.",
       ],
     },
     ffmpeg: {

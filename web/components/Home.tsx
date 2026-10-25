@@ -1,4 +1,5 @@
 import type { Content } from "@/content";
+import { Download } from "./Download";
 import { Page } from "./Page";
 
 export function Home({ c }: { c: Content }) {
@@ -10,6 +11,7 @@ export function Home({ c }: { c: Content }) {
         <p className="text-gray-800">
           {c.home.availability} <span className="text-gray-500">· {c.home.version}</span>
         </p>
+        <Download home={c.home} />
       </article>
       <img
         src={`/screenshots/${c.lang}-overview.png`}
