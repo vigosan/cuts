@@ -72,4 +72,12 @@ describe("site content", () => {
   it("links to the public repository this site is built from, not the releases one, so visitors can read the source", () => {
     expect(REPO).toBe("https://github.com/vigosan/cuts");
   });
+
+  it("tells in the privacy policy that the app goes online to check for updates, instead of claiming it never does", () => {
+    for (const lang of LANGS) {
+      const text = content[lang].privacy.sections.flatMap((section) => section.body).join(" ");
+      expect(text).toContain("GitHub");
+      expect(text).not.toMatch(/does not connect to the internet|no se conecta a internet/);
+    }
+  });
 });

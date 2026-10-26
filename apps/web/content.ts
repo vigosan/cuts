@@ -4,7 +4,7 @@ export type Lang = (typeof LANGS)[number];
 export const SITE_URL = "https://cuts.vicent.io";
 export const CONTACT = "hello@vicent.io";
 export const REPO = "https://github.com/vigosan/cuts";
-export const UPDATED = "2026-10-25";
+export const UPDATED = "2026-10-26";
 export const VERSION = "1.0";
 export const SCREENSHOTS = ["overview", "timeline", "framing", "dark"] as const;
 export const DARK_SCREENSHOTS = { overview: "overview-dark", dark: "light" } as const;
@@ -85,7 +85,8 @@ export const content = {
         {
           heading: "The app",
           body: [
-            "Cuts does not collect, store or share any personal data. It has no accounts, analytics, advertising or third-party SDKs, and it does not connect to the internet.",
+            "Cuts does not collect, store or share any personal data. It has no accounts, analytics, advertising or third-party SDKs.",
+            "Cuts only connects to the internet to check for new versions: when it opens and every two hours, it asks GitHub, where its releases are published, whether there is a newer one, and downloads it if there is. GitHub receives technical request data, such as your IP address, to answer. The Mac App Store and Microsoft Store versions never do this, as their store updates them.",
             "Your videos never leave your computer. Cuts reads the video you open and writes the exported clips to the folder you choose, by default Cuts inside your Movies or Videos folder.",
             "So you can pick up where you left off, Cuts saves on your computer the clips you mark in each video: their times, order and settings. This stays on your computer, is never sent anywhere, and is deleted when you remove all the clips of a video or uninstall the app.",
             "To remove everything Cuts creates, delete the exported clips and uninstall the app.",
@@ -186,7 +187,8 @@ export const content = {
         {
           heading: "La app",
           body: [
-            "Cuts no recopila, guarda ni comparte ningún dato personal. No tiene cuentas, analítica, publicidad ni SDK de terceros, y no se conecta a internet.",
+            "Cuts no recopila, guarda ni comparte ningún dato personal. No tiene cuentas, analítica, publicidad ni SDK de terceros.",
+            "Cuts solo se conecta a internet para buscar nuevas versiones: al abrirse y cada dos horas pregunta a GitHub, donde se publican sus versiones, si hay una más reciente y, si la hay, la descarga. GitHub recibe datos técnicos de la petición, como tu dirección IP, para responder. Las versiones de la Mac App Store y de Microsoft Store nunca lo hacen, porque las actualiza su tienda.",
             "Tus vídeos nunca salen de tu ordenador. Cuts lee el vídeo que abres y guarda los clips en la carpeta que elijas, por defecto Cuts dentro de tu carpeta Películas o Vídeos.",
             "Para que puedas seguir donde lo dejaste, Cuts guarda en tu ordenador los clips que marcas en cada vídeo: sus tiempos, su orden y sus ajustes. Esto se queda en tu ordenador, nunca se envía a ningún sitio y se borra cuando eliminas todos los clips de un vídeo o desinstalas la app.",
             "Para borrar todo lo que crea Cuts, elimina los clips exportados y desinstala la app.",
