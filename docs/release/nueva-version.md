@@ -51,6 +51,28 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
+## Novedades de la 1.2
+
+### Español
+
+- Reordena el carrusel con el teclado: ⌥↑ y ⌥↓ suben y bajan el clip seleccionado.
+- Antes de exportar ves los nombres exactos de los archivos y la carpeta donde se guardarán.
+- Puedes seguir marcando clips mientras Cuts lee la sesión para sugerir momentos.
+- Si cambias algo durante la exportación, el botón vuelve a ofrecer "Exportar", para no compartir clips desactualizados.
+- Si no se puede leer el audio, puedes volver a pedir las sugerencias.
+- ⌘O ya no marca el final de un clip con un vídeo abierto: abre otro vídeo, como debe.
+
+### English
+
+- Reorder the carousel from the keyboard: ⌥↑ and ⌥↓ move the selected clip up and down.
+- Before exporting, see the exact file names and the folder they will be saved to.
+- Keep marking clips while Cuts reads the session to suggest moments.
+- If you change something while exporting, the button offers Export again, so you never share outdated clips.
+- If the audio cannot be read, you can ask for the suggestions again.
+- ⌘O no longer marks a clip end while a video is open: it opens another video, as it should.
+
+En las descargas de la web (no en la App Store), la 1.2 es además la primera que se actualiza sola.
+
 ## Novedades de la 1.1
 
 ### Español
