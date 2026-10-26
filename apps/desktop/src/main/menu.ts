@@ -10,14 +10,17 @@ export type MenuActions = {
   openUrl: (url: string) => void
   undo: () => void
   redo: () => void
+  checkForUpdates?: () => void
 }
 
 export function menuTemplate(t: Messages, appName: string, actions: MenuActions, platform: NodeJS.Platform = process.platform): MenuEntry[] {
   const mac = platform === 'darwin'
+  const updates: MenuEntry[] = actions.checkForUpdates ? [{ label: t.menuCheckForUpdates, click: actions.checkForUpdates }] : []
   const appMenu: MenuEntry = {
     label: appName,
     submenu: [
       { role: 'about', label: t.menuAbout(appName) },
+      ...updates,
       separator,
       { role: 'services', label: t.menuServices },
       separator,
@@ -63,7 +66,8 @@ export function menuTemplate(t: Messages, appName: string, actions: MenuActions,
       label: t.menuHelp,
       submenu: [
         { label: t.menuPrivacy, click: () => actions.openUrl(t.privacyUrl) },
-        { label: t.menuSupport, click: () => actions.openUrl(t.supportUrl) }
+        { label: t.menuSupport, click: () => actions.openUrl(t.supportUrl) },
+        ...(mac || updates.length === 0 ? [] : [separator, ...updates])
       ]
     }
   ]

@@ -31,13 +31,19 @@ function makeApi(): Api {
     onMenuCommand: vi.fn((callback: (command: 'undo' | 'redo') => void) => {
       menuCommand = callback
       return () => {}
-    })
+    }),
+    onUpdateReady: vi.fn((callback: (version: string) => void) => {
+      updateReady = callback
+      return () => {}
+    }),
+    restartToUpdate: vi.fn()
   }
 }
 
 let api: Api
 let menuOpenVideo: () => void
 let menuCommand: (command: 'undo' | 'redo') => void
+let updateReady: (version: string) => void
 
 beforeEach(() => {
   api = makeApi()
@@ -67,6 +73,15 @@ async function markClip(video: HTMLVideoElement, start: number, end: number) {
 }
 
 describe('App', () => {
+  it('offers to restart once a new version has downloaded, so the update applies without hunting for it', async () => {
+    render(<App />)
+    expect(screen.queryByTestId('update-ready')).not.toBeInTheDocument()
+    act(() => updateReady('1.2.0'))
+    expect(screen.getByTestId('update-ready')).toHaveTextContent(t.updateReady('1.2.0'))
+    await userEvent.click(screen.getByTestId('restart-to-update'))
+    expect(api.restartToUpdate).toHaveBeenCalled()
+  })
+
   it('loads the dropped video by its path so the file is streamed, not copied', async () => {
     render(<App />)
     const file = new File([''], '2026-10-22 22-33-13.mov')

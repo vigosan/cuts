@@ -66,4 +66,22 @@ describe('menuTemplate', () => {
     expect(roles).not.toContain('zoom')
     expect(template.find((e) => e.label === 'File')!.submenu!.map((e) => e.role)).toContain('quit')
   })
+
+  it('offers Check for Updates… under the app menu on macOS, where Mac apps put it', () => {
+    const checkForUpdates = vi.fn()
+    const template = menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {}, checkForUpdates }, 'darwin')
+    const item = template[0].submenu!.find((e) => e.label === 'Check for Updates…')!
+    ;(item.click as () => void)()
+    expect(checkForUpdates).toHaveBeenCalled()
+  })
+
+  it('offers Check for Updates… in the Help menu on Windows and Linux, which have no app menu', () => {
+    const template = menuTemplate(messagesFor('es'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {}, checkForUpdates: () => {} }, 'win32')
+    expect(template.find((e) => e.label === 'Ayuda')!.submenu!.map((e) => e.label)).toContain('Buscar actualizaciones…')
+  })
+
+  it('hides Check for Updates… when the build cannot update itself, as in the App Store', () => {
+    const labels = flatten(menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {} })).map((e) => e.label)
+    expect(labels).not.toContain('Check for Updates…')
+  })
 })
