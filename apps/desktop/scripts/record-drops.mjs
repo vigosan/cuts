@@ -1,4 +1,4 @@
-const [, , wsUrl, dir] = process.argv
+const [, , wsUrl, dir, scheme = 'light'] = process.argv
 const fs = await import('node:fs')
 fs.mkdirSync(dir, { recursive: true })
 const ws = new WebSocket(wsUrl)
@@ -31,7 +31,7 @@ const waitForTimeline = async () => {
 ws.onopen = async () => {
   await send('Page.enable')
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false })
-  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] })
+  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] })
   const data = { items: [], files: ['/Users/vicent/Movies/2026-10-22 22-33-13.mov'], dragOperationsMask: 1 }
   for (const type of ['dragEnter', 'dragOver', 'drop']) await send('Input.dispatchDragEvent', { type, x: 500, y: 400, data })
   await sleep(2000)

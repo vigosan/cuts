@@ -1,4 +1,4 @@
-const [, , wsUrl, dir, lang] = process.argv
+const [, , wsUrl, dir, lang, scheme = 'light'] = process.argv
 const fs = await import('node:fs')
 const ws = new WebSocket(wsUrl)
 let id = 0
@@ -22,7 +22,7 @@ const waitForTimeline = async () => {
 }
 ws.onopen = async () => {
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false })
-  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] })
+  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] })
   const data = { items: [], files: ['/Users/vicent/Movies/2026-10-22 22-33-13.mov'], dragOperationsMask: 1 }
   for (const type of ['dragEnter', 'dragOver', 'drop']) await send('Input.dispatchDragEvent', { type, x: 500, y: 400, data })
   await sleep(2000)
@@ -51,7 +51,7 @@ ws.onopen = async () => {
   await shot('4-framing')
   await select('format', 'original')
   await evalJs(`document.head.insertAdjacentHTML('beforeend', '<style>*{transition:none!important}</style>')`)
-  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
+  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme === 'light' ? 'dark' : 'light' }] })
   await seek(3115)
   await waitForTimeline()
   await shot('3-dark')
