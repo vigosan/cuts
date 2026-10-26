@@ -32,7 +32,7 @@ describe("site content", () => {
     }
   });
 
-  it("has the screenshots shown to visitors in dark mode, in both languages, so dark mode never shows a broken image", () => {
+  it("has every screenshot in its dark version, in both languages, so dark mode never shows a broken or glaring light image", () => {
     for (const lang of LANGS) {
       for (const name of Object.values(DARK_SCREENSHOTS)) expect(existsSync(`public/screenshots/${lang}-${name}.png`), `${lang}-${name}`).toBe(true);
     }
@@ -50,7 +50,7 @@ describe("site content", () => {
     expect(SCREENSHOTS).toEqual(["overview", "timeline", "framing", "dark"]);
   });
 
-  it("has the drop suggestion video and its poster in both languages, so the section is never empty", () => {
+  it("has the drop suggestion video and its poster in both languages and themes, so the section is never empty or out of theme", () => {
     for (const lang of LANGS) {
       for (const file of Object.values(DROPS_VIDEO)) expect(existsSync(`public/screenshots/${lang}-${file}`), `${lang}-${file}`).toBe(true);
     }

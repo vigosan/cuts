@@ -29,6 +29,8 @@ export async function Home({ c }: { c: Content }) {
         <LoopVideo
           src={`/screenshots/${c.lang}-${DROPS_VIDEO.video}`}
           poster={`/screenshots/${c.lang}-${DROPS_VIDEO.poster}`}
+          dark={`/screenshots/${c.lang}-${DROPS_VIDEO.darkVideo}`}
+          darkPoster={`/screenshots/${c.lang}-${DROPS_VIDEO.darkPoster}`}
           label={c.home.dropsAlt}
           width={1440}
           height={900}
@@ -60,6 +62,7 @@ export async function Home({ c }: { c: Content }) {
         <p>{c.home.timelineText}</p>
         <Screenshot
           src={`/screenshots/${c.lang}-timeline.png`}
+          dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.timeline}.png`}
           alt={c.home.timelineAlt}
           width={2039}
           height={322}
@@ -70,6 +73,7 @@ export async function Home({ c }: { c: Content }) {
         <p>{c.home.framingText}</p>
         <Screenshot
           src={`/screenshots/${c.lang}-framing.png`}
+          dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.framing}.png`}
           alt={c.home.framingAlt}
           width={1600}
           height={1000}

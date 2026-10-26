@@ -7,8 +7,13 @@ export const REPO = "https://github.com/vigosan/cuts";
 export const UPDATED = "2026-10-26";
 export const VERSION = "1.2";
 export const SCREENSHOTS = ["overview", "timeline", "framing", "dark"] as const;
-export const DARK_SCREENSHOTS = { overview: "overview-dark", dark: "light" } as const;
-export const DROPS_VIDEO = { video: "drops.mp4", poster: "drops-poster.jpg" } as const;
+export const DARK_SCREENSHOTS = { overview: "overview-dark", timeline: "timeline-dark", framing: "framing-dark", dark: "light" } as const;
+export const DROPS_VIDEO = {
+  video: "drops.mp4",
+  poster: "drops-poster.jpg",
+  darkVideo: "drops-dark.mp4",
+  darkPoster: "drops-dark-poster.jpg",
+} as const;
 
 const RELEASES = "https://github.com/vigosan/cuts-releases/releases/latest/download";
 export const DOWNLOADS = {

@@ -3,7 +3,9 @@
 import { useEffect, useRef } from "react";
 import { frame } from "./Screenshot";
 
-export function LoopVideo({ src, poster, label, width, height }: { src: string; poster: string; label: string; width: number; height: number }) {
+type Props = { src: string; poster: string; label: string; width: number; height: number };
+
+function Video({ src, poster, label, width, height, className }: Props & { className: string }) {
   const video = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) void video.current?.play().catch(() => {});
@@ -20,7 +22,16 @@ export function LoopVideo({ src, poster, label, width, height }: { src: string; 
       loop
       playsInline
       preload="metadata"
-      className={frame}
+      className={className}
     />
+  );
+}
+
+export function LoopVideo({ dark, darkPoster, ...props }: Props & { dark: string; darkPoster: string }) {
+  return (
+    <>
+      <Video {...props} className={`${frame} dark:hidden`} />
+      <Video {...props} src={dark} poster={darkPoster} className={`${frame} hidden dark:block`} />
+    </>
   );
 }
