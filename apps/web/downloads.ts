@@ -17,13 +17,19 @@ export function formatDownloads(count: number, lang: Lang, label: { one: string;
 }
 
 export async function fetchDownloads(): Promise<number | null> {
+  const token = process.env.GITHUB_TOKEN;
   try {
     const response = await fetch("https://api.github.com/repos/vigosan/cuts-releases/releases?per_page=100", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       next: { revalidate: 3600 },
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(`GitHub releases request failed: ${response.status} ${await response.text()}`);
+      return null;
+    }
     return totalDownloads(await response.json());
-  } catch {
+  } catch (error) {
+    console.error(`GitHub releases request failed: ${error}`);
     return null;
   }
 }
