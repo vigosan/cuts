@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
+import { BREW, content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -71,6 +71,12 @@ describe("site content", () => {
 
   it("links to the public repository this site is built from, not the releases one, so visitors can read the source", () => {
     expect(REPO).toBe("https://github.com/vigosan/cuts");
+  });
+
+  it("installs with Homebrew from the tap the release workflow keeps current, so brew never installs an old version", () => {
+    const workflow = readFileSync("../../.github/workflows/release.yml", "utf8");
+    expect(BREW).toBe("brew install --cask vigosan/cuts/cuts");
+    expect(workflow).toContain("repository: vigosan/homebrew-cuts");
   });
 
   it("tells in the privacy policy that the app goes online to check for updates, instead of claiming it never does", () => {

@@ -16,6 +16,7 @@ export const DOWNLOADS = {
   windows: `${RELEASES}/Cuts-windows.exe`,
   linux: `${RELEASES}/Cuts-linux.AppImage`,
 } as const;
+export const BREW = "brew install --cask vigosan/cuts/cuts";
 
 export const FFMPEG_FILES = {
   source: "/ffmpeg/ffmpeg-9.0.2.tar.xz",
@@ -46,6 +47,7 @@ export const content = {
       free: "Free",
       requirements: { mac: "macOS 13 or later", windows: "Windows 10 or later", linux: "AppImage x86_64" },
       download: { mac: "Download for Mac", windows: "Download for Windows", linux: "Download for Linux", also: "Also for" },
+      brew: "Or with Homebrew:",
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Version ${VERSION}`,
       downloads: { one: "download", other: "downloads" },
@@ -148,6 +150,7 @@ export const content = {
       free: "Gratis",
       requirements: { mac: "macOS 13 o posterior", windows: "Windows 10 o posterior", linux: "AppImage x86_64" },
       download: { mac: "Descargar para Mac", windows: "Descargar para Windows", linux: "Descargar para Linux", also: "También para" },
+      brew: "O con Homebrew:",
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Versión ${VERSION}`,
       downloads: { one: "descarga", other: "descargas" },

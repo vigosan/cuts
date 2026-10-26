@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DOWNLOADS, type Content, type Lang } from "@/content";
+import { BREW, DOWNLOADS, type Content, type Lang } from "@/content";
 import { formatDownloads } from "@/downloads";
 import { detectOS, type OS } from "@/os";
 import { link } from "./Page";
@@ -65,6 +65,14 @@ export function Download({ home, lang, downloads }: { home: Content["home"]; lan
           </span>
         ))}
       </p>
+      {os === "mac" && (
+        <p className="text-sm">
+          {home.brew}{" "}
+          <code data-testid="brew" className="select-all rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[13px] dark:bg-neutral-800">
+            {BREW}
+          </code>
+        </p>
+      )}
     </div>
   );
 }
