@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CONTACT, content, REPO, type Content } from "@/content";
+import { LangSwitch } from "./LangSwitch";
 import { ThemeToggle } from "./ThemeToggle";
 
 export const link = "underline font-medium hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-400 rounded px-1";
@@ -22,9 +23,9 @@ export function Page({ c, current, children }: { c: Content; current: Route; chi
         </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle labels={c.theme} />
-          <Link href={content[c.other].routes[current]} hrefLang={c.other} className={link}>
+          <LangSwitch lang={c.other} href={content[c.other].routes[current]} className={link}>
             {c.switchLabel}
-          </Link>
+          </LangSwitch>
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-8 lg:gap-12">{children}</main>
