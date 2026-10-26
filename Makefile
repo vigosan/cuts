@@ -7,7 +7,7 @@ install:
 	cd $(DESKTOP) && npx install-electron
 
 dev:
-	cd $(DESKTOP) && npm run dev
+	npm run dev:desktop
 
 test: ffmpeg
 	npm test --workspaces
@@ -45,4 +45,4 @@ web:
 	cd apps/web && npm ci && npm test && npm run build
 
 web-dev:
-	cd apps/web && npm run dev
+	npm run dev:web
