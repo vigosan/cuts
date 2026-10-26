@@ -1,67 +1,67 @@
 # Cuts
 
-App para Mac que convierte una grabación larga en clips cortos, listos para un carrusel de Instagram. Arrastras un vídeo, marcas dónde empieza y acaba cada clip (o dejas que Cuts sugiera los mejores momentos) y los exporta todos de una vez, numerados en el orden del carrusel.
+Mac app that turns a long recording into short clips, ready for an Instagram carousel. Drag in a video, mark where each clip starts and ends (or let Cuts suggest the best moments), and it exports them all at once, numbered in carousel order.
 
-Web: [cuts.vicent.io](https://cuts.vicent.io)
+Website: [cuts.vicent.io](https://cuts.vicent.io)
 
-## Qué hace
+## What it does
 
-- Marca clips mientras escuchas: <kbd>I</kbd> y <kbd>O</kbd> para inicio y fin, <kbd>Espacio</kbd> para reproducir.
-- Línea de tiempo con fotogramas y forma de onda, zoom y arrastre; clips con bordes ajustables.
-- Ajuste fino con el teclado: <kbd>,</kbd> <kbd>.</kbd> un fotograma (con <kbd>⇧</kbd>, un segundo) y <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd>.
-- ✦ Sugerir momentos: detecta los drops de una sesión (bajón y vuelta de la mezcla) y propone hasta 10 clips repartidos por la sesión.
-- Fundidos de imagen y audio por clip, y encuadre por clip en 4:5, 1:1 y 9:16.
-- Escucha el carrusel entero en bucle y comparte los clips exportados con Fotos o AirDrop.
-- Recuerda el trabajo de cada vídeo, con deshacer y rehacer.
-- En inglés y español. Todo ocurre en el Mac: sin cuentas, sin subidas, sin analítica.
+- Mark clips while you listen: <kbd>I</kbd> and <kbd>O</kbd> for in and out, <kbd>Space</kbd> to play.
+- Timeline with thumbnails and waveform, zoom and drag; clips with adjustable edges.
+- Fine-tune from the keyboard: <kbd>,</kbd> <kbd>.</kbd> one frame (with <kbd>⇧</kbd>, one second) and <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd>.
+- ✦ Suggest moments: detects the drops in a set (the mix dipping and coming back) and proposes up to 10 clips spread across the set.
+- Per-clip video and audio fades, and per-clip framing in 4:5, 1:1 and 9:16.
+- Listen to the whole carousel on a loop and share the exported clips to Photos or AirDrop.
+- Remembers the work for each video, with undo and redo.
+- In English and Spanish. Everything happens on the Mac: no accounts, no uploads, no analytics.
 
-## Tecnología
+## Tech
 
-Electron + electron-vite, React 19, TypeScript y Tailwind CSS v4. Pruebas con Vitest y Testing Library. Empaquetado con electron-builder (app universal arm64 + x86_64). Los clips se exportan con un FFmpeg incluido en la app, compilado desde el código oficial sin componentes GPL (licencia LGPL v2.1).
+Electron + electron-vite, React 19, TypeScript and Tailwind CSS v4. Tests with Vitest and Testing Library. Packaged with electron-builder (universal arm64 + x86_64 app). Clips are exported with an FFmpeg bundled in the app, built from the official source without GPL components (LGPL v2.1 license).
 
-## Empezar
+## Getting started
 
-Requisitos: macOS con Xcode Command Line Tools y Node.js con npm.
+Requirements: macOS with Xcode Command Line Tools, and Node.js with npm.
 
 ```bash
-make install   # dependencias
-make ffmpeg    # compila el FFmpeg LGPL universal en apps/desktop/resources/ffmpeg (tarda un rato, solo la primera vez)
-make dev       # app en modo desarrollo
+make install   # dependencies
+make ffmpeg    # builds the universal LGPL FFmpeg into apps/desktop/resources/ffmpeg (takes a while, first time only)
+make dev       # app in development mode
 ```
 
-## Comandos
+## Commands
 
-| Comando | Qué hace |
+| Command | What it does |
 |---|---|
-| `make dev` / `npm run dev:desktop` | App de escritorio en local |
-| `make test` | Todas las pruebas |
+| `make dev` / `npm run dev:desktop` | Desktop app locally |
+| `make test` | All tests |
 | `make lint` | Linter (oxlint) |
-| `make typecheck` | Comprobación de tipos |
-| `cd apps/desktop && npm run app` | Construye `apps/desktop/dist/mac-universal/Cuts.app` sin firmar |
-| `make app` | Lo mismo y además la copia a `/Applications` (sustituye la que haya instalada) |
-| `APPLE_TEAM_ID=… make mas` | `.pkg` firmado para la Mac App Store |
-| `make icon` | Regenera el icono |
-| `make web` / `make web-dev` (`npm run dev:web`) | Pruebas y build de la web / web en local |
+| `make typecheck` | Type checking |
+| `cd apps/desktop && npm run app` | Builds an unsigned `apps/desktop/dist/mac-universal/Cuts.app` |
+| `make app` | Same, and also copies it to `/Applications` (replacing the installed one) |
+| `APPLE_TEAM_ID=… make mas` | Signed `.pkg` for the Mac App Store |
+| `make icon` | Regenerates the icon |
+| `make web` / `make web-dev` (`npm run dev:web`) | Website tests and build / website locally |
 
-## Estructura
+## Structure
 
 ```
-apps/desktop/           app de escritorio (Electron)
-  src/main/             proceso principal: ventana, menú, FFmpeg, exportación, sesiones
-  src/preload/          puente seguro entre el proceso principal y la interfaz
-  src/renderer/         interfaz en React
-  src/shared/           tipos de la comunicación entre procesos y URLs del vídeo
-  scripts/              compilar FFmpeg, icono, capturas, prueba local del sandbox
-  build/                icono, entitlements y perfil de la Mac App Store
-apps/web/               web cuts.vicent.io (Next.js, desplegada en Vercel)
-packages/core/          lógica sin interfaz: clips, fundidos, formatos, encuadre, sugerencias, deshacer, textos (i18n)
-docs/                   publicación en la Mac App Store, privacidad, idiomas
+apps/desktop/           desktop app (Electron)
+  src/main/             main process: window, menu, FFmpeg, export, sessions
+  src/preload/          secure bridge between the main process and the UI
+  src/renderer/         React UI
+  src/shared/           inter-process communication types and video URLs
+  scripts/              FFmpeg build, icon, screenshots, local sandbox test
+  build/                icon, entitlements and Mac App Store profile
+apps/web/               cuts.vicent.io website (Next.js, deployed on Vercel)
+packages/core/          UI-free logic: clips, fades, formats, framing, suggestions, undo, strings (i18n)
+docs/                   Mac App Store release, privacy, languages
 ```
 
-## Documentación
+## Documentation
 
-- [Publicar en la Mac App Store](docs/release/mac-app-store.md)
-- [Cómo sacar una nueva versión](docs/release/nueva-version.md)
-- [Ficha de la App Store](docs/release/app-store-listing.md)
-- [Privacidad](docs/release/privacy.md)
-- [Idiomas](docs/i18n.md)
+- [Publishing to the Mac App Store](docs/release/mac-app-store.md)
+- [How to ship a new version](docs/release/nueva-version.md)
+- [App Store listing](docs/release/app-store-listing.md)
+- [Privacy](docs/release/privacy.md)
+- [Languages](docs/i18n.md)
