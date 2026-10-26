@@ -33,13 +33,15 @@ make dev       # app en modo desarrollo
 
 | Comando | Qué hace |
 |---|---|
+| `make dev` / `npm run dev:desktop` | App de escritorio en local |
 | `make test` | Todas las pruebas |
+| `make lint` | Linter (oxlint) |
 | `make typecheck` | Comprobación de tipos |
 | `cd apps/desktop && npm run app` | Construye `apps/desktop/dist/mac-universal/Cuts.app` sin firmar |
 | `make app` | Lo mismo y además la copia a `/Applications` (sustituye la que haya instalada) |
 | `APPLE_TEAM_ID=… make mas` | `.pkg` firmado para la Mac App Store |
 | `make icon` | Regenera el icono |
-| `make web` / `make web-dev` | Pruebas y build de la web / web en local |
+| `make web` / `make web-dev` (`npm run dev:web`) | Pruebas y build de la web / web en local |
 
 ## Estructura
 

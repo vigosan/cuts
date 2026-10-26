@@ -6,6 +6,8 @@
     "packages/core"
   ],
   "scripts": {
+    "dev:desktop": "npm run dev -w apps/desktop",
+    "dev:web": "npm run dev --prefix apps/web",
     "lint": "oxlint --deny-warnings apps/desktop/src apps/desktop/scripts packages/core/src"
   },
   "devDependencies": {
