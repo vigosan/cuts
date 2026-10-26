@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseFrameRate, PEAKS_PER_SECOND, peaksFromSamples, thumbnailArgs, waveformArgs, WAVEFORM_SAMPLE_RATE } from './preview'
+import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs, WAVEFORM_SAMPLE_RATE } from './preview'
 
 const valueAfter = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
 

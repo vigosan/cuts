@@ -34,6 +34,23 @@ describe('sessions', () => {
     expect(readdirSync(dir)).toEqual([])
   })
 
+  it('fills settings a session saved by an older version lacks, so a new option never breaks reopening old work', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cuts-sessions-'))
+    const old = {
+      clips: snapshot.clips,
+      clipSettings: { a: { videoFade: 'white', audioFade: 'none', fadeSeconds: 2 } },
+      defaultSettings: { videoFade: 'none', audioFade: 'linear', fadeSeconds: 0.5 },
+      format: '1:1',
+      baseName: 'session'
+    }
+    await saveSession(dir, '/Movies/a.mov', old as unknown as Session)
+    expect(await loadSession(dir, '/Movies/a.mov')).toEqual({
+      ...old,
+      clipSettings: { a: { videoFade: 'white', audioFade: 'none', fadeSeconds: 2, framing: 'crop', cropX: 0.5, cropY: 0.5 } },
+      defaultSettings: { videoFade: 'none', audioFade: 'linear', fadeSeconds: 0.5, framing: 'crop', cropX: 0.5, cropY: 0.5 }
+    })
+  })
+
   it('ignores a damaged file instead of failing to open the video', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'cuts-sessions-'))
     await saveSession(dir, '/Movies/a.mov', snapshot)

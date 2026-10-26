@@ -1,3 +1,5 @@
+export const PEAKS_PER_SECOND = 50
+
 export type Tile = { time: number; left: number }
 
 const LAST_FRAME_MARGIN = 0.5

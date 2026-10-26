@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import { DEFAULT_SETTINGS, type ClipSettings } from '@cuts/core/fades'
 import type { ExportResult } from '@shared/api'
@@ -15,12 +15,13 @@ import { withHistory } from '@cuts/core/history'
 import { t } from './i18n'
 import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/core/timeline-view'
 import { suggestMoments } from '@cuts/core/suggest'
+import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { useClipLoop } from './useClipLoop'
+import { useTransport } from './useTransport'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
-const PEAKS_PER_SECOND = 50
 const DEFAULT_FPS = 30
-const MAX_SHUTTLE = 4
 const clipsHistory = withHistory(clipsReducer)
 const APP_FOLDER = 'Cuts'
 
@@ -43,7 +44,6 @@ export function App() {
   const [defaultSettings, setDefaultSettings] = useState<ClipSettings>(DEFAULT_SETTINGS)
   const [clipSettings, setClipSettings] = useState<Record<string, ClipSettings>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [loopingId, setLoopingId] = useState<string | null>(null)
 
   const settingsOf = (clip: Clip) => clipSettings[clip.id] ?? defaultSettings
   const selectedIndex = clips.findIndex((clip) => clip.id === selectedId)
@@ -59,13 +59,11 @@ export function App() {
   const [format, setFormat] = useState<OutputFormat>('original')
   const [restoredFor, setRestoredFor] = useState<string | null>(null)
   const openedPath = useRef<string | null>(null)
-  const shuttle = useRef(0)
-  const looping = useRef<string | null>(null)
   const [fps, setFps] = useState(DEFAULT_FPS)
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
   const shownSettings = selectedClip ? settingsOf(selectedClip) : defaultSettings
   const target = formatSize(format)
-  const [exportState, setExportState] = useState<ExportState>({ status: 'idle' })
+  const [lastExport, setExportState] = useState<ExportState>({ status: 'idle' })
   const [zoom, setZoom] = useState<Zoom>(null)
   const [viewStart, setViewStart] = useState(0)
 
@@ -77,36 +75,9 @@ export function App() {
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
-  const now = () => videoRef.current?.currentTime ?? 0
-  const seekTo = (t: number) => {
-    if (videoRef.current) videoRef.current.currentTime = Math.max(0, Math.min(t, duration || t))
-  }
-  const togglePlay = () => {
-    const video = videoRef.current
-    if (!video) return
-    if (video.paused) void video.play()
-    else video.pause()
-  }
-  const stepTo = (t: number) => {
-    videoRef.current?.pause()
-    seekTo(t)
-  }
-  const shuttleForward = () => {
-    const video = videoRef.current
-    if (!video) return
-    shuttle.current = shuttle.current === 0 ? 1 : Math.min(shuttle.current * 2, MAX_SHUTTLE)
-    video.playbackRate = shuttle.current
-    if (shuttle.current === 1) void video.play()
-  }
-  const stopShuttle = () => {
-    const video = videoRef.current
-    if (!video) return
-    video.pause()
-    shuttle.current = 0
-    video.playbackRate = 1
-  }
+  const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(videoRef, duration)
   const markStart = () => dispatch({ type: 'markStart', time: now() })
-  const markEnd = () => dispatch({ type: 'markEnd', time: now() })
+  const markEnd = () => dispatch({ type: 'markEnd', time: now(), id: crypto.randomUUID() })
 
   const load = (path: string) => {
     setVideoPath(path)
@@ -146,37 +117,48 @@ export function App() {
     return () => clearTimeout(timer)
   }, [videoPath, restoredFor, clips, clipSettings, defaultSettings, format, baseName])
 
-  useEffect(() => {
-    setExportState((s) => (s.status === 'done' || s.status === 'error' ? { status: 'idle' } : s))
-  }, [clips, clipSettings, defaultSettings, format, baseName, folder])
+  const exportInputs = [clips, clipSettings, defaultSettings, format, baseName, folder]
+  const [exportedWith, setExportedWith] = useState(exportInputs)
+  const outdated = exportedWith.some((input, index) => input !== exportInputs[index])
+  const exportState: ExportState =
+    outdated && (lastExport.status === 'done' || lastExport.status === 'error') ? { status: 'idle' } : lastExport
+
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
+    if (e.metaKey || e.ctrlKey) return
+    if (e.altKey && selectedIndex !== -1 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault()
+      const to = selectedIndex + (e.key === 'ArrowUp' ? -1 : 1)
+      if (to >= 0 && to < clips.length) dispatch({ type: 'reorder', from: selectedIndex, to })
+      return
+    }
+    const actions: Record<string, () => void> = {
+      i: markStart,
+      o: markEnd,
+      ' ': togglePlay,
+      ArrowLeft: () => seekTo(now() - SEEK_STEP),
+      ArrowRight: () => seekTo(now() + SEEK_STEP)
+    }
+    const frame = e.shiftKey ? 1 : 1 / fps
+    const byPosition: Record<string, () => void> = {
+      Comma: () => stepTo(now() - frame),
+      Period: () => stepTo(now() + frame),
+      KeyJ: () => seekTo(now() - SEEK_STEP),
+      KeyK: stopShuttle,
+      KeyL: shuttleForward
+    }
+    const action = byPosition[e.code] ?? actions[e.key.length === 1 ? e.key.toLowerCase() : e.key]
+    if (!action) return
+    e.preventDefault()
+    action()
+  })
 
   useEffect(() => {
     if (!videoPath) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
-      const actions: Record<string, () => void> = {
-        i: markStart,
-        o: markEnd,
-        ' ': togglePlay,
-        ArrowLeft: () => seekTo(now() - SEEK_STEP),
-        ArrowRight: () => seekTo(now() + SEEK_STEP)
-      }
-      const frame = e.shiftKey ? 1 : 1 / fps
-      const byPosition: Record<string, () => void> = {
-        Comma: () => stepTo(now() - frame),
-        Period: () => stepTo(now() + frame),
-        KeyJ: () => seekTo(now() - SEEK_STEP),
-        KeyK: stopShuttle,
-        KeyL: shuttleForward
-      }
-      const action = byPosition[e.code] ?? actions[e.key.length === 1 ? e.key.toLowerCase() : e.key]
-      if (!action) return
-      e.preventDefault()
-      action()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
+    const listener = (e: KeyboardEvent) => onKey(e)
+    window.addEventListener('keydown', listener)
+    return () => window.removeEventListener('keydown', listener)
+  }, [videoPath])
 
   useEffect(
     () =>
@@ -188,13 +170,16 @@ export function App() {
     []
   )
 
+  const destination = videoPath && folder ? `${folder}/${defaultBaseName(videoPath)}` : null
+
   const runExport = async () => {
-    if (!videoPath || !folder) return
+    if (!videoPath || !destination) return
+    setExportedWith(exportInputs)
     setExportState({ status: 'running', progress: clips.map(() => 0) })
     const result = await window.api
       .exportClips({
         input: videoPath,
-        folder: `${folder}/${defaultBaseName(videoPath)}`,
+        folder: destination,
         baseName,
         format,
         clips: clips.map((clip) => ({ ...clip, ...settingsOf(clip) }))
@@ -203,46 +188,7 @@ export function App() {
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
   }
 
-  const loopingClip = clips.find((clip) => clip.id === loopingId) ?? null
-
-  const loop = (id: string | null) => {
-    looping.current = id
-    setLoopingId(id)
-  }
-
-  const playClip = (clip: Clip) => {
-    if (loopingId === clip.id) {
-      videoRef.current?.pause()
-      loop(null)
-      return
-    }
-    loop(clip.id)
-    seekTo(clip.start)
-    void videoRef.current?.play()
-  }
-
-  const keepLooping = (video: HTMLVideoElement) => {
-    const index = clips.findIndex((clip) => clip.id === looping.current)
-    if (index < 0 || video.currentTime < clips[index].end) return
-    const next = clips[(index + 1) % clips.length]
-    loop(next.id)
-    video.currentTime = next.start
-  }
-
-  const seekFromTimeline = (t: number) => {
-    if (loopingClip && (t < loopingClip.start || t > loopingClip.end)) loop(null)
-    seekTo(t)
-  }
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !loopingClip || !playing) return
-    let frame = requestAnimationFrame(function check() {
-      keepLooping(video)
-      frame = requestAnimationFrame(check)
-    })
-    return () => cancelAnimationFrame(frame)
-  })
+  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, seekTo })
 
   const pickClip = (clip: Clip) => {
     if (clip.id === selectedId) return setSelectedId(null)
@@ -254,10 +200,13 @@ export function App() {
 
   const suggest = async (path: string) => {
     setSuggesting(true)
-    const peaks = await window.api.waveform(path).finally(() => setSuggesting(false))
-    if (openedPath.current !== path) return
+    const peaks = await window.api
+      .waveform(path)
+      .catch(() => null)
+      .finally(() => setSuggesting(false))
+    if (!peaks || openedPath.current !== path) return
     const moments = suggestMoments({ peaks, peaksPerSecond: PEAKS_PER_SECOND, duration, clipLength: MAX_CLIP_SECONDS, existing: clips })
-    dispatch({ type: 'restore', clips: [...clips, ...moments.map((moment) => ({ id: crypto.randomUUID(), ...moment }))] })
+    dispatch({ type: 'add', clips: moments.map((moment) => ({ id: crypto.randomUUID(), ...moment })) })
   }
 
   const exporting = exportState.status === 'running'
@@ -269,7 +218,8 @@ export function App() {
     if (path) load(path)
   }
 
-  useEffect(() => window.api.onMenuOpenVideo(() => void openVideo()))
+  const onMenuOpenVideo = useEffectEvent(() => void openVideo())
+  useEffect(() => window.api.onMenuOpenVideo(() => onMenuOpenVideo()), [])
 
   useEffect(
     () =>
@@ -511,6 +461,7 @@ export function App() {
               canExport={canExport}
               baseName={baseName}
               folder={folder}
+              destination={destination}
               format={format}
               state={exportState}
               onBaseName={setBaseName}

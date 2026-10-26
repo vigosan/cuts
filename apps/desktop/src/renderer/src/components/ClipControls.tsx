@@ -2,6 +2,7 @@ import { FADE_OPTIONS } from '@cuts/core/clips'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type ClipSettings, type VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
+import { field } from './field'
 import { ImageIcon, SpeakerIcon } from './icons'
 
 type Props = {
@@ -9,9 +10,6 @@ type Props = {
   format: OutputFormat
   onChange: (change: Partial<ClipSettings>) => void
 }
-
-const field =
-  'h-8 w-full rounded-lg bg-sunken px-2.5 text-sm text-ink placeholder:text-ink-3 transition-colors hover:bg-sunken/80'
 
 export function ClipControls({ settings, format, onChange }: Props) {
   return (

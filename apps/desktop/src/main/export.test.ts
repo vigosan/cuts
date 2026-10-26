@@ -76,6 +76,11 @@ describe('exportClips', () => {
     expect(result).toEqual({ ok: true, files: [join('/Movies/Instagram', 'sesion 22-10-1.mp4'), join('/Movies/Instagram', 'sesion 22-10-2.mp4')] })
   })
 
+  it('names the files without characters Windows forbids, so a time in the name never fails the export', async () => {
+    const result = await exportClips({ ...request, baseName: 'set 22:30' }, deps())
+    expect(result).toEqual({ ok: true, files: [join('/Movies/Instagram', 'set 22-30-1.mp4'), join('/Movies/Instagram', 'set 22-30-2.mp4')] })
+  })
+
   it('skips the image fade-in only on the first clip, because Instagram uses its first frame as the carousel cover', async () => {
     const d = deps()
     await exportClips(request, d)

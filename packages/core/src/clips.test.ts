@@ -5,7 +5,8 @@ import {
   formatDuration,
   formatTime,
   isOverLimit,
-  outputFileName
+  outputFileName,
+  safeBaseName
 } from './clips'
 
 describe('clip limit', () => {
@@ -51,5 +52,9 @@ describe('output naming', () => {
 
   it('reads the file name from a Windows path too, or the exported clips would be named after the whole path', () => {
     expect(defaultBaseName('C:\\Users\\x\\Videos\\set.mov')).toBe('set')
+  })
+
+  it('turns characters Windows forbids in file names into dashes, so a name like 22:30 never breaks the export', () => {
+    expect(safeBaseName(' set 22:30 a\\b*?"<>|/c ')).toBe('set 22-30 a-b-------c')
   })
 })

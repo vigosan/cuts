@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Api } from '@shared/api'
+import type { Api, ExportResult } from '@shared/api'
 import { App } from './App'
 import { t } from './i18n'
 
@@ -105,6 +105,19 @@ describe('App', () => {
     seek(video, 130)
     await userEvent.keyboard('o')
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('0:30')
+  })
+
+  it('leaves Command and Control shortcuts to the menu, so Command-O opens a video instead of marking an end', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 100)
+    await userEvent.keyboard('i')
+    seek(video, 130)
+    const shortcut = new KeyboardEvent('keydown', { key: 'o', code: 'KeyO', metaKey: true, cancelable: true })
+    window.dispatchEvent(shortcut)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', code: 'KeyO', ctrlKey: true, cancelable: true }))
+    expect(shortcut.defaultPrevented).toBe(false)
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
   })
 
   it('exports every clip in order with the chosen name, folder, fades and format', async () => {
@@ -301,6 +314,22 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:17:30')
   })
 
+  it('moves the selected clip up and down the carousel with Option and the arrows, so reordering needs no mouse', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await userEvent.click(screen.getByTestId('clip-row-3'))
+    seek(video, 1000)
+    await userEvent.keyboard('{Alt>}{ArrowUp}{ArrowUp}{ArrowUp}{/Alt}')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:05:00')
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'true')
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}')
+    expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:05:00')
+    expect(video.currentTime).toBe(1000)
+  })
+
   it('drags a clip to the top of the carousel so it becomes the first exported file and the cover', async () => {
     render(<App />)
     const video = await loadVideo()
@@ -340,7 +369,7 @@ describe('App', () => {
     await markClip(video, 200, 250)
     await markClip(video, 300, 350)
     await userEvent.click(screen.getByTestId('clip-row-2'))
-    expect(screen.getByTestId('clip-row-2')).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('clip-row-2')).toHaveAttribute('aria-current', 'true')
     await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
     await userEvent.selectOptions(screen.getByTestId('fade-audio'), 'none')
     await userEvent.click(screen.getByTestId('clip-row-1'))
@@ -367,7 +396,7 @@ describe('App', () => {
     await userEvent.click(screen.getByTestId('clip-row-2'))
     await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
     await userEvent.click(screen.getByTestId('clip-row-2'))
-    expect(screen.getByTestId('clip-row-2')).toHaveAttribute('aria-selected', 'false')
+    expect(screen.getByTestId('clip-row-2')).toHaveAttribute('aria-current', 'false')
     await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
     await userEvent.click(screen.getByTestId('choose-folder'))
     await act(() => userEvent.click(screen.getByTestId('export')))
@@ -380,7 +409,7 @@ describe('App', () => {
     const video = await loadVideo()
     await markClip(video, 383, 419)
     await userEvent.click(screen.getByTestId('clip-set-end-1'))
-    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'true')
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:06:59')
     seek(video, 473)
     await userEvent.click(screen.getByTestId('clip-set-end-1'))
@@ -396,6 +425,17 @@ describe('App', () => {
     expect(api.exportClips).toHaveBeenCalledWith(
       expect.objectContaining({ folder: '/Users/vicent/Movies/Cuts/2026-10-22 22-33-13' })
     )
+  })
+
+  it('previews the exact file names and folder the export will write, so what is promised is what lands on disk', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.clear(screen.getByTestId('base-name'))
+    await userEvent.type(screen.getByTestId('base-name'), 'set 22:30')
+    const preview = await screen.findByTestId('export-preview')
+    expect(preview).toHaveTextContent('set 22-30-1.mp4')
+    expect(preview).toHaveAttribute('title', '/Users/vicent/Movies/Cuts/2026-10-22 22-33-13/set 22-30-1.mp4')
   })
 
   it('names the clips and the default folder after the video on Windows, whose paths use backslashes', async () => {
@@ -435,8 +475,8 @@ describe('App', () => {
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
     await userEvent.click(screen.getByTestId('clip-row-2'))
-    expect(screen.getByTestId('clip-block-2')).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByTestId('clip-block-1')).toHaveAttribute('aria-selected', 'false')
+    expect(screen.getByTestId('clip-block-2')).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByTestId('clip-block-1')).toHaveAttribute('aria-current', 'false')
   })
 
   it('selects a clip in the list when clicking its block on the timeline', async () => {
@@ -448,7 +488,7 @@ describe('App', () => {
     timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
     fireEvent.pointerDown(screen.getByTestId('clip-block-1'), { clientX: 120 })
     fireEvent.pointerUp(window, { clientX: 120 })
-    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'true')
     expect(video.currentTime).toBe(120)
   })
 
@@ -458,6 +498,26 @@ describe('App', () => {
     vi.mocked(api.openVideo).mockClear()
     await act(async () => menuOpenVideo())
     expect(api.openVideo).toHaveBeenCalled()
+  })
+
+  it('listens to the File menu once instead of on every frame of playback, so the IPC listeners never churn', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 10)
+    seek(video, 20)
+    seek(video, 30)
+    expect(api.onMenuOpenVideo).toHaveBeenCalledTimes(1)
+  })
+
+  it('listens to the keyboard once per video instead of on every frame of playback', async () => {
+    const listen = vi.spyOn(window, 'addEventListener')
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 10)
+    seek(video, 20)
+    seek(video, 30)
+    expect(listen.mock.calls.filter(([type]) => type === 'keydown')).toHaveLength(1)
+    listen.mockRestore()
   })
 
   it('ignores opening another video while exporting, so the running export never reports onto a different video', async () => {
@@ -689,6 +749,30 @@ describe('App', () => {
     expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
   })
 
+  it('keeps the clips marked while the suggestions are being read, since reading a whole session takes seconds', async () => {
+    let finish: (value: Float32Array) => void = () => {}
+    vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    const video = await loadVideo()
+    await userEvent.click(screen.getByTestId('suggest'))
+    await markClip(video, 2000, 2030)
+    const peaks = new Float32Array(4880 * 50).fill(0.2)
+    peaks.fill(0.02, 980 * 50, 1000 * 50)
+    peaks.fill(0.3, 1000 * 50, 1030 * 50)
+    await act(async () => finish(peaks))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:33:20')
+    expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:16:10')
+  })
+
+  it('lets the suggestions be asked again when the audio cannot be read, instead of failing in the background', async () => {
+    vi.mocked(api.waveform).mockRejectedValue(new Error('Invalid data found'))
+    render(<App />)
+    await loadVideo()
+    await userEvent.click(screen.getByTestId('suggest'))
+    await waitFor(() => expect(screen.getByTestId('suggest')).toBeEnabled())
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+  })
+
   it('drops suggestions that arrive after another video was opened, so they never land on the wrong video', async () => {
     let finish: (value: Float32Array) => void = () => {}
     vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))
@@ -728,6 +812,21 @@ describe('App', () => {
     expect(screen.getByTestId('clip-play-1')).toHaveAttribute('aria-pressed', 'true')
     seek(video, 150.1)
     expect(video.currentTime).toBe(100)
+  })
+
+  it('keeps one frame watcher running while a clip loops instead of restarting it on every render', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    Object.assign(video, { play: vi.fn(async () => {}) })
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('clip-play-1'))
+    fireEvent(video, new Event('play'))
+    const cancel = vi.spyOn(window, 'cancelAnimationFrame')
+    seek(video, 110)
+    seek(video, 120)
+    seek(video, 130)
+    expect(cancel).not.toHaveBeenCalled()
+    cancel.mockRestore()
   })
 
   it('plays on into the next clip and back to the first, so the whole carousel can be heard in posting order', async () => {
@@ -846,6 +945,18 @@ describe('App', () => {
     await act(() => userEvent.click(screen.getByTestId('export')))
     expect(screen.getByTestId('export')).toHaveTextContent(t.share)
     await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
+  })
+
+  it('offers Export again when something changed while exporting, so a share never sends outdated clips', async () => {
+    let finish: (result: ExportResult) => void = () => {}
+    vi.mocked(api.exportClips).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('export'))
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    await act(async () => finish({ ok: true, files: ['/Movies/Cuts/x/x-1.mp4'] }))
     expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
   })
 })

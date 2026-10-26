@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events'
 import { describe, expect, it, vi } from 'vitest'
 
 const locked = { value: true }
+const stillLockedAfterExit = { value: false }
 const removed: string[] = []
 
 vi.mock('node:fs', () => ({
@@ -18,7 +19,7 @@ vi.mock('node:child_process', () => ({
       stderr: new EventEmitter(),
       kill: () => {
         setTimeout(() => {
-          locked.value = false
+          locked.value = stillLockedAfterExit.value
           child.emit('exit', null)
           child.emit('close', null)
         })
@@ -37,5 +38,13 @@ describe('cancelFfmpeg', () => {
     expect(() => cancelFfmpeg()).not.toThrow()
     await expect(exporting).rejects.toThrow()
     expect(removed).toEqual(['C:\\Videos\\clip-1.mp4'])
+  })
+
+  it('still ends the export when the clip stays locked after ffmpeg exits, as an antivirus scan can do on Windows', async () => {
+    locked.value = true
+    stillLockedAfterExit.value = true
+    const exporting = runFfmpeg('ffmpeg', ['-i', 'in.mov', 'C:\\Videos\\clip-2.mp4'], () => {})
+    cancelFfmpeg()
+    await expect(exporting).rejects.toThrow()
   })
 })

@@ -6,13 +6,14 @@ type Meta = { transient?: boolean; resetHistory?: boolean }
 
 export type ClipsAction = Meta &
   (  | { type: 'markStart'; time: number }
-  | { type: 'markEnd'; time: number }
+  | { type: 'markEnd'; time: number; id: string }
   | { type: 'remove'; id: string }
   | { type: 'setStart'; id: string; time: number }
   | { type: 'setEnd'; id: string; time: number }
   | { type: 'replace'; clip: Clip }
   | { type: 'reorder'; from: number; to: number }
   | { type: 'restore'; clips: Clip[] }
+  | { type: 'add'; clips: Clip[] }
   | { type: 'reset' }
   )
 
@@ -29,6 +30,8 @@ function updateClip(state: ClipsState, id: string, change: (clip: Clip) => Clip)
   }
 }
 
+const overlaps = (a: Clip, b: Clip) => a.start < b.end && b.start < a.end
+
 export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState {
   switch (action.type) {
     case 'markStart':
@@ -36,7 +39,7 @@ export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState
     case 'markEnd':
       if (state.pendingStart === null || action.time <= state.pendingStart) return state
       return {
-        clips: [...state.clips, { id: crypto.randomUUID(), start: state.pendingStart, end: action.time }],
+        clips: [...state.clips, { id: action.id, start: state.pendingStart, end: action.time }],
         pendingStart: null
       }
     case 'remove':
@@ -55,6 +58,11 @@ export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState
     }
     case 'restore':
       return { clips: action.clips, pendingStart: null }
+    case 'add':
+      return {
+        ...state,
+        clips: [...state.clips, ...action.clips.filter((clip) => !state.clips.some((other) => overlaps(clip, other)))]
+      }
     case 'reset':
       return initialClipsState
   }

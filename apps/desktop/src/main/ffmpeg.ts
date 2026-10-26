@@ -43,7 +43,7 @@ export function runFfmpeg(ffmpeg: string, args: string[], onSeconds: (seconds: n
     child.on('error', reject)
     child.on('exit', () => running.delete(child))
     child.on('close', (code) => {
-      if (cancelled.delete(child)) rmSync(args.at(-1)!, { force: true })
+      if (cancelled.delete(child)) removeUnlessLocked(args.at(-1)!)
       if (code === 0) resolve()
       else reject(new Error(stderr.trim().split('\n').slice(-3).join('\n') || `ffmpeg exited with ${code}`))
     })
