@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS, type ClipSettings } from '@cuts/core/fades'
 import type { ExportResult } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { mediaUrl } from '@shared/media-url'
+import { isSupportedVideo } from '@shared/video-formats'
 import { ClipList } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
@@ -21,6 +22,7 @@ import { useTransport } from './useTransport'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
+const NOTICE_MS = 5000
 const DEFAULT_FPS = 30
 const clipsHistory = withHistory(clipsReducer)
 const APP_FOLDER = 'Cuts'
@@ -34,6 +36,7 @@ export function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoPath, setVideoPath] = useState<string | null>(null)
   const [videoError, setVideoError] = useState(false)
+  const [unsupportedDrops, setUnsupportedDrops] = useState(0)
   const [history, dispatch] = useReducer(clipsHistory, { past: [], present: initialClipsState, future: [] })
   const { clips, pendingStart } = history.present
   const [time, setTime] = useState(0)
@@ -107,6 +110,12 @@ export function App() {
       setRestoredFor(path)
     })
   }
+
+  useEffect(() => {
+    if (unsupportedDrops === 0) return
+    const timer = setTimeout(() => setUnsupportedDrops(0), NOTICE_MS)
+    return () => clearTimeout(timer)
+  }, [unsupportedDrops])
 
   useEffect(() => {
     if (!videoPath || restoredFor !== videoPath) return
@@ -252,6 +261,10 @@ export function App() {
         e.preventDefault()
         const file = e.dataTransfer.files[0]
         if (!file || exporting) return
+        if (!isSupportedVideo(file.name)) {
+          setUnsupportedDrops((count) => count + 1)
+          return
+        }
         if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
         load(window.api.pathForFile(file))
       }}
@@ -481,6 +494,16 @@ export function App() {
             />
           </aside>
         </main>
+      )}
+
+      {unsupportedDrops > 0 && (
+        <div
+          data-testid="unsupported-video"
+          role="status"
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 rounded-xl bg-surface px-4 py-2 text-sm shadow-lg ring-1 ring-ink-3/20"
+        >
+          {t.unsupportedVideo}
+        </div>
       )}
 
       {updateVersion && (

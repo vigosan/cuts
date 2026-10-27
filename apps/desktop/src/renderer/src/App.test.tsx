@@ -91,6 +91,36 @@ describe('App', () => {
     expect(screen.getByTestId('base-name')).toHaveValue('2026-10-22 22-33-13')
   })
 
+  it('accepts a dropped video whose extension is uppercase, as cameras and iPhones name them', async () => {
+    render(<App />)
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'IMG_0042.MOV')] } })
+    expect(await screen.findByTestId('video')).toBeInTheDocument()
+  })
+
+  it('ignores a dropped file that is not a supported video, so a stray drop never threatens the marked clips', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 10, 20)
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'notes.pdf')] } })
+    expect(confirm).not.toHaveBeenCalled()
+    expect(api.pathForFile).not.toHaveBeenCalled()
+    expect(screen.getByTestId('clip-row-1')).toBeInTheDocument()
+    expect(screen.getByTestId('unsupported-video')).toHaveTextContent(t.unsupportedVideo)
+    confirm.mockRestore()
+  })
+
+  it('hides the unsupported file notice after 5 seconds, so it never lingers over the work', () => {
+    vi.useFakeTimers()
+    render(<App />)
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'notes.pdf')] } })
+    act(() => vi.advanceTimersByTime(4999))
+    expect(screen.getByTestId('unsupported-video')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1))
+    expect(screen.queryByTestId('unsupported-video')).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
   it('lists a marked clip with its times and duration', async () => {
     render(<App />)
     const video = await loadVideo()

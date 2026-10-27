@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
 import type { ExportRequest, Session } from '../shared/api'
+import { VIDEO_EXTENSIONS } from '../shared/video-formats'
 import { messagesFor, resolveLocale } from '@cuts/core/i18n'
 import { exportClips } from './export'
 import { bundledFfmpegPath, findFfmpeg } from './ffmpeg-args'
@@ -93,7 +94,7 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
-      filters: [{ name: t.videoFilter, extensions: ['mov', 'mp4', 'm4v', 'mkv', 'webm'] }]
+      filters: [{ name: t.videoFilter, extensions: VIDEO_EXTENSIONS }]
     })
     if (result.canceled) return null
     openedVideos.add(result.filePaths[0])
