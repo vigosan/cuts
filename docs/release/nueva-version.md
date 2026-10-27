@@ -51,6 +51,16 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
+## Novedades de la 1.2.1
+
+### Español
+
+- Si arrastras a Cuts un archivo que no es un vídeo MOV, MP4, M4V, MKV o WebM, ya no intenta abrirlo ni pone en riesgo tus clips: un aviso te dice qué formatos abre.
+
+### English
+
+- Drag a file into Cuts that isn't a MOV, MP4, M4V, MKV or WebM video and it no longer tries to open it or puts your clips at risk: a notice tells you which formats it opens.
+
 ## Novedades de la 1.2
 
 ### Español
