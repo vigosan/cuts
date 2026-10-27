@@ -121,6 +121,13 @@ describe('App', () => {
     vi.useRealTimers()
   })
 
+  it('closes the unsupported file notice at once from its close button, without waiting the 5 seconds', async () => {
+    render(<App />)
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'notes.pdf')] } })
+    await userEvent.click(screen.getByTestId('close-unsupported-video'))
+    expect(screen.queryByTestId('unsupported-video')).not.toBeInTheDocument()
+  })
+
   it('lists a marked clip with its times and duration', async () => {
     render(<App />)
     const video = await loadVideo()

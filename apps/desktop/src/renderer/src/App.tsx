@@ -9,7 +9,7 @@ import { ClipList } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
-import { FilmIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
+import { CloseIcon, FilmIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from '@cuts/core/clips-reducer'
 import { withHistory } from '@cuts/core/history'
@@ -496,32 +496,48 @@ export function App() {
         </main>
       )}
 
-      {unsupportedDrops > 0 && (
-        <div
-          data-testid="unsupported-video"
-          role="status"
-          className="fixed bottom-5 left-1/2 -translate-x-1/2 rounded-xl bg-surface px-4 py-2 text-sm shadow-lg ring-1 ring-ink-3/20"
-        >
-          {t.unsupportedVideo}
-        </div>
-      )}
-
-      {updateVersion && (
-        <div
-          data-testid="update-ready"
-          role="status"
-          className="fixed right-5 bottom-5 flex items-center gap-3 rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20"
-        >
-          {t.updateReady(updateVersion)}
-          <button
-            data-testid="restart-to-update"
-            className="h-8 rounded-lg bg-accent px-3 font-medium text-on-accent transition-colors hover:bg-accent-hover"
-            onClick={window.api.restartToUpdate}
+      <div className="fixed right-5 bottom-5 flex flex-col items-end gap-2">
+        {unsupportedDrops > 0 && (
+          <div
+            key={unsupportedDrops}
+            data-testid="unsupported-video"
+            role="status"
+            className="relative flex items-center gap-2 overflow-hidden rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20"
           >
-            {t.restartToUpdate}
-          </button>
-        </div>
-      )}
+            {t.unsupportedVideo}
+            <button
+              data-testid="close-unsupported-video"
+              className="grid size-7 place-items-center rounded-lg text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+              title={t.close}
+              aria-label={t.close}
+              onClick={() => setUnsupportedDrops(0)}
+            >
+              <CloseIcon />
+            </button>
+            <span
+              className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent"
+              style={{ animation: `countdown ${NOTICE_MS}ms linear forwards` }}
+            />
+          </div>
+        )}
+
+        {updateVersion && (
+          <div
+            data-testid="update-ready"
+            role="status"
+            className="flex items-center gap-3 rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20"
+          >
+            {t.updateReady(updateVersion)}
+            <button
+              data-testid="restart-to-update"
+              className="h-8 rounded-lg bg-accent px-3 font-medium text-on-accent transition-colors hover:bg-accent-hover"
+              onClick={window.api.restartToUpdate}
+            >
+              {t.restartToUpdate}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
