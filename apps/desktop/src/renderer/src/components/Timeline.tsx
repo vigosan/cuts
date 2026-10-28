@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import type { Clip } from '@cuts/core/clips'
-import type { ClipFade } from '@cuts/core/fades'
+import { audioGain, nearestFadeSeconds, type ClipFade } from '@cuts/core/fades'
 import { dragClip, type DragMode } from '@cuts/core/drag-clip'
 import { filmstripTiles, PEAKS_PER_SECOND, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
 import { t } from '../i18n'
@@ -10,8 +10,18 @@ const DRAG_THRESHOLD_PX = 3
 const TILE_WIDTH_PX = 96
 const ROOMY_CLIP_PX = 28
 
+const VOLUME_STEPS = 16
+
 function fadeRamp(seconds: number, clipLength: number): string {
   return `max(6px, ${(seconds / clipLength) * 100}%)`
+}
+
+function volumePoints(fade: ClipFade, clipLength: number): string {
+  const ramp = Math.min(fade.fadeSeconds, clipLength / 2)
+  const times = Array.from({ length: VOLUME_STEPS + 1 }, (_, i) => (ramp * i) / VOLUME_STEPS)
+  return [...times, ...times.map((t) => clipLength - t).reverse()]
+    .map((t) => `${(t / clipLength) * 100},${1 - audioGain(fade, clipLength, t)}`)
+    .join(' ')
 }
 
 type Props = {
@@ -30,6 +40,7 @@ type Props = {
   onSeek: (time: number) => void
   onClipChange: (clip: Clip) => void
   onDragStart: () => void
+  onFadeSeconds: (seconds: number) => void
   onPan: (viewStart: number) => void
 }
 
@@ -49,6 +60,7 @@ export function Timeline({
   onSeek,
   onClipChange,
   onDragStart,
+  onFadeSeconds,
   onPan
 }: Props) {
   const justDragged = useRef(false)
@@ -75,14 +87,18 @@ export function Timeline({
     canvas.width = Math.round(width * scale)
     canvas.height = Math.round(canvas.clientHeight * scale)
     const columns = waveformColumns(peaks, PEAKS_PER_SECOND, viewStart, viewSpan, Math.round(width))
+    const gainAt = (time: number) => {
+      const index = clips.findIndex((clip) => clip.start <= time && time <= clip.end)
+      return index === -1 ? 1 : audioGain(fades[index], clips[index].end - clips[index].start, time - clips[index].start)
+    }
     context.clearRect(0, 0, canvas.width, canvas.height)
     context.fillStyle = getComputedStyle(canvas).color
     const middle = canvas.height / 2
     columns.forEach((peak, x) => {
-      const h = Math.max(scale, peak * canvas.height)
+      const h = Math.max(scale, peak * gainAt(viewStart + (x / columns.length) * viewSpan) * canvas.height)
       context.fillRect(x * scale, middle - h / 2, scale, h)
     })
-  }, [peaks, viewStart, viewSpan, width])
+  }, [peaks, viewStart, viewSpan, width, clips, fades])
   const pct = (t: number) => (viewSpan > 0 ? `${(t / viewSpan) * 100}%` : '0%')
 
   const startDrag = (e: ReactPointerEvent<HTMLElement>, clip: Clip, mode: DragMode) => {
@@ -105,6 +121,27 @@ export function Timeline({
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       if (!moved) onSeek(viewStart + ((up.clientX - bar.left) / bar.width) * viewSpan)
+      justDragged.current = true
+      setTimeout(() => {
+        justDragged.current = false
+      }, 0)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const startFadeDrag = (e: ReactPointerEvent<HTMLElement>, clip: Clip, side: 'in' | 'out') => {
+    e.stopPropagation()
+    e.preventDefault()
+    const block = e.currentTarget.parentElement!.getBoundingClientRect()
+    const length = clip.end - clip.start
+    const onMove = (move: PointerEvent) => {
+      const from = side === 'in' ? move.clientX - block.left : block.left + block.width - move.clientX
+      onFadeSeconds(nearestFadeSeconds((from / block.width) * length))
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
       justDragged.current = true
       setTimeout(() => {
         justDragged.current = false
@@ -208,6 +245,35 @@ export function Timeline({
                 style={{ width: fadeRamp(fade.fadeSeconds, clip.end - clip.start) }}
               />
             )}
+            {roomy && (
+              <svg
+                className="pointer-events-none absolute inset-x-0 bottom-1 h-6 w-full overflow-visible"
+                viewBox="0 0 100 1"
+                preserveAspectRatio="none"
+              >
+                <polyline
+                  data-testid={`clip-volume-${index + 1}`}
+                  points={volumePoints(fade, clip.end - clip.start)}
+                  fill="none"
+                  className="stroke-yellow-300"
+                  strokeWidth={1.5}
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
+            )}
+            {roomy && selected && fade.audioFade !== 'none' &&
+              (['in', 'out'] as const).map((side) => (
+                <div
+                  key={side}
+                  data-testid={`fade-handle-${side}-${index + 1}`}
+                  className="absolute bottom-7 z-10 size-3 cursor-ew-resize rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.5)]"
+                  style={{
+                    [side === 'in' ? 'left' : 'right']: `${(Math.min(fade.fadeSeconds, (clip.end - clip.start) / 2) / (clip.end - clip.start)) * 100}%`,
+                    translate: side === 'in' ? '-50% 50%' : '50% 50%'
+                  }}
+                  onPointerDown={(e) => startFadeDrag(e, clip, side)}
+                />
+              ))}
             <span className="pointer-events-none absolute top-1 left-1 rounded bg-black/60 px-1 text-[10px] leading-4 font-semibold text-white tabular-nums">
               {index + 1}
             </span>

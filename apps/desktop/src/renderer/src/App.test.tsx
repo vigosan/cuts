@@ -400,6 +400,48 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).not.toHaveAttribute('data-over-limit', 'true')
   })
 
+  it('draws the audio fade as a volume line over the waveform, so a hard cut is visible before exporting', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 130)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    expect(screen.getByTestId('clip-volume-1').getAttribute('points')).toMatch(/^0,1 /)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    await userEvent.selectOptions(screen.getByTestId('fade-audio'), 'none')
+    expect(screen.getByTestId('clip-volume-1').getAttribute('points')).toMatch(/^0,0 /)
+  })
+
+  it('lengthens the fade by dragging its handle, snapping to the lengths the fade menu offers', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 130)
+    await markClip(video, 200, 230)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    screen.getByTestId('clip-block-1').getBoundingClientRect = () => ({ left: 0, width: 1000, top: 0, height: 88, right: 1000, bottom: 88, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(screen.getByTestId('fade-handle-in-1'), { clientX: 33 })
+    fireEvent.pointerMove(window, { clientX: 60 })
+    fireEvent.pointerUp(window, { clientX: 60 })
+    expect(screen.getByTestId('fade-seconds')).toHaveValue('2')
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips.map((c) => c.fadeSeconds)).toEqual([2, 1])
+  })
+
+  it('shows the fade handles only on the selected clip with an audio fade, so they are never dragged by accident', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 130)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    expect(screen.queryByTestId('fade-handle-in-1')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    expect(screen.getByTestId('fade-handle-in-1')).toBeInTheDocument()
+    expect(screen.getByTestId('fade-handle-out-1')).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByTestId('fade-audio'), 'none')
+    expect(screen.queryByTestId('fade-handle-in-1')).not.toBeInTheDocument()
+  })
+
   it('moves a whole clip along the timeline keeping its length', async () => {
     render(<App />)
     const video = await loadVideo()

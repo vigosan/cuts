@@ -449,6 +449,7 @@ export function App() {
                 onSelect={(clip) => setSelectedId(clip.id)}
                 onSeek={seekFromTimeline}
                 onDragStart={() => dispatch({ type: 'checkpoint' })}
+                onFadeSeconds={(seconds) => changeSettings({ fadeSeconds: seconds })}
                 onClipChange={(clip) => dispatch({ type: 'replace', clip, transient: true })}
                 onPan={(start) => {
                   setViewStart(Math.min(Math.max(0, start), duration - viewSpan))
