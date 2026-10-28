@@ -64,8 +64,8 @@ export async function Home({ c }: { c: Content }) {
           src={`/screenshots/${c.lang}-timeline.png`}
           dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.timeline}.png`}
           alt={c.home.timelineAlt}
-          width={2039}
-          height={322}
+          width={2032}
+          height={312}
         />
       </article>
       <article className="flex flex-col gap-6">
