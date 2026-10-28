@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import type { Clip } from '@cuts/core/clips'
+import { formatDuration, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import { audioGain, nearestFadeSeconds, type ClipFade } from '@cuts/core/fades'
 import { dragClip, type DragMode } from '@cuts/core/drag-clip'
 import { filmstripTiles, PEAKS_PER_SECOND, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
@@ -9,6 +9,7 @@ import { useThumbnails } from '../useVideoPreview'
 const DRAG_THRESHOLD_PX = 3
 const TILE_WIDTH_PX = 96
 const ROOMY_CLIP_PX = 28
+const PENDING_LABEL_PX = 40
 
 const VOLUME_STEPS = 16
 
@@ -291,15 +292,38 @@ export function Timeline({
         )
       })}
       {pendingStart !== null && (
-        <div
-          className="pointer-events-none absolute inset-y-1.5 rounded-md border border-dashed border-accent bg-accent-soft"
-          style={{ left: pct(pendingStart - viewStart), width: pct(Math.max(0, time - pendingStart)) }}
+        <PendingClip
+          elapsed={Math.max(0, time - pendingStart)}
+          left={pct(pendingStart - viewStart)}
+          width={pct(Math.max(0, time - pendingStart))}
+          widthPx={viewSpan > 0 ? (Math.max(0, time - pendingStart) / viewSpan) * width : 0}
         />
       )}
       <div
         className="pointer-events-none absolute inset-y-0 z-20 w-0.5 -translate-x-1/2 rounded-full bg-red-500"
         style={{ left: pct(time - viewStart) }}
       />
+    </div>
+  )
+}
+
+function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left: string; width: string; widthPx: number }) {
+  const over = elapsed > MAX_CLIP_SECONDS
+  const outside = widthPx < PENDING_LABEL_PX
+  return (
+    <div
+      data-testid="pending-clip"
+      data-over-limit={over}
+      className={`pointer-events-none absolute inset-y-1.5 rounded-md border border-dashed ${over ? 'border-warn bg-warn-soft' : 'border-accent bg-accent-soft'}`}
+      style={{ left, width }}
+    >
+      <span
+        data-testid="pending-clip-time"
+        data-outside={outside}
+        className={`absolute top-1 rounded px-1 text-[10px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${over ? 'bg-warn' : 'bg-accent'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
+      >
+        {formatDuration(elapsed)}
+      </span>
     </div>
   )
 }

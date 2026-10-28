@@ -345,6 +345,39 @@ describe('App', () => {
     confirm.mockRestore()
   })
 
+  it('counts the seconds of the clip being marked on the clip itself, so you know when to press End', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    seek(video, 100)
+    await userEvent.click(screen.getByTestId('mark-start'))
+    seek(video, 134)
+    expect(screen.getByTestId('pending-clip')).toHaveTextContent('0:34')
+    expect(screen.getByTestId('pending-clip')).not.toHaveAttribute('data-over-limit', 'true')
+    expect(screen.getByTestId('pending-clip-time')).toHaveAttribute('data-outside', 'false')
+  })
+
+  it('turns the clip being marked to the warning colour past 59 s, before it is too long for a carousel', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    seek(video, 100)
+    await userEvent.click(screen.getByTestId('mark-start'))
+    seek(video, 160)
+    expect(screen.getByTestId('pending-clip')).toHaveTextContent('1:00')
+    expect(screen.getByTestId('pending-clip')).toHaveAttribute('data-over-limit', 'true')
+  })
+
+  it('puts the count beside a clip too narrow to hold it, so it can always be read', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 100)
+    await userEvent.click(screen.getByTestId('mark-start'))
+    seek(video, 110)
+    expect(screen.getByTestId('pending-clip-time')).toHaveTextContent('0:10')
+    expect(screen.getByTestId('pending-clip-time')).toHaveAttribute('data-outside', 'true')
+  })
+
   it('replaces the pending start when marking start again, because he often corrects the in-point by ear', async () => {
     render(<App />)
     const video = await loadVideo()
