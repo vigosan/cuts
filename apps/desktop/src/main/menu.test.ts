@@ -97,4 +97,13 @@ describe('menuTemplate', () => {
     const labels = flatten(menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {} }, 'win32')).map((e) => e.label)
     expect(labels).not.toContain('Open Recent')
   })
+
+  it('exports the current frame from File with Shift-Command-E, next to Open Video…', () => {
+    const exportFrame = vi.fn()
+    const item = flatten(menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {}, exportFrame }))
+      .find((e) => e.label === 'Export Current Frame')!
+    expect(item.accelerator).toBe('Shift+CmdOrCtrl+E')
+    ;(item.click as () => void)()
+    expect(exportFrame).toHaveBeenCalled()
+  })
 })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFfmpegArgs, bundledFfmpegPath, findFfmpeg, parseProgressSeconds } from './ffmpeg-args'
+import { buildFfmpegArgs, buildFrameArgs, bundledFfmpegPath, findFfmpeg, parseProgressSeconds } from './ffmpeg-args'
 
 const base = {
   input: '/Users/vicent/Movies/2026-10-22 22-33-13.mov',
@@ -181,5 +181,31 @@ describe('bundledFfmpegPath', () => {
 
   it('looks next to the executable on Linux, inside the mounted AppImage', () => {
     expect(bundledFfmpegPath('linux', '/tmp/.mount_Cuts/resources', '/tmp/.mount_Cuts/cuts')).toBe('/tmp/.mount_Cuts/ffmpeg')
+  })
+})
+
+describe('buildFrameArgs', () => {
+  const frame = { input: base.input, output: '/out/sesion-0.jpg', time: 584.5, framing: 'crop' as const, cropX: 0.5, cropY: 0.5, format: '4:5' as const }
+
+  it('seeks before the input and writes a single frame, so a still from minute 80 is instant', () => {
+    const args = buildFrameArgs(frame)
+    expect(args.indexOf('-ss')).toBeLessThan(args.indexOf('-i'))
+    expect(valueAfter(args, '-ss')).toBe('584.5')
+    expect(valueAfter(args, '-frames:v')).toBe('1')
+    expect(args.at(-1)).toBe('/out/sesion-0.jpg')
+  })
+
+  it('frames the still exactly like the clips, so it matches them in the carousel', () => {
+    expect(valueAfter(buildFrameArgs({ ...frame, cropX: 0 }), '-vf')).toBe(
+      "crop='min(iw,ih*1080/1350)':'min(ih,iw*1350/1080)':'(iw-ow)*0':'(ih-oh)*0.5',scale=1080:1350,setsar=1"
+    )
+  })
+
+  it('keeps the whole frame for the original format', () => {
+    expect(buildFrameArgs({ ...frame, format: 'original' })).not.toContain('-vf')
+  })
+
+  it('writes the best JPEG quality, since Instagram compresses it again', () => {
+    expect(valueAfter(buildFrameArgs(frame), '-q:v')).toBe('1')
   })
 })

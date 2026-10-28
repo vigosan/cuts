@@ -28,6 +28,11 @@ function makeApi(): Api {
       menuOpenVideo = callback
       return () => {}
     }),
+    exportFrame: vi.fn(async () => ({ ok: true as const, files: ['/Users/vicent/Movies/Instagram/x-0.jpg'] })),
+    onMenuExportFrame: vi.fn((callback: () => void) => {
+      menuExportFrame = callback
+      return () => {}
+    }),
     onOpenPath: vi.fn((callback: (path: string) => void) => {
       openPath = callback
       return () => {}
@@ -47,6 +52,7 @@ function makeApi(): Api {
 let api: Api
 let menuOpenVideo: () => void
 let openPath: (path: string) => void
+let menuExportFrame: () => void
 let menuCommand: (command: 'undo' | 'redo') => void
 let updateReady: (version: string) => void
 
@@ -625,6 +631,39 @@ describe('App', () => {
     expect(confirm).toHaveBeenCalledWith(t.replaceVideoConfirm)
     expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(VIDEO))
     confirm.mockRestore()
+  })
+
+  it('exports the frame under the playhead framed like the selected clip, and shows it in the Finder', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    await userEvent.click(screen.getByTestId('framing-fit'))
+    seek(video, 120)
+    await act(async () => menuExportFrame())
+    expect(api.exportFrame).toHaveBeenCalledWith({
+      input: VIDEO,
+      folder: '/Users/vicent/Movies/Instagram/2026-10-22 22-33-13',
+      baseName: '2026-10-22 22-33-13',
+      format: '4:5',
+      time: 120,
+      framing: 'fit',
+      cropX: 0.5,
+      cropY: 0.5
+    })
+    expect(api.reveal).toHaveBeenCalledWith('/Users/vicent/Movies/Instagram/x-0.jpg')
+  })
+
+  it('shows why the frame could not be exported instead of failing silently', async () => {
+    vi.mocked(api.exportFrame).mockResolvedValue({ ok: false, error: t.ffmpegMissing })
+    render(<App />)
+    await loadVideo()
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(async () => menuExportFrame())
+    expect(api.reveal).not.toHaveBeenCalled()
+    expect(screen.getByTestId('export-error')).toHaveTextContent(t.ffmpegMissing)
   })
 
   it('listens to the File menu once instead of on every frame of playback, so the IPC listeners never churn', async () => {

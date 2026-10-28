@@ -1,8 +1,8 @@
 import { join } from 'node:path'
-import type { ExportProgress, ExportRequest, ExportResult } from '../shared/api'
-import { clipDuration, outputFileName, safeBaseName } from '@cuts/core/clips'
+import type { ExportProgress, ExportRequest, ExportResult, FrameRequest } from '../shared/api'
+import { clipDuration, frameFileName, outputFileName, safeBaseName } from '@cuts/core/clips'
 import type { Messages } from '@cuts/core/i18n'
-import { buildFfmpegArgs } from './ffmpeg-args'
+import { buildFfmpegArgs, buildFrameArgs } from './ffmpeg-args'
 
 export type ExportDeps = {
   ffmpeg: string | null
@@ -45,4 +45,26 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
     deps.onProgress({ index, ratio: 1 })
   }
   return { ok: true, files }
+}
+
+export async function exportFrame(request: FrameRequest, deps: ExportDeps): Promise<ExportResult> {
+  const { ffmpeg, t } = deps
+  if (!ffmpeg) return { ok: false, error: t.ffmpegMissing }
+
+  try {
+    await deps.ensureDir(request.folder)
+  } catch (error) {
+    return { ok: false, error: t.folderFailed((error as Error).message) }
+  }
+  const name = frameFileName(safeBaseName(request.baseName))
+  const file = join(request.folder, name)
+  if (deps.exists(file) && !(await deps.confirmOverwrite([name]))) return { ok: false, error: t.exportCancelled }
+
+  try {
+    await deps.run(ffmpeg, buildFrameArgs({ ...request, output: file }), () => {})
+  } catch (error) {
+    await deps.remove(file).catch(() => {})
+    return { ok: false, error: (error as Error).message }
+  }
+  return { ok: true, files: [file] }
 }

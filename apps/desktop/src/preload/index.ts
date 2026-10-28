@@ -12,6 +12,7 @@ const api: Api = {
   chooseFolder: (current) => ipcRenderer.invoke('choose-folder', current),
   moviesDir: () => ipcRenderer.invoke('movies-dir'),
   exportClips: (request) => ipcRenderer.invoke('export-clips', request),
+  exportFrame: (request) => ipcRenderer.invoke('export-frame', request),
   onExportProgress: (callback) => {
     const listener = (_event: IpcRendererEvent, progress: ExportProgress) => callback(progress)
     ipcRenderer.on('export-progress', listener)
@@ -34,6 +35,11 @@ const api: Api = {
     const listener = () => callback()
     ipcRenderer.on('menu-open-video', listener)
     return () => ipcRenderer.removeListener('menu-open-video', listener)
+  },
+  onMenuExportFrame: (callback) => {
+    const listener = () => callback()
+    ipcRenderer.on('menu-export-frame', listener)
+    return () => ipcRenderer.removeListener('menu-export-frame', listener)
   },
   onOpenPath: (callback) => {
     const listener = (_event: IpcRendererEvent, path: string) => callback(path)

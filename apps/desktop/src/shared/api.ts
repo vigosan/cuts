@@ -1,5 +1,6 @@
 import type { Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
+import type { ClipFraming } from '@cuts/core/framing'
 import type { OutputFormat } from '@cuts/core/formats'
 
 export type ExportClip = Clip & ClipSettings
@@ -20,6 +21,14 @@ export type ExportRequest = {
   clips: ExportClip[]
 }
 
+export type FrameRequest = ClipFraming & {
+  input: string
+  folder: string
+  baseName: string
+  format: OutputFormat
+  time: number
+}
+
 export type ExportResult = { ok: true; files: string[] } | { ok: false; error: string }
 
 export type ExportProgress = { index: number; ratio: number }
@@ -31,12 +40,14 @@ export type Api = {
   chooseFolder(current: string | null): Promise<string | null>
   moviesDir(): Promise<string>
   exportClips(request: ExportRequest): Promise<ExportResult>
+  exportFrame(request: FrameRequest): Promise<ExportResult>
   onExportProgress(callback: (progress: ExportProgress) => void): () => void
   reveal(path: string): void
   cancelExport(): void
   share(files: string[]): void
   onMenuOpenVideo(callback: () => void): () => void
   onOpenPath(callback: (path: string) => void): () => void
+  onMenuExportFrame(callback: () => void): () => void
   onMenuCommand(callback: (command: 'undo' | 'redo') => void): () => void
   onUpdateReady(callback: (version: string) => void): () => void
   restartToUpdate(): void

@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { ExportRequest } from '../shared/api'
 import { messagesFor } from '@cuts/core/i18n'
-import { exportClips, type ExportDeps } from './export'
+import { exportClips, exportFrame, type ExportDeps } from './export'
 
 const t = messagesFor('en')
 
@@ -142,5 +142,29 @@ describe('exportClips', () => {
     const result = await exportClips(request, deps({ run, cancelled: () => cancelled }))
     expect(result).toEqual({ ok: false, error: t.exportCancelled })
     expect(run).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('exportFrame', () => {
+  const frame = { input: '/Movies/session.mov', folder: '/Movies/Instagram', baseName: 'sesion', format: '4:5' as const, time: 120, framing: 'crop' as const, cropX: 0.5, cropY: 0.5 }
+
+  it('writes the still as name-0.jpg next to the clips', async () => {
+    const d = deps()
+    const result = await exportFrame(frame, d)
+    const file = join('/Movies/Instagram', 'sesion-0.jpg')
+    expect(result).toEqual({ ok: true, files: [file] })
+    expect(d.ensureDir).toHaveBeenCalledWith('/Movies/Instagram')
+    expect(vi.mocked(d.run).mock.calls[0][1].at(-1)).toBe(file)
+  })
+
+  it('asks before replacing a still that is already there', async () => {
+    const d = deps({ exists: () => true, confirmOverwrite: vi.fn(async () => false) })
+    expect(await exportFrame(frame, d)).toEqual({ ok: false, error: t.exportCancelled })
+    expect(d.confirmOverwrite).toHaveBeenCalledWith(['sesion-0.jpg'])
+    expect(d.run).not.toHaveBeenCalled()
+  })
+
+  it('reports a missing FFmpeg instead of failing silently', async () => {
+    expect(await exportFrame(frame, deps({ ffmpeg: null }))).toEqual({ ok: false, error: t.ffmpegMissing })
   })
 })

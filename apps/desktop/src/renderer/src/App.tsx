@@ -207,6 +207,19 @@ export function App() {
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
   }
 
+  const runExportFrame = async () => {
+    if (!videoPath || !destination || exporting) return
+    const { framing, cropX, cropY } = shownSettings
+    const result = await window.api
+      .exportFrame({ input: videoPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY })
+      .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
+    if (result.ok) return window.api.reveal(result.files[0])
+    setExportedWith(exportInputs)
+    setExportState({ status: 'error', error: result.error })
+  }
+  const onMenuExportFrame = useEffectEvent(() => void runExportFrame())
+  useEffect(() => window.api.onMenuExportFrame(() => onMenuExportFrame()), [])
+
   const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, seekTo })
 
   const pickClip = (clip: Clip) => {

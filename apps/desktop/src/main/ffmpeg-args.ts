@@ -25,7 +25,9 @@ function fadeFilters(prefix: string, duration: number, seconds: number, options 
   ]
 }
 
-function framingFilters(o: CutOptions): string[] {
+export type FrameOptions = ClipFraming & { input: string; output: string; time: number; format: OutputFormat }
+
+function framingFilters(o: ClipFraming & { format: OutputFormat }): string[] {
   const size = formatSize(o.format)
   if (!size) return []
   const { width: w, height: h } = size
@@ -49,6 +51,22 @@ const VIDEO_ENCODERS: Partial<Record<NodeJS.Platform, string[]>> = {
   darwin: ['-c:v', 'h264_videotoolbox', '-allow_sw', '1'],
   win32: ['-c:v', 'h264_mf'],
   linux: ['-c:v', 'libopenh264']
+}
+
+export function buildFrameArgs(o: FrameOptions): string[] {
+  const video = framingFilters(o)
+  return [
+    '-hide_banner',
+    '-y',
+    '-ss', num(o.time),
+    '-i', o.input,
+    '-frames:v', '1',
+    ...(video.length ? ['-vf', video.join(',')] : []),
+    '-q:v', '1',
+    '-progress', 'pipe:1',
+    '-nostats',
+    o.output
+  ]
 }
 
 export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = process.platform): string[] {

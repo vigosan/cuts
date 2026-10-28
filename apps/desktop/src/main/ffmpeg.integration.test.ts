@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { buildFfmpegArgs, findFfmpeg } from './ffmpeg-args'
+import { buildFfmpegArgs, buildFrameArgs, findFfmpeg } from './ffmpeg-args'
 import { cancelFfmpeg, captureFfmpeg, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
@@ -49,6 +49,18 @@ describe('runFfmpeg with real ffmpeg', () => {
     expect(result.duration).toBeGreaterThan(1.9)
     expect(result.duration).toBeLessThan(2.1)
     expect(progress.length).toBeGreaterThan(0)
+  })
+
+  it('writes a still frame at the Instagram size', async () => {
+    const output = join(dir, 'still-0.jpg')
+    await runFfmpeg(ffmpeg, buildFrameArgs({ input, output, time: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, format: '4:5' }), () => {})
+    let info = ''
+    try {
+      execFileSync(ffmpeg, ['-hide_banner', '-i', output], { stdio: 'pipe' })
+    } catch (error) {
+      info = String((error as { stderr: Buffer }).stderr)
+    }
+    expect(info).toMatch(/Video: mjpeg.*, 1080x1350/)
   })
 
   it('exports the full frame over a blurred background at the Instagram size', async () => {

@@ -3,10 +3,10 @@ import { mkdir, realpath, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
-import type { ExportRequest, Session } from '../shared/api'
+import type { ExportRequest, FrameRequest, Session } from '../shared/api'
 import { VIDEO_EXTENSIONS } from '../shared/video-formats'
 import { messagesFor, resolveLocale } from '@cuts/core/i18n'
-import { exportClips } from './export'
+import { exportClips, exportFrame, type ExportDeps } from './export'
 import { bundledFfmpegPath, findFfmpeg } from './ffmpeg-args'
 import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
@@ -79,6 +79,7 @@ app.whenReady().then(() => {
     Menu.buildFromTemplate(
       menuTemplate(t, app.name, {
         openVideo,
+        exportFrame: () => mainWindow()?.webContents.send('menu-export-frame'),
         openUrl: (url) => void shell.openExternal(url),
         undo: command('undo'),
         redo: command('redo'),
@@ -128,10 +129,9 @@ app.whenReady().then(() => {
     cancelFfmpeg()
   })
 
-  ipcMain.handle('export-clips', (event, request: ExportRequest) => {
-    cancelled = false
+  const exportDeps = (event: Electron.IpcMainInvokeEvent): ExportDeps => {
     const win = BrowserWindow.fromWebContents(event.sender)!
-    return exportClips(request, {
+    return {
       ffmpeg: bundledFfmpeg(),
       exists: existsSync,
       cancelled: () => cancelled,
@@ -153,8 +153,15 @@ app.whenReady().then(() => {
         })
         return response === 0
       }
-    })
+    }
+  }
+
+  ipcMain.handle('export-clips', (event, request: ExportRequest) => {
+    cancelled = false
+    return exportClips(request, exportDeps(event))
   })
+
+  ipcMain.handle('export-frame', (event, request: FrameRequest) => exportFrame({ ...request, input: opened(request.input) }, exportDeps(event)))
 
   const bundledFfmpeg = () => findFfmpeg(existsSync, bundledFfmpegPath(process.platform, process.resourcesPath, process.execPath), !process.mas)
 

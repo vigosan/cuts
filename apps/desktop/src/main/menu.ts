@@ -7,6 +7,7 @@ const separator: MenuEntry = { type: 'separator' }
 
 export type MenuActions = {
   openVideo: () => void
+  exportFrame?: () => void
   openUrl: (url: string) => void
   undo: () => void
   redo: () => void
@@ -39,6 +40,9 @@ export function menuTemplate(t: Messages, appName: string, actions: MenuActions,
         { label: t.menuOpenVideo, accelerator: 'CmdOrCtrl+O', click: actions.openVideo },
         ...(mac
           ? [{ role: 'recentDocuments', label: t.menuOpenRecent, submenu: [{ role: 'clearRecentDocuments', label: t.menuClearRecent }] } as MenuEntry]
+          : []),
+        ...(actions.exportFrame
+          ? [separator, { label: t.menuExportFrame, accelerator: 'Shift+CmdOrCtrl+E', click: actions.exportFrame }]
           : []),
         ...(mac ? [] : [separator, { role: 'quit', label: t.menuQuit(appName) } as MenuEntry])
       ]
