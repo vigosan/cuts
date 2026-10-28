@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 
-export function useWaveform(path: string): Float32Array | null {
+export function useWaveform(path: string | null): Float32Array | null {
   const [peaks, setPeaks] = useState<{ path: string; peaks: Float32Array } | null>(null)
   useEffect(() => {
+    if (!path) return
     let current = true
     window.api.waveform(path).then(
       (result) => current && setPeaks({ path, peaks: result }),

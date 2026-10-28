@@ -4,7 +4,7 @@ import type { ClipFade } from '@cuts/core/fades'
 import { dragClip, type DragMode } from '@cuts/core/drag-clip'
 import { filmstripTiles, PEAKS_PER_SECOND, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
 import { t } from '../i18n'
-import { useThumbnails, useWaveform } from '../useVideoPreview'
+import { useThumbnails } from '../useVideoPreview'
 
 const DRAG_THRESHOLD_PX = 3
 const TILE_WIDTH_PX = 96
@@ -16,6 +16,8 @@ function fadeRamp(seconds: number, clipLength: number): string {
 
 type Props = {
   videoPath: string
+  peaks: Float32Array | null
+  onBeat: (time: number) => number
   duration: number
   viewStart: number
   viewSpan: number
@@ -33,6 +35,8 @@ type Props = {
 
 export function Timeline({
   videoPath,
+  peaks,
+  onBeat,
   duration,
   viewStart,
   viewSpan,
@@ -56,7 +60,6 @@ export function Timeline({
     videoPath,
     tiles.map((tile) => tile.time)
   )
-  const peaks = useWaveform(videoPath)
 
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
@@ -93,7 +96,8 @@ export function Timeline({
       if (!moved && Math.abs(move.clientX - originX) < DRAG_THRESHOLD_PX) return
       if (!moved) onDragStart()
       moved = true
-      const next = dragClip(clip, mode, ((move.clientX - originX) / bar.width) * viewSpan, duration)
+      const dragged = dragClip(clip, mode, ((move.clientX - originX) / bar.width) * viewSpan, duration)
+      const next = mode === 'move' || move.altKey ? dragged : dragClip(clip, mode, onBeat(dragged[mode]) - clip[mode], duration)
       onClipChange(next)
       onSeek(mode === 'end' ? next.end : next.start)
     }

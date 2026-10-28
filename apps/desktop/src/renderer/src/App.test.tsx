@@ -76,6 +76,12 @@ function seek(video: HTMLVideoElement, time: number) {
   fireEvent(video, new Event('timeupdate'))
 }
 
+function kicksEveryHalfSecond(): Float32Array {
+  const peaks = new Float32Array(4880 * 50).fill(0.2)
+  for (let i = 0; i < peaks.length; i += 25) peaks[i] = 0.9
+  return peaks
+}
+
 async function markClip(video: HTMLVideoElement, start: number, end: number) {
   seek(video, start)
   await userEvent.click(screen.getByTestId('mark-start'))
@@ -209,6 +215,47 @@ describe('App', () => {
     seek(video, 200)
     await userEvent.keyboard('s')
     expect(screen.queryByTestId('clip-row-2')).not.toBeInTheDocument()
+  })
+
+  it('puts marks on the nearest kick, so a mark pressed a little late or early still cuts on the beat', async () => {
+    vi.mocked(api.waveform).mockResolvedValue(kicksEveryHalfSecond())
+    render(<App />)
+    const video = await loadVideo()
+    await act(async () => {})
+    await markClip(video, 100.18, 130.4)
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(vi.mocked(api.exportClips).mock.calls[0][0].clips[0]).toMatchObject({ start: 100, end: 130.5 })
+  })
+
+  it('marks exactly where the playhead is with Option-I and Option-O, for cuts that should not land on a beat', async () => {
+    vi.mocked(api.waveform).mockResolvedValue(kicksEveryHalfSecond())
+    render(<App />)
+    const video = await loadVideo()
+    await act(async () => {})
+    seek(video, 100.18)
+    fireEvent.keyDown(window, { key: 'ˆ', code: 'KeyI', altKey: true })
+    seek(video, 130.4)
+    fireEvent.keyDown(window, { key: 'ø', code: 'KeyO', altKey: true })
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(vi.mocked(api.exportClips).mock.calls[0][0].clips[0]).toMatchObject({ start: 100.18, end: 130.4 })
+  })
+
+  it('pulls a dragged edge onto the nearest kick, and leaves it free while Option is held', async () => {
+    vi.mocked(api.waveform).mockResolvedValue(kicksEveryHalfSecond())
+    render(<App />)
+    const video = await loadVideo()
+    await act(async () => {})
+    await markClip(video, 1000, 1100)
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(screen.getByTestId('clip-handle-end-1'), { clientX: 1100 })
+    fireEvent.pointerMove(window, { clientX: 1059.3 })
+    expect(video.currentTime).toBe(1059.5)
+    fireEvent.pointerMove(window, { clientX: 1059.3, altKey: true })
+    expect(video.currentTime).toBeCloseTo(1059.3)
+    fireEvent.pointerUp(window, { clientX: 1059.3 })
   })
 
   it('marks with the I and O keys like in Final Cut', async () => {

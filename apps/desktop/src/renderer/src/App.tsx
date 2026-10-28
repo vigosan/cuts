@@ -17,8 +17,10 @@ import { t } from './i18n'
 import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/core/timeline-view'
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { snapToBeat } from '@cuts/core/beats'
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
+import { useWaveform } from './useVideoPreview'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
@@ -79,8 +81,10 @@ export function App() {
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
   const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(videoRef, duration)
-  const markStart = () => dispatch({ type: 'markStart', time: now() })
-  const markEnd = () => dispatch({ type: 'markEnd', time: now(), id: crypto.randomUUID() })
+  const peaks = useWaveform(videoPath)
+  const onBeat = (time: number) => (peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
+  const markStart = (free = false) => dispatch({ type: 'markStart', time: free ? now() : onBeat(now()) })
+  const markEnd = (free = false) => dispatch({ type: 'markEnd', time: free ? now() : onBeat(now()), id: crypto.randomUUID() })
   const split = () => {
     const time = now()
     const inside = (clip: Clip) => clip.start < time && time < clip.end
@@ -151,8 +155,8 @@ export function App() {
       return
     }
     const actions: Record<string, () => void> = {
-      i: markStart,
-      o: markEnd,
+      i: () => markStart(),
+      o: () => markEnd(),
       s: split,
       ' ': togglePlay,
       ArrowLeft: () => seekTo(now() - SEEK_STEP),
@@ -160,6 +164,7 @@ export function App() {
     }
     const frame = e.shiftKey ? 1 : 1 / fps
     const byPosition: Record<string, () => void> = {
+      ...(e.altKey ? { KeyI: () => markStart(true), KeyO: () => markEnd(true) } : {}),
       Comma: () => stepTo(now() - frame),
       Period: () => stepTo(now() + frame),
       KeyJ: () => seekTo(now() - SEEK_STEP),
@@ -384,10 +389,10 @@ export function App() {
                   {formatTime(time)}
                   <span className="text-ink-3"> / {formatTime(duration)}</span>
                 </span>
-                <MarkButton testId="mark-start" shortcut="I" title={t.markStartHint} onClick={markStart}>
+                <MarkButton testId="mark-start" shortcut="I" title={t.markStartHint} onClick={() => markStart()}>
                   {t.markStart}
                 </MarkButton>
-                <MarkButton testId="mark-end" shortcut="O" title={t.markEndHint} onClick={markEnd}>
+                <MarkButton testId="mark-end" shortcut="O" title={t.markEndHint} onClick={() => markEnd()}>
                   {t.markEnd}
                 </MarkButton>
                 {pendingStart !== null && (
@@ -425,6 +430,8 @@ export function App() {
 
               <Timeline
                 videoPath={videoPath}
+                peaks={peaks}
+                onBeat={onBeat}
                 duration={duration}
                 viewStart={currentViewStart}
                 viewSpan={viewSpan}
