@@ -89,7 +89,7 @@ No hace falta acceso persistente (marcadores de seguridad): la app no guarda pro
 2. Publicar una política de privacidad y una URL de soporte (ver `docs/release/privacy.md`).
 3. Completar la privacidad, la clasificación por edad, la categoría (Video / Foto y vídeo), el precio y el copyright.
 4. Responder la pregunta de cifrado.
-5. Subir las capturas de `docs/release/screenshots/` (2880×1800, 16:10, sin alfa, en inglés y español; se regeneran con `apps/desktop/scripts/store-screenshots.mjs` y la app abierta con `--remote-debugging-port`).
+5. Subir las capturas de `docs/release/screenshots/` (2880×1800, 16:10, sin alfa, en inglés y español; se regeneran con `make media`, que también rehace las capturas y el vídeo de la web).
 6. Pegar las notas de revisión de `docs/release/app-store-listing.md`.
 
 **FFmpeg (LGPL)**

@@ -8,6 +8,11 @@ ws.onmessage = (m) => { const d = JSON.parse(m.data); if (pending.has(d.id)) { p
 const evalJs = async (expression) => (await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })).result?.value
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const shot = async (name) => { const s = await send('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(`${dir}/${lang}-${name}.png`, Buffer.from(s.data, 'base64')) }
+const shotTimeline = async () => {
+  const clip = await evalJs(`(() => { const play = document.querySelector('[data-testid=play]'); let card = document.querySelector('[data-testid=timeline]'); while (!card.contains(play)) card = card.parentElement; const r = card.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, scale: 1 } })()`)
+  const s = await send('Page.captureScreenshot', { format: 'png', clip })
+  fs.writeFileSync(`${dir}/${lang}-timeline.png`, Buffer.from(s.data, 'base64'))
+}
 const select = (testid, value) => evalJs(`(() => { const s = document.querySelector('[data-testid=${testid}]'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(s, '${value}'); s.dispatchEvent(new Event('change', { bubbles: true })) })()`)
 const click = (testid) => evalJs(`document.querySelector('[data-testid=${testid}]').click()`)
 const waitForTimeline = async () => {
@@ -43,6 +48,7 @@ ws.onopen = async () => {
   await seek(1430)
   await waitForTimeline()
   await shot('2-zoom')
+  await shotTimeline()
   await click('zoom-all')
   await select('format', '4:5')
   await click('clip-row-6')
@@ -52,7 +58,7 @@ ws.onopen = async () => {
   await select('format', 'original')
   await evalJs(`document.head.insertAdjacentHTML('beforeend', '<style>*{transition:none!important}</style>')`)
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme === 'light' ? 'dark' : 'light' }] })
-  await seek(3115)
+  await seek(3139)
   await waitForTimeline()
   await shot('3-dark')
   ws.close()

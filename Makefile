@@ -1,4 +1,4 @@
-.PHONY: install dev test typecheck lint build app ffmpeg icon mas web web-dev
+.PHONY: install dev test typecheck lint build app ffmpeg icon media mas web web-dev
 
 DESKTOP := apps/desktop
 
@@ -23,6 +23,9 @@ build:
 
 icon:
 	$(DESKTOP)/scripts/build-icon.sh
+
+media:
+	$(DESKTOP)/scripts/website-media.sh
 
 ffmpeg: $(DESKTOP)/resources/ffmpeg/ffmpeg
 
