@@ -1,7 +1,7 @@
 export const MAX_CLIP_SECONDS = 59
 export const MAX_CAROUSEL_ITEMS = 20
 export const FADE_SECONDS = 1
-export const FADE_OPTIONS = [0.5, 1, 2]
+export const FADE_OPTIONS = [0.5, 1, 2, 3, 5]
 
 export type Clip = { id: string; start: number; end: number }
 

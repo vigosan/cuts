@@ -37,6 +37,11 @@ describe('nearestFadeSeconds', () => {
     expect(nearestFadeSeconds(0.2)).toBe(0.5)
     expect(nearestFadeSeconds(1.4)).toBe(1)
     expect(nearestFadeSeconds(1.6)).toBe(2)
-    expect(nearestFadeSeconds(9)).toBe(2)
+    expect(nearestFadeSeconds(9)).toBe(5)
+  })
+
+  it('reaches fades of 3 and 5 s, for slow transitions between clips of a set', () => {
+    expect(nearestFadeSeconds(3.2)).toBe(3)
+    expect(nearestFadeSeconds(4.5)).toBe(5)
   })
 })
