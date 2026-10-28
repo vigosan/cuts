@@ -629,6 +629,25 @@ describe('App', () => {
     ])
   })
 
+  it('says whether the settings change one clip or all of them, so the difference never needs explaining', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForAll)
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClip(2))
+  })
+
+  it('names each fade menu with a visible label, so image, audio and length are told apart without hovering', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    expect(screen.getByLabelText(t.fadeLabels.image)).toBe(screen.getByTestId('fade-video'))
+    expect(screen.getByLabelText(t.fadeLabels.audio)).toBe(screen.getByTestId('fade-audio'))
+    expect(screen.getByLabelText(t.fadeLabels.length)).toBe(screen.getByTestId('fade-seconds'))
+  })
+
   it('applies fade changes to every clip when none is selected', async () => {
     render(<App />)
     const video = await loadVideo()

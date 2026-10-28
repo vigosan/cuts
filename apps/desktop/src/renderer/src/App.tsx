@@ -511,6 +511,7 @@ export function App() {
             </div>
             {clips.length > 0 && (
               <ClipControls
+                clipNumber={selectedIndex === -1 ? null : selectedIndex + 1}
                 settings={shownSettings}
                 format={format}
                 onChange={changeSettings}

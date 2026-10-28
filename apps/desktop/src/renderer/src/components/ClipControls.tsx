@@ -6,14 +6,18 @@ import { field } from './field'
 import { ImageIcon, SpeakerIcon } from './icons'
 
 type Props = {
+  clipNumber: number | null
   settings: ClipSettings
   format: OutputFormat
   onChange: (change: Partial<ClipSettings>) => void
 }
 
-export function ClipControls({ settings, format, onChange }: Props) {
+export function ClipControls({ clipNumber, settings, format, onChange }: Props) {
   return (
     <section data-testid="fade-controls" className="flex flex-col gap-2 px-4 pb-4">
+      <h3 data-testid="settings-scope" className="text-xs font-medium text-ink-2">
+        {clipNumber === null ? t.settingsForAll : t.settingsForClip(clipNumber)}
+      </h3>
       {formatSize(format) && (
         <div className="flex rounded-lg bg-sunken p-0.5 text-sm" role="group" aria-label={t.framing}>
           {(['crop', 'fit'] as const).map((framing) => (
@@ -30,13 +34,21 @@ export function ClipControls({ settings, format, onChange }: Props) {
           ))}
         </div>
       )}
-      <div className="grid grid-cols-[1fr_1fr_4.5rem] gap-2">
+      <div className="grid grid-cols-[1fr_1fr_4.5rem] gap-x-2 gap-y-1">
+        <label htmlFor="fade-video" className="text-[11px] text-ink-3">
+          {t.fadeLabels.image}
+        </label>
+        <label htmlFor="fade-audio" className="text-[11px] text-ink-3">
+          {t.fadeLabels.audio}
+        </label>
+        <label htmlFor="fade-seconds" className="text-[11px] text-ink-3">
+          {t.fadeLabels.length}
+        </label>
         <span className="relative">
           <ImageIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
           <select
             id="fade-video"
             data-testid="fade-video"
-            aria-label={t.imageFade}
             title={t.imageFade}
             className={`${field} pl-7`}
             value={settings.videoFade}
@@ -52,8 +64,8 @@ export function ClipControls({ settings, format, onChange }: Props) {
         <span className="relative">
           <SpeakerIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
           <select
+            id="fade-audio"
             data-testid="fade-audio"
-            aria-label={t.audioFade}
             title={t.audioFade}
             className={`${field} pl-7`}
             value={settings.audioFade}
@@ -67,8 +79,8 @@ export function ClipControls({ settings, format, onChange }: Props) {
           </select>
         </span>
         <select
+          id="fade-seconds"
           data-testid="fade-seconds"
-          aria-label={t.fadeLength}
           title={t.fadeLength}
           className={`${field} disabled:opacity-40`}
           value={settings.fadeSeconds}
