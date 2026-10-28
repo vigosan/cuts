@@ -51,6 +51,26 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
+## Novedades de la 1.5
+
+### Español
+
+- Exporta solo los clips que quieras: selecciónalos con ⇧-clic (un rango) o ⌘-clic (sueltos) en la lista o en la línea de tiempo, y el botón exporta solo esos, cada uno con su número del carrusel. Sin selección se exportan todos.
+- Con varios clips seleccionados, los fundidos y el encuadre cambian en todos a la vez.
+- Cuts recuerda tus fundidos, formato y carpeta para el siguiente vídeo, así no tienes que elegirlos cada vez.
+- Mientras marcas un clip, sus segundos se cuentan en la línea de tiempo y cambian de color al pasar de 59.
+- Los desplegables de fundido llevan su nombre: Imagen, Audio y Duración.
+- En Mac, al terminar de exportar tienes un botón "Mostrar en Finder" junto a "Compartir…".
+
+### English
+
+- Export only the clips you want: select them with ⇧-click (a range) or ⌘-click (one by one) in the list or on the timeline, and the button exports just those, each with its number in the carousel. With nothing selected, it exports them all.
+- With several clips selected, the fades and framing change on all of them at once.
+- Cuts remembers your fades, format and folder for the next video, so you don't pick them every time.
+- While you mark a clip, its seconds count up on the timeline and change colour past 59.
+- The fade menus are labelled: Image, Audio and Length.
+- On Mac, when the export finishes there is a Show in Finder button beside Share.
+
 ## Novedades de la 1.4
 
 ### Español
