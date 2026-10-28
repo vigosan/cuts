@@ -633,14 +633,13 @@ describe('App', () => {
     ])
   })
 
-  it('names the selected clip above the settings, and nothing when they change every clip, so the exception is what stands out', async () => {
+  it('puts no title above the settings, since the Export button already says which clips they apply to', async () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
-    expect(screen.queryByTestId('settings-scope')).not.toBeInTheDocument()
     await userEvent.click(screen.getByTestId('clip-row-2'))
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClip(2))
+    expect(screen.getByTestId('fade-controls').querySelector('h3')).toBeNull()
   })
 
   it('names each fade menu with a visible label, so image, audio and length are told apart without hovering', async () => {
@@ -728,7 +727,7 @@ describe('App', () => {
     fireEvent.click(screen.getByTestId('clip-row-3'), { metaKey: true })
     expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'true')
     expect(screen.getByTestId('clip-row-3')).toHaveAttribute('aria-current', 'true')
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(2))
     await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
     expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(2))
     await act(() => userEvent.click(screen.getByTestId('export')))
@@ -743,9 +742,9 @@ describe('App', () => {
     await markClip(video, 200, 250)
     await userEvent.click(screen.getByTestId('clip-row-1'))
     fireEvent.click(screen.getByTestId('clip-set-start-2'), { metaKey: true })
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(2))
     fireEvent.click(screen.getByTestId('clip-set-start-1'), { metaKey: true })
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClip(2))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportClip(2))
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
   })
 
@@ -758,11 +757,11 @@ describe('App', () => {
     await markClip(video, 400, 450)
     await userEvent.click(screen.getByTestId('clip-row-2'))
     fireEvent.click(screen.getByTestId('clip-row-4'), { shiftKey: true })
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(3))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(3))
     expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'false')
     expect(screen.getByTestId('clip-row-3')).toHaveAttribute('aria-current', 'true')
     fireEvent.click(screen.getByTestId('clip-set-start-1'), { shiftKey: true })
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(2))
     expect(screen.getByTestId('clip-row-4')).toHaveAttribute('aria-current', 'false')
   })
 
@@ -775,9 +774,9 @@ describe('App', () => {
     fireEvent.pointerDown(screen.getByTestId('clip-block-1'), { clientX: 100 })
     fireEvent.pointerUp(window, { clientX: 100 })
     fireEvent.pointerDown(screen.getByTestId('clip-block-3'), { clientX: 300, shiftKey: true })
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(3))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(3))
     fireEvent.pointerDown(screen.getByTestId('clip-block-2'), { clientX: 200, metaKey: true })
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(2))
     expect(screen.getByTestId('clip-block-2')).toHaveAttribute('aria-current', 'false')
   })
 
@@ -789,7 +788,7 @@ describe('App', () => {
     await markClip(video, 200, 250)
     await userEvent.click(screen.getByTestId('clip-row-1'))
     fireEvent.click(screen.getByTestId('clip-row-2'), { ctrlKey: true })
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(2))
   })
 
   it('offers to export again when the selection changes after exporting, so the new choice can be exported', async () => {

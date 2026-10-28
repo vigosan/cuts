@@ -537,7 +537,6 @@ export function App() {
             </div>
             {clips.length > 0 && (
               <ClipControls
-                selectedNumbers={selectedClips.map((clip) => clips.indexOf(clip) + 1)}
                 settings={shownSettings}
                 format={format}
                 onChange={changeSettings}

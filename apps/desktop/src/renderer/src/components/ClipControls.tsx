@@ -6,20 +6,14 @@ import { field } from './field'
 import { ImageIcon, SpeakerIcon } from './icons'
 
 type Props = {
-  selectedNumbers: number[]
   settings: ClipSettings
   format: OutputFormat
   onChange: (change: Partial<ClipSettings>) => void
 }
 
-export function ClipControls({ selectedNumbers, settings, format, onChange }: Props) {
+export function ClipControls({ settings, format, onChange }: Props) {
   return (
     <section data-testid="fade-controls" className="flex flex-col gap-2 px-4 pb-4">
-      {selectedNumbers.length > 0 && (
-        <h3 data-testid="settings-scope" className="text-xs font-medium text-ink-2">
-          {selectedNumbers.length === 1 ? t.settingsForClip(selectedNumbers[0]) : t.settingsForClips(selectedNumbers.length)}
-        </h3>
-      )}
       {formatSize(format) && (
         <div className="flex rounded-lg bg-sunken p-0.5 text-sm" role="group" aria-label={t.framing}>
           {(['crop', 'fit'] as const).map((framing) => (
