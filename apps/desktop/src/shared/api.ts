@@ -36,6 +36,7 @@ export type Api = {
   cancelExport(): void
   share(files: string[]): void
   onMenuOpenVideo(callback: () => void): () => void
+  onOpenPath(callback: (path: string) => void): () => void
   onMenuCommand(callback: (command: 'undo' | 'redo') => void): () => void
   onUpdateReady(callback: (version: string) => void): () => void
   restartToUpdate(): void

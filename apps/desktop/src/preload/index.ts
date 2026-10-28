@@ -35,6 +35,11 @@ const api: Api = {
     ipcRenderer.on('menu-open-video', listener)
     return () => ipcRenderer.removeListener('menu-open-video', listener)
   },
+  onOpenPath: (callback) => {
+    const listener = (_event: IpcRendererEvent, path: string) => callback(path)
+    ipcRenderer.on('open-path', listener)
+    return () => ipcRenderer.removeListener('open-path', listener)
+  },
   onUpdateReady: (callback) => {
     const listener = (_event: IpcRendererEvent, version: string) => callback(version)
     ipcRenderer.on('update-ready', listener)

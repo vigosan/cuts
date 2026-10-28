@@ -28,6 +28,10 @@ function makeApi(): Api {
       menuOpenVideo = callback
       return () => {}
     }),
+    onOpenPath: vi.fn((callback: (path: string) => void) => {
+      openPath = callback
+      return () => {}
+    }),
     onMenuCommand: vi.fn((callback: (command: 'undo' | 'redo') => void) => {
       menuCommand = callback
       return () => {}
@@ -42,6 +46,7 @@ function makeApi(): Api {
 
 let api: Api
 let menuOpenVideo: () => void
+let openPath: (path: string) => void
 let menuCommand: (command: 'undo' | 'redo') => void
 let updateReady: (version: string) => void
 
@@ -563,6 +568,25 @@ describe('App', () => {
     expect(api.openVideo).toHaveBeenCalled()
   })
 
+  it('loads a video opened from the Finder or the Dock, so there is no need to find it again in a dialog', async () => {
+    render(<App />)
+    act(() => openPath('/Users/vicent/Movies/set.mov'))
+    const video = await screen.findByTestId('video')
+    expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent('/Users/vicent/Movies/set.mov'))
+    expect(api.loadSession).toHaveBeenCalledWith('/Users/vicent/Movies/set.mov')
+  })
+
+  it('asks before a video opened from the Finder replaces the marked clips', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 10, 20)
+    act(() => openPath('/Users/vicent/Movies/set.mov'))
+    expect(confirm).toHaveBeenCalledWith(t.replaceVideoConfirm)
+    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(VIDEO))
+    confirm.mockRestore()
+  })
+
   it('listens to the File menu once instead of on every frame of playback, so the IPC listeners never churn', async () => {
     render(<App />)
     const video = await loadVideo()
@@ -593,6 +617,8 @@ describe('App', () => {
     vi.mocked(api.openVideo).mockClear()
     await act(async () => menuOpenVideo())
     fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'other.mov')] } })
+    act(() => openPath('/Users/vicent/Movies/other.mov'))
+    expect(api.loadSession).not.toHaveBeenCalledWith('/Users/vicent/Movies/other.mov')
     expect(api.openVideo).not.toHaveBeenCalled()
     expect(api.pathForFile).not.toHaveBeenCalled()
     vi.mocked(window.confirm).mockRestore()

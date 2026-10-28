@@ -230,6 +230,13 @@ export function App() {
   const onMenuOpenVideo = useEffectEvent(() => void openVideo())
   useEffect(() => window.api.onMenuOpenVideo(() => onMenuOpenVideo()), [])
 
+  const onOpenPath = useEffectEvent((path: string) => {
+    if (exporting) return
+    if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
+    load(path)
+  })
+  useEffect(() => window.api.onOpenPath((path) => onOpenPath(path)), [])
+
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
 

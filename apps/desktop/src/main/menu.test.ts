@@ -84,4 +84,17 @@ describe('menuTemplate', () => {
     const labels = flatten(menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {} })).map((e) => e.label)
     expect(labels).not.toContain('Check for Updates…')
   })
+
+  it('lists recent videos under File > Open Recent on macOS, so a set from yesterday is one click away', () => {
+    const file = menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {} }, 'darwin')
+      .find((e) => e.label === 'File')!
+    const recent = file.submenu!.find((e) => e.label === 'Open Recent')!
+    expect(recent.role).toBe('recentDocuments')
+    expect(recent.submenu!.map((e) => e.role)).toEqual(['clearRecentDocuments'])
+  })
+
+  it('leaves out Open Recent on Windows and Linux, where Electron cannot fill it', () => {
+    const labels = flatten(menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {} }, 'win32')).map((e) => e.label)
+    expect(labels).not.toContain('Open Recent')
+  })
 })

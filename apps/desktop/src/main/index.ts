@@ -18,6 +18,14 @@ import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from '.
 
 registerMediaScheme()
 
+const pendingPaths: string[] = []
+let sendPath: ((path: string) => void) | null = null
+app.on('open-file', (event, path) => {
+  event.preventDefault()
+  if (sendPath) sendPath(path)
+  else pendingPaths.push(path)
+})
+
 const THUMBNAIL_HEIGHT = 96
 const DEFAULT_FRAME_RATE = 30
 
@@ -80,13 +88,17 @@ app.whenReady().then(() => {
   )
   app.setAboutPanelOptions({ credits: t.aboutCredits })
   const openedVideos = new Set<string>()
+  const allowVideo = (path: string) => {
+    openedVideos.add(path)
+    app.addRecentDocument(path)
+  }
   const opened = (path: string) => {
     if (!openedVideos.has(path)) throw new Error('This video was not opened in Cuts')
     return path
   }
   handleMediaProtocol((path) => openedVideos.has(path))
   ipcMain.on('allow-video', (event, path: string) => {
-    openedVideos.add(path)
+    allowVideo(path)
     event.returnValue = null
   })
 
@@ -97,7 +109,7 @@ app.whenReady().then(() => {
       filters: [{ name: t.videoFilter, extensions: VIDEO_EXTENSIONS }]
     })
     if (result.canceled) return null
-    openedVideos.add(result.filePaths[0])
+    allowVideo(result.filePaths[0])
     return result.filePaths[0]
   })
 
@@ -186,6 +198,17 @@ app.whenReady().then(() => {
   ipcMain.on('reveal', (_event, path: string) => shell.showItemInFolder(path))
 
   const win = createWindow()
+  win.webContents.once('did-finish-load', () => {
+    sendPath = (path) => {
+      allowVideo(path)
+      const target = mainWindow()
+      if (!target) return
+      if (target.isMinimized()) target.restore()
+      target.focus()
+      target.webContents.send('open-path', path)
+    }
+    pendingPaths.splice(0).forEach(sendPath)
+  })
   if (updates) {
     autoUpdater.on('update-downloaded', ({ version }) => mainWindow()?.webContents.send('update-ready', version))
     ipcMain.on('restart-to-update', () => autoUpdater.quitAndInstall())

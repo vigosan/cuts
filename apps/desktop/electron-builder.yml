@@ -21,6 +21,11 @@ mac:
       to: Helpers/ffmpeg
   x64ArchFiles: Contents/Helpers/ffmpeg
   category: public.app-category.video
+  fileAssociations:
+    - ext: [mov, mp4, m4v, mkv, webm]
+      name: Video
+      role: Viewer
+      rank: Alternate
   electronLanguages:
     - en
     - en_FEMININE

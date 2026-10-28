@@ -37,6 +37,9 @@ export function menuTemplate(t: Messages, appName: string, actions: MenuActions,
       label: t.menuFile,
       submenu: [
         { label: t.menuOpenVideo, accelerator: 'CmdOrCtrl+O', click: actions.openVideo },
+        ...(mac
+          ? [{ role: 'recentDocuments', label: t.menuOpenRecent, submenu: [{ role: 'clearRecentDocuments', label: t.menuClearRecent }] } as MenuEntry]
+          : []),
         ...(mac ? [] : [separator, { role: 'quit', label: t.menuQuit(appName) } as MenuEntry])
       ]
     },
