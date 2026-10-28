@@ -12,6 +12,18 @@ describe("site content", () => {
     expect(keys(content.es)).toEqual(keys(content.en));
   });
 
+  it("groups the features under a few titled tasks, so visitors can scan the list instead of reading every line", () => {
+    for (const lang of LANGS) {
+      const groups = content[lang].home.features;
+      expect(groups.length, lang).toBeGreaterThanOrEqual(3);
+      expect(groups.length, lang).toBeLessThanOrEqual(5);
+      for (const group of groups) {
+        expect(group.title, lang).not.toBe("");
+        expect(group.items.length, `${lang} ${group.title}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
   it("links every route to a page that exists, so the App Store privacy and support URLs never 404", () => {
     for (const lang of LANGS) {
       for (const path of Object.values(content[lang].routes)) {

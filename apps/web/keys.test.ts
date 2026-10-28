@@ -17,7 +17,7 @@ describe("splitKeys", () => {
 
   it("leaves no stray bracket in any feature, so a typo never shows up on the page", () => {
     for (const lang of LANGS) {
-      for (const feature of content[lang].home.features) {
+      for (const feature of [...content[lang].home.features.flatMap((group) => group.items), content[lang].home.shortcuts]) {
         expect(splitKeys(feature).some((part) => "text" in part && /[[\]]/.test(part.text)), feature).toBe(false);
       }
     }

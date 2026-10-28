@@ -6,6 +6,21 @@ import { LoopVideo } from "./LoopVideo";
 import { Page } from "./Page";
 import { Screenshot } from "./Screenshot";
 
+function Keys({ text }: { text: string }) {
+  return splitKeys(text).map((part, index) =>
+    "key" in part ? (
+      <kbd
+        key={index}
+        className="mx-0.5 rounded-md border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-medium text-gray-800 shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+      >
+        {part.key}
+      </kbd>
+    ) : (
+      part.text
+    ),
+  );
+}
+
 export async function Home({ c }: { c: Content }) {
   const downloads = await fetchDownloads();
 
@@ -38,24 +53,35 @@ export async function Home({ c }: { c: Content }) {
       </article>
       <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100">{c.home.featuresTitle}</h2>
-        <ul className="grid gap-x-10 gap-y-4 sm:grid-cols-2">
-          {c.home.features.map((feature) => (
-            <li key={feature} className="border-l-2 border-gray-300 dark:border-gray-700 pl-4 hover:border-gray-500 dark:hover:border-gray-400">
-              {splitKeys(feature).map((part, index) =>
-                "key" in part ? (
-                  <kbd
-                    key={index}
-                    className="mx-0.5 rounded-md border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-medium text-gray-800 shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                  >
-                    {part.key}
-                  </kbd>
-                ) : (
-                  part.text
-                ),
-              )}
+        <ol className="border-b border-gray-200 dark:border-gray-800">
+          {c.home.features.map((group, groupIndex) => (
+            <li
+              key={group.title}
+              data-testid="feature-group"
+              className="grid gap-4 border-t border-gray-200 py-6 sm:grid-cols-[11rem_1fr] sm:gap-8 dark:border-gray-800"
+            >
+              <h3 className="flex items-baseline gap-3 text-gray-800 dark:text-gray-100">
+                <span className="text-xs tabular-nums text-gray-400 dark:text-gray-600">{String(groupIndex + 1).padStart(2, "0")}</span>
+                <span className="font-medium">{group.title}</span>
+              </h3>
+              <ul className="flex flex-col gap-3 text-sm leading-relaxed">
+                {group.items.map((item, itemIndex) => (
+                  <li key={item} className="grid grid-cols-[2.5rem_1fr]">
+                    <span className="text-xs leading-6 tabular-nums text-gray-300 dark:text-gray-700">
+                      {groupIndex + 1}.{itemIndex + 1}
+                    </span>
+                    <span>
+                      <Keys text={item} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
-        </ul>
+        </ol>
+        <p className="text-sm">
+          <Keys text={c.home.shortcuts} />
+        </p>
       </article>
       <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100">{c.home.timelineTitle}</h2>
