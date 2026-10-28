@@ -15,13 +15,11 @@ type Props = {
 export function ClipControls({ selectedNumbers, settings, format, onChange }: Props) {
   return (
     <section data-testid="fade-controls" className="flex flex-col gap-2 px-4 pb-4">
-      <h3 data-testid="settings-scope" className="text-xs font-medium text-ink-2">
-        {selectedNumbers.length === 0
-          ? t.settingsForAll
-          : selectedNumbers.length === 1
-            ? t.settingsForClip(selectedNumbers[0])
-            : t.settingsForClips(selectedNumbers.length)}
-      </h3>
+      {selectedNumbers.length > 0 && (
+        <h3 data-testid="settings-scope" className="text-xs font-medium text-ink-2">
+          {selectedNumbers.length === 1 ? t.settingsForClip(selectedNumbers[0]) : t.settingsForClips(selectedNumbers.length)}
+        </h3>
+      )}
       {formatSize(format) && (
         <div className="flex rounded-lg bg-sunken p-0.5 text-sm" role="group" aria-label={t.framing}>
           {(['crop', 'fit'] as const).map((framing) => (

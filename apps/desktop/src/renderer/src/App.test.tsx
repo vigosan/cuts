@@ -633,12 +633,12 @@ describe('App', () => {
     ])
   })
 
-  it('says whether the settings change one clip or all of them, so the difference never needs explaining', async () => {
+  it('names the selected clip above the settings, and nothing when they change every clip, so the exception is what stands out', async () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
-    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForAll)
+    expect(screen.queryByTestId('settings-scope')).not.toBeInTheDocument()
     await userEvent.click(screen.getByTestId('clip-row-2'))
     expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClip(2))
   })
