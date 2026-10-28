@@ -1255,6 +1255,20 @@ describe('App', () => {
     expect(api.reveal).toHaveBeenCalledWith('/Movies/Cuts/x/x-1.mp4')
   })
 
+  it('offers Show in Finder as a button beside Share on macOS, since a small link under it went unnoticed', async () => {
+    vi.mocked(api.exportClips).mockResolvedValue({ ok: true, files: ['/Movies/Cuts/x/x-1.mp4'] })
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const reveal = screen.getByRole('button', { name: t.showInFinder })
+    expect(reveal).toHaveAttribute('data-testid', 'reveal')
+    expect(screen.getByTestId('export-status')).not.toContainElement(reveal)
+    expect(screen.getByTestId('export-status')).toHaveTextContent(t.exportedClips(1))
+    await userEvent.click(reveal)
+    expect(api.reveal).toHaveBeenCalledWith('/Movies/Cuts/x/x-1.mp4')
+  })
+
   it('opens the folder with the clips instead of sharing them on Windows and Linux, which have no share menu', async () => {
     api.platform = 'win32'
     vi.mocked(api.exportClips).mockResolvedValue({ ok: true, files: ['C:\\Videos\\Cuts\\x\\x-1.mp4'] })

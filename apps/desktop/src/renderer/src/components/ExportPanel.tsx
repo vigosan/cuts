@@ -80,29 +80,40 @@ export function ExportPanel(p: Props) {
         </select>
       </div>
 
-      <button
-        data-testid="export"
-        className={`relative h-10 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition-colors ${running ? 'cursor-default' : 'hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3'}`}
-        disabled={!p.canExport || running}
-        onClick={() => (p.state.status === 'done' ? (p.canShare ? p.onShare(p.state.files) : p.onReveal(p.state.files[0])) : p.onExport())}
-      >
-        {running && (
-          <span
-            data-testid="export-progress"
-            className="absolute inset-y-0 left-0 bg-on-accent/20 transition-[width]"
-            style={{ width: `${overall * 100}%` }}
-          />
+      <div className="flex gap-2">
+        {p.state.status === 'done' && p.canShare && (
+          <button
+            data-testid="reveal"
+            className="h-10 flex-1 rounded-xl bg-sunken text-sm font-medium text-ink transition-colors hover:bg-accent-soft hover:text-accent"
+            onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
+          >
+            {t.showInFinder}
+          </button>
         )}
-        <span className="relative">
-          {p.state.status === 'running'
-            ? t.exportingClip(Math.min(finished + 1, p.state.progress.length), p.state.progress.length)
-            : p.state.status === 'done'
-              ? p.canShare
-                ? t.share
-                : t.showInFolder
-              : t.exportClips(p.clipCount)}
-        </span>
-      </button>
+        <button
+          data-testid="export"
+          className={`relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition-colors ${running ? 'cursor-default' : 'hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3'}`}
+          disabled={!p.canExport || running}
+          onClick={() => (p.state.status === 'done' ? (p.canShare ? p.onShare(p.state.files) : p.onReveal(p.state.files[0])) : p.onExport())}
+        >
+          {running && (
+            <span
+              data-testid="export-progress"
+              className="absolute inset-y-0 left-0 bg-on-accent/20 transition-[width]"
+              style={{ width: `${overall * 100}%` }}
+            />
+          )}
+          <span className="relative">
+            {p.state.status === 'running'
+              ? t.exportingClip(Math.min(finished + 1, p.state.progress.length), p.state.progress.length)
+              : p.state.status === 'done'
+                ? p.canShare
+                  ? t.share
+                  : t.showInFolder
+                : t.exportClips(p.clipCount)}
+          </span>
+        </button>
+      </div>
 
       <p data-testid="export-status" className="h-4 truncate text-center text-xs leading-4 text-ink-3">
         {p.state.status === 'running' && (
@@ -117,18 +128,6 @@ export function ExportPanel(p: Props) {
         {p.state.status === 'done' && (
           <span data-testid="export-done" className="text-ok">
             {t.exportedClips(p.state.files.length)}
-            {p.canShare && (
-              <>
-                {' '}·{' '}
-                <button
-                  data-testid="reveal"
-                  className="cursor-pointer font-medium underline-offset-2 hover:underline"
-                  onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
-                >
-                  {t.showInFinder}
-                </button>
-              </>
-            )}
           </span>
         )}
         {p.state.status === 'error' && (
