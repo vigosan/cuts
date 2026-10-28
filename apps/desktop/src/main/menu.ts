@@ -8,6 +8,7 @@ const separator: MenuEntry = { type: 'separator' }
 export type MenuActions = {
   openVideo: () => void
   exportFrame?: () => void
+  showShortcuts?: () => void
   openUrl: (url: string) => void
   undo: () => void
   redo: () => void
@@ -74,6 +75,7 @@ export function menuTemplate(t: Messages, appName: string, actions: MenuActions,
       submenu: [
         { label: t.menuPrivacy, click: () => actions.openUrl(t.privacyUrl) },
         { label: t.menuSupport, click: () => actions.openUrl(t.supportUrl) },
+        ...(actions.showShortcuts ? [{ label: t.menuShortcuts, click: actions.showShortcuts }] : []),
         ...(mac || updates.length === 0 ? [] : [separator, ...updates])
       ]
     }

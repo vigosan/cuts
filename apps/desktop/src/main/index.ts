@@ -80,6 +80,7 @@ app.whenReady().then(() => {
       menuTemplate(t, app.name, {
         openVideo,
         exportFrame: () => mainWindow()?.webContents.send('menu-export-frame'),
+        showShortcuts: () => mainWindow()?.webContents.send('menu-shortcuts'),
         openUrl: (url) => void shell.openExternal(url),
         undo: command('undo'),
         redo: command('redo'),

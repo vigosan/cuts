@@ -33,6 +33,10 @@ function makeApi(): Api {
       menuExportFrame = callback
       return () => {}
     }),
+    onMenuShortcuts: vi.fn((callback: () => void) => {
+      menuShortcuts = callback
+      return () => {}
+    }),
     onOpenPath: vi.fn((callback: (path: string) => void) => {
       openPath = callback
       return () => {}
@@ -53,6 +57,7 @@ let api: Api
 let menuOpenVideo: () => void
 let openPath: (path: string) => void
 let menuExportFrame: () => void
+let menuShortcuts: () => void
 let menuCommand: (command: 'undo' | 'redo') => void
 let updateReady: (version: string) => void
 
@@ -711,6 +716,57 @@ describe('App', () => {
     await act(async () => menuExportFrame())
     expect(api.reveal).not.toHaveBeenCalled()
     expect(screen.getByTestId('export-error')).toHaveTextContent(t.ffmpegMissing)
+  })
+
+  it('shows every shortcut with ? so they can be learned without hunting through tooltips', async () => {
+    render(<App />)
+    await loadVideo()
+    expect(screen.queryByTestId('shortcuts')).not.toBeInTheDocument()
+    await userEvent.keyboard('?')
+    const panel = screen.getByTestId('shortcuts')
+    expect(panel).toHaveTextContent(t.shortcuts.title)
+    expect(panel).toHaveTextContent(t.shortcuts.split)
+    expect(panel).toHaveTextContent('⇧⌘E')
+    expect(panel).toHaveTextContent('⌥I')
+  })
+
+  it('opens the shortcuts from the Help menu even before a video is open', () => {
+    render(<App />)
+    act(() => menuShortcuts())
+    expect(screen.getByTestId('shortcuts')).toBeInTheDocument()
+  })
+
+  it('names the Windows modifier keys on Windows, where ⌘ and ⌥ do not exist', () => {
+    api.platform = 'win32'
+    render(<App />)
+    act(() => menuShortcuts())
+    expect(screen.getByTestId('shortcuts')).toHaveTextContent('Ctrl+Shift+E')
+    expect(screen.getByTestId('shortcuts')).toHaveTextContent('Alt+I')
+  })
+
+  it('closes the shortcuts with Escape, with its close button and by clicking outside', async () => {
+    render(<App />)
+    await loadVideo()
+    await userEvent.keyboard('?')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByTestId('shortcuts')).not.toBeInTheDocument()
+    await userEvent.keyboard('?')
+    await userEvent.click(screen.getByTestId('close-shortcuts'))
+    expect(screen.queryByTestId('shortcuts')).not.toBeInTheDocument()
+    await userEvent.keyboard('?')
+    await userEvent.click(screen.getByTestId('shortcuts-backdrop'))
+    expect(screen.queryByTestId('shortcuts')).not.toBeInTheDocument()
+  })
+
+  it('keeps the keys from editing while the shortcuts are open, so reading them never marks a clip by accident', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 100)
+    await userEvent.keyboard('?')
+    await userEvent.keyboard('i')
+    seek(video, 130)
+    await userEvent.keyboard('o')
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
   })
 
   it('listens to the File menu once instead of on every frame of playback, so the IPC listeners never churn', async () => {

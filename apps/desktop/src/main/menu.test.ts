@@ -106,4 +106,11 @@ describe('menuTemplate', () => {
     ;(item.click as () => void)()
     expect(exportFrame).toHaveBeenCalled()
   })
+
+  it('opens the keyboard shortcuts from the Help menu, where people look for them', () => {
+    const showShortcuts = vi.fn()
+    const items = flatten(menuTemplate(messagesFor('es'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {}, showShortcuts }))
+    ;(items.find((e) => e.label === 'Atajos de teclado')!.click as () => void)()
+    expect(showShortcuts).toHaveBeenCalled()
+  })
 })

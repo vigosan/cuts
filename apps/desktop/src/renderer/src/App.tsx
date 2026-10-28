@@ -10,6 +10,7 @@ import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
 import { CloseIcon, FilmIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
+import { ShortcutsPanel } from './components/ShortcutsPanel'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from '@cuts/core/clips-reducer'
 import { withHistory } from '@cuts/core/history'
@@ -145,7 +146,11 @@ export function App() {
   const exportState: ExportState =
     outdated && (lastExport.status === 'done' || lastExport.status === 'error') ? { status: 'idle' } : lastExport
 
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  useEffect(() => window.api.onMenuShortcuts(() => setShortcutsOpen(true)), [])
+
   const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (shortcutsOpen) return
     if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
     if (e.metaKey || e.ctrlKey) return
     if (e.altKey && selectedIndex !== -1 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
@@ -159,6 +164,7 @@ export function App() {
       o: () => markEnd(),
       s: split,
       ' ': togglePlay,
+      '?': () => setShortcutsOpen(true),
       ArrowLeft: () => seekTo(now() - SEEK_STEP),
       ArrowRight: () => seekTo(now() + SEEK_STEP)
     }
@@ -532,6 +538,8 @@ export function App() {
           </aside>
         </main>
       )}
+
+      {shortcutsOpen && <ShortcutsPanel platform={window.api.platform} onClose={() => setShortcutsOpen(false)} />}
 
       <div className="fixed right-5 bottom-5 flex flex-col items-end gap-2">
         {unsupportedDrops > 0 && (

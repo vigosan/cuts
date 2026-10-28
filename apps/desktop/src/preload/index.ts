@@ -41,6 +41,11 @@ const api: Api = {
     ipcRenderer.on('menu-export-frame', listener)
     return () => ipcRenderer.removeListener('menu-export-frame', listener)
   },
+  onMenuShortcuts: (callback) => {
+    const listener = () => callback()
+    ipcRenderer.on('menu-shortcuts', listener)
+    return () => ipcRenderer.removeListener('menu-shortcuts', listener)
+  },
   onOpenPath: (callback) => {
     const listener = (_event: IpcRendererEvent, path: string) => callback(path)
     ipcRenderer.on('open-path', listener)
