@@ -62,6 +62,7 @@ let menuCommand: (command: 'undo' | 'redo') => void
 let updateReady: (version: string) => void
 
 beforeEach(() => {
+  localStorage.clear()
   api = makeApi()
   Object.assign(window, { api })
 })
@@ -646,6 +647,56 @@ describe('App', () => {
     expect(screen.getByLabelText(t.fadeLabels.image)).toBe(screen.getByTestId('fade-video'))
     expect(screen.getByLabelText(t.fadeLabels.audio)).toBe(screen.getByTestId('fade-audio'))
     expect(screen.getByLabelText(t.fadeLabels.length)).toBe(screen.getByTestId('fade-seconds'))
+  })
+
+  it('starts the next video with the settings last chosen for all clips, so None never has to be picked again', async () => {
+    const first = render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
+    await userEvent.selectOptions(screen.getByTestId('fade-seconds'), '2')
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    first.unmount()
+    render(<App />)
+    const next = await loadVideo()
+    await markClip(next, 100, 150)
+    expect(screen.getByTestId('fade-video')).toHaveValue('none')
+    expect(screen.getByTestId('fade-seconds')).toHaveValue('2')
+    expect(screen.getByTestId('format')).toHaveValue('4:5')
+    expect(screen.getByTestId('choose-folder')).toHaveAttribute('title', '/Users/vicent/Movies/Instagram')
+  })
+
+  it('keeps a change made to one selected clip for that clip only, not for the next videos', async () => {
+    const first = render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
+    first.unmount()
+    render(<App />)
+    const next = await loadVideo()
+    await markClip(next, 100, 150)
+    expect(screen.getByTestId('fade-video')).toHaveValue('black')
+  })
+
+  it('does not let an old video reopened with its own settings replace the ones remembered for new videos', async () => {
+    vi.mocked(api.loadSession).mockResolvedValueOnce({
+      clips: [{ id: 'a', start: 100, end: 150 }],
+      clipSettings: {},
+      defaultSettings: { videoFade: 'white', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5 },
+      format: '1:1',
+      baseName: 'old'
+    })
+    const first = render(<App />)
+    await loadVideo()
+    await screen.findByTestId('clip-row-1')
+    first.unmount()
+    render(<App />)
+    const next = await loadVideo()
+    await markClip(next, 100, 150)
+    expect(screen.getByTestId('fade-video')).toHaveValue('black')
+    expect(screen.getByTestId('format')).toHaveValue('original')
   })
 
   it('applies fade changes to every clip when none is selected', async () => {

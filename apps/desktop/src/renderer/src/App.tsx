@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
-import { DEFAULT_SETTINGS, type ClipSettings } from '@cuts/core/fades'
+import type { ClipSettings } from '@cuts/core/fades'
 import type { ExportResult } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { mediaUrl } from '@shared/media-url'
@@ -22,6 +22,7 @@ import { snapToBeat } from '@cuts/core/beats'
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
 import { useWaveform } from './useVideoPreview'
+import { loadPreferences, savePreferences } from './preferences'
 
 const SEEK_STEP = 5
 const SAVE_DELAY_MS = 300
@@ -46,8 +47,8 @@ export function App() {
   const [duration, setDuration] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [baseName, setBaseName] = useState('')
-  const [folder, setFolder] = useState<string | null>(null)
-  const [defaultSettings, setDefaultSettings] = useState<ClipSettings>(DEFAULT_SETTINGS)
+  const [folder, setFolder] = useState<string | null>(() => loadPreferences().folder)
+  const [defaultSettings, setDefaultSettings] = useState<ClipSettings>(() => loadPreferences().settings)
   const [clipSettings, setClipSettings] = useState<Record<string, ClipSettings>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -58,11 +59,13 @@ export function App() {
     if (selectedClip) {
       setClipSettings({ ...clipSettings, [selectedClip.id]: { ...settingsOf(selectedClip), ...change } })
     } else {
-      setDefaultSettings({ ...defaultSettings, ...change })
+      const settings = { ...defaultSettings, ...change }
+      setDefaultSettings(settings)
+      savePreferences({ settings })
       setClipSettings({})
     }
   }
-  const [format, setFormat] = useState<OutputFormat>('original')
+  const [format, setFormat] = useState<OutputFormat>(() => loadPreferences().format)
   const [restoredFor, setRestoredFor] = useState<string | null>(null)
   const openedPath = useRef<string | null>(null)
   const [fps, setFps] = useState(DEFAULT_FPS)
@@ -528,9 +531,14 @@ export function App() {
               onBaseName={setBaseName}
               onChooseFolder={async () => {
                 const chosen = await window.api.chooseFolder(folder)
-                if (chosen) setFolder(chosen)
+                if (!chosen) return
+                setFolder(chosen)
+                savePreferences({ folder: chosen })
               }}
-              onFormat={setFormat}
+              onFormat={(chosen) => {
+                setFormat(chosen)
+                savePreferences({ format: chosen })
+              }}
               onExport={runExport}
               onReveal={window.api.reveal}
               onCancel={window.api.cancelExport}
