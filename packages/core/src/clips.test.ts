@@ -5,6 +5,7 @@ import {
   formatDuration,
   formatTime,
   isOverLimit,
+  isPastCarousel,
   outputFileName,
   safeBaseName
 } from './clips'
@@ -20,6 +21,16 @@ describe('clip limit', () => {
 
   it('measures duration from start to end', () => {
     expect(clipDuration({ id: 'a', start: 10.5, end: 40 })).toBe(29.5)
+  })
+})
+
+describe('carousel limit', () => {
+  it('keeps the 20th clip because an Instagram carousel holds 20 items', () => {
+    expect(isPastCarousel(19)).toBe(false)
+  })
+
+  it('flags the 21st clip and later, which Instagram would refuse in the same carousel', () => {
+    expect(isPastCarousel(20)).toBe(true)
   })
 })
 

@@ -149,6 +149,17 @@ describe('App', () => {
     expect(screen.getByTestId('export')).toBeEnabled()
   })
 
+  it('warns about clips past the 20th but still exports them, because the rest can go in a second carousel', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    for (let i = 0; i < 21; i++) await markClip(video, i * 10, i * 10 + 5)
+    expect(screen.getByTestId('clip-row-20')).not.toHaveAttribute('data-past-carousel', 'true')
+    expect(screen.getByTestId('clip-row-21')).toHaveAttribute('data-past-carousel', 'true')
+    expect(screen.getByTestId('clip-number-21')).toHaveAttribute('title', t.pastCarousel(20))
+    expect(screen.getByTestId('export')).toBeEnabled()
+  })
+
   it('marks with the I and O keys like in Final Cut', async () => {
     render(<App />)
     const video = await loadVideo()

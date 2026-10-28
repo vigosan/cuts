@@ -1,5 +1,14 @@
 import { useState } from 'react'
-import { clipDuration, formatDuration, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
+import {
+  clipDuration,
+  formatDuration,
+  formatTime,
+  isOverLimit,
+  isPastCarousel,
+  MAX_CAROUSEL_ITEMS,
+  MAX_CLIP_SECONDS,
+  type Clip
+} from '@cuts/core/clips'
 import type { VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
 import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PauseIcon, PlayIcon } from './icons'
@@ -57,6 +66,7 @@ export function ClipList({
       {clips.map((clip, index) => {
         const n = index + 1
         const over = isOverLimit(clip)
+        const past = isPastCarousel(index)
         const dropTarget = dragIndex !== null && overIndex === index && dragIndex !== index
         const now = formatTime(time)
         const selected = clip.id === selectedId
@@ -67,6 +77,7 @@ export function ClipList({
             key={clip.id}
             data-testid={`clip-row-${n}`}
             data-over-limit={over}
+            data-past-carousel={past}
             aria-current={selected}
             onClick={(e) => {
               if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip)
@@ -101,9 +112,9 @@ export function ClipList({
               <GripIcon />
             </span>
             <span
-              data-testid={index === 0 ? 'clip-cover-1' : undefined}
-              title={index === 0 ? t.cover : undefined}
-              className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums ${index === 0 ? 'bg-accent text-on-accent' : selected ? 'bg-surface text-ink-2' : 'bg-sunken text-ink-2'}`}
+              data-testid={index === 0 ? 'clip-cover-1' : `clip-number-${n}`}
+              title={index === 0 ? t.cover : past ? t.pastCarousel(MAX_CAROUSEL_ITEMS) : undefined}
+              className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium tabular-nums ${index === 0 ? 'bg-accent text-on-accent' : past ? 'bg-warn-soft text-warn' : selected ? 'bg-surface text-ink-2' : 'bg-sunken text-ink-2'}`}
             >
               {n}
             </span>
