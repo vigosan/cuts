@@ -51,6 +51,18 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
+## Novedades de la 1.4
+
+### Español
+
+- Ves el fundido de audio en la línea de tiempo: una línea de volumen sobre la forma de onda baja en cada extremo del clip, con la misma curva que se exporta. En el clip seleccionado, arrastra sus tiradores para alargar o acortar el fundido.
+- Fundidos más largos: además de 0,5, 1 y 2 segundos, ahora puedes elegir 3 y 5.
+
+### English
+
+- See the audio fade on the timeline: a volume line over the waveform dips at each end of the clip, with the same curve that gets exported. On the selected clip, drag its handles to lengthen or shorten the fade.
+- Longer fades: besides 0.5, 1 and 2 seconds, you can now choose 3 and 5.
+
 ## Novedades de la 1.3
 
 ### Español
