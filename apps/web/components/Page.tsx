@@ -10,8 +10,7 @@ type Route = keyof Content["routes"];
 export function Page({ c, current, children }: { c: Content; current: Route; children: React.ReactNode }) {
   return (
     <div
-      className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-12 text-gray-500 dark:text-gray-400 antialiased lg:gap-16 lg:py-16"
-      style={{ fontFamily: "monospace" }}
+      className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-12 font-sans text-gray-600 dark:text-gray-400 antialiased lg:gap-16 lg:py-16"
     >
       <header className="flex items-center justify-between">
         <Link
@@ -19,7 +18,7 @@ export function Page({ c, current, children }: { c: Content; current: Route; chi
           className="flex items-center gap-3 rounded focus:outline-none focus:ring-1 focus:ring-gray-400"
         >
           <img src="/icon.png" alt="" width={36} height={36} />
-          <span className="font-medium tracking-wide text-gray-800 dark:text-gray-100">Cuts</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-50">Cuts</span>
         </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle labels={c.theme} />
@@ -28,7 +27,7 @@ export function Page({ c, current, children }: { c: Content; current: Route; chi
           </LangSwitch>
         </div>
       </header>
-      <main className="flex flex-1 flex-col gap-8 lg:gap-12">{children}</main>
+      <main className="flex flex-1 flex-col gap-20 lg:gap-28">{children}</main>
       <footer className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
         <Link href={c.routes.privacy} className={link}>
           {c.footer.privacy}

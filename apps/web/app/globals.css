@@ -2,8 +2,9 @@
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-@theme {
-  --font-family: var(--font-geist-sans);
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 [data-theme="dark"] {

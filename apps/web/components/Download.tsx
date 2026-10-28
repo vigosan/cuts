@@ -9,7 +9,7 @@ import { link } from "./Page";
 const PLATFORMS: OS[] = ["mac", "windows", "linux"];
 
 const base =
-  "inline-flex items-center gap-3 rounded-lg px-4 py-2 font-medium transition focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-neutral-950";
+  "inline-flex items-center gap-3 rounded-lg px-5 py-2.5 font-medium transition focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-neutral-950";
 const button = `${base} bg-gray-800 text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white`;
 const outline = `${base} border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:border-gray-500 dark:hover:border-gray-400`;
 
@@ -40,18 +40,18 @@ export function Download({ home, lang, downloads }: { home: Content["home"]; lan
             </a>
           ))}
         </div>
-        <p className="text-sm">{meta}</p>
+        <p className="font-mono text-xs text-gray-400 dark:text-gray-500">{meta}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-3">
       <a data-testid="download" href={DOWNLOADS[os]} className={button}>
         <ArrowDown />
         {home.download[os]}
       </a>
-      <p className="text-sm text-gray-400 dark:text-gray-500">
+      <p className="font-mono text-xs text-gray-400 dark:text-gray-500">
         {meta} · {home.requirements[os]}
       </p>
       <p className="text-sm">
@@ -68,7 +68,7 @@ export function Download({ home, lang, downloads }: { home: Content["home"]; lan
       {os === "mac" && (
         <p className="text-sm">
           {home.brew}{" "}
-          <code data-testid="brew" className="select-all rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[13px] dark:bg-neutral-800">
+          <code data-testid="brew" className="select-all rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-800 dark:bg-neutral-800 dark:text-gray-200">
             {BREW}
           </code>
         </p>
