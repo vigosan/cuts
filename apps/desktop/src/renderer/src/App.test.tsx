@@ -749,6 +749,38 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
   })
 
+  it('selects a range of clips with Shift-click, as in the Finder and Windows Explorer', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await markClip(video, 400, 450)
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    fireEvent.click(screen.getByTestId('clip-row-4'), { shiftKey: true })
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(3))
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'false')
+    expect(screen.getByTestId('clip-row-3')).toHaveAttribute('aria-current', 'true')
+    fireEvent.click(screen.getByTestId('clip-set-start-1'), { shiftKey: true })
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    expect(screen.getByTestId('clip-row-4')).toHaveAttribute('aria-current', 'false')
+  })
+
+  it('selects several clips on the timeline too, with Shift-click and Command-click', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    fireEvent.pointerDown(screen.getByTestId('clip-block-1'), { clientX: 100 })
+    fireEvent.pointerUp(window, { clientX: 100 })
+    fireEvent.pointerDown(screen.getByTestId('clip-block-3'), { clientX: 300, shiftKey: true })
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(3))
+    fireEvent.pointerDown(screen.getByTestId('clip-block-2'), { clientX: 200, metaKey: true })
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    expect(screen.getByTestId('clip-block-2')).toHaveAttribute('aria-current', 'false')
+  })
+
   it('selects with Control-click on Windows, where Command does not exist', async () => {
     api.platform = 'win32'
     render(<App />)

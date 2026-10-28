@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import {
   clipDuration,
   formatDuration,
@@ -13,13 +13,17 @@ import type { VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
 import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PauseIcon, PlayIcon } from './icons'
 
+export type SelectMode = 'only' | 'toggle' | 'range'
+
+const selectMode = (e: MouseEvent): SelectMode => (e.shiftKey ? 'range' : e.metaKey || e.ctrlKey ? 'toggle' : 'only')
+
 type Props = {
   clips: Clip[]
   time: number
   videoFades: VideoFade[]
   selectedIds: string[]
   loopingId: string | null
-  onSelect: (clip: Clip, additive?: boolean) => void
+  onSelect: (clip: Clip, mode?: SelectMode) => void
   onPlay: (clip: Clip) => void
   onSetStart: (clip: Clip) => void
   onSetEnd: (clip: Clip) => void
@@ -80,7 +84,7 @@ export function ClipList({
             data-past-carousel={past}
             aria-current={selected}
             onClick={(e) => {
-              if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip, e.metaKey || e.ctrlKey)
+              if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip, selectMode(e))
             }}
             draggable
             onDragStart={(e) => {
@@ -127,7 +131,7 @@ export function ClipList({
                 className={selected ? timeButton : 'px-1 tabular-nums'}
                 title={selected ? t.moveStartTo(now) : undefined}
                 disabled={selected && time >= clip.end}
-                onClick={(e) => (e.metaKey || e.ctrlKey ? onSelect(clip, true) : selected ? onSetStart(clip) : onSelect(clip))}
+                onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetStart(clip) : onSelect(clip))}
               >
                 {formatTime(clip.start)}
               </button>
@@ -137,7 +141,7 @@ export function ClipList({
                 className={selected ? timeButton : 'px-1 tabular-nums'}
                 title={selected ? t.moveEndTo(now) : undefined}
                 disabled={selected && time <= clip.start}
-                onClick={(e) => (e.metaKey || e.ctrlKey ? onSelect(clip, true) : selected ? onSetEnd(clip) : onSelect(clip))}
+                onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetEnd(clip) : onSelect(clip))}
               >
                 {formatTime(clip.end)}
               </button>

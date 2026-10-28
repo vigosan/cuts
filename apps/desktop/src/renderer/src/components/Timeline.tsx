@@ -5,6 +5,7 @@ import { dragClip, type DragMode } from '@cuts/core/drag-clip'
 import { filmstripTiles, PEAKS_PER_SECOND, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
 import { t } from '../i18n'
 import { useThumbnails } from '../useVideoPreview'
+import type { SelectMode } from './ClipList'
 
 const DRAG_THRESHOLD_PX = 3
 const TILE_WIDTH_PX = 96
@@ -37,7 +38,7 @@ type Props = {
   fades: ClipFade[]
   pendingStart: number | null
   selectedIds: string[]
-  onSelect: (clip: Clip) => void
+  onSelect: (clip: Clip, mode?: SelectMode) => void
   onSeek: (time: number) => void
   onClipChange: (clip: Clip) => void
   onDragStart: () => void
@@ -105,6 +106,7 @@ export function Timeline({
   const startDrag = (e: ReactPointerEvent<HTMLElement>, clip: Clip, mode: DragMode) => {
     e.stopPropagation()
     e.preventDefault()
+    if (e.shiftKey || e.metaKey || e.ctrlKey) return onSelect(clip, e.shiftKey ? 'range' : 'toggle')
     onSelect(clip)
     const bar = e.currentTarget.closest('[data-testid=timeline]')!.getBoundingClientRect()
     const originX = e.clientX

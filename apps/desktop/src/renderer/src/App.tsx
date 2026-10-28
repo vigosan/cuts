@@ -5,7 +5,7 @@ import type { ExportResult } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { mediaUrl } from '@shared/media-url'
 import { isSupportedVideo } from '@shared/video-formats'
-import { ClipList } from './components/ClipList'
+import { ClipList, type SelectMode } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
@@ -51,6 +51,7 @@ export function App() {
   const [defaultSettings, setDefaultSettings] = useState<ClipSettings>(() => loadPreferences().settings)
   const [clipSettings, setClipSettings] = useState<Record<string, ClipSettings>>({})
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const selectionAnchor = useRef<string | null>(null)
 
   const settingsOf = (clip: Clip) => clipSettings[clip.id] ?? defaultSettings
   const selectedClips = clips.filter((clip) => selectedIds.includes(clip.id))
@@ -242,13 +243,25 @@ export function App() {
 
   const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, seekTo })
 
-  const pickClip = (clip: Clip, additive = false) => {
-    if (additive) {
+  const selectClip = (clip: Clip, mode: SelectMode = 'only') => {
+    const from = clips.findIndex((other) => other.id === selectionAnchor.current)
+    if (mode === 'range' && from !== -1) {
+      const to = clips.indexOf(clip)
+      setSelectedIds(clips.slice(Math.min(from, to), Math.max(from, to) + 1).map((other) => other.id))
+      return
+    }
+    selectionAnchor.current = clip.id
+    if (mode === 'toggle') {
       setSelectedIds(selectedIds.includes(clip.id) ? selectedIds.filter((id) => id !== clip.id) : [...selectedIds, clip.id])
       return
     }
-    if (selectedClip?.id === clip.id) return setSelectedIds([])
     setSelectedIds([clip.id])
+  }
+
+  const pickClip = (clip: Clip, mode: SelectMode = 'only') => {
+    if (mode !== 'only') return selectClip(clip, mode)
+    if (selectedClip?.id === clip.id) return setSelectedIds([])
+    selectClip(clip)
     setViewStart(viewStartForClip(clip, duration, zoom))
     setTime(clip.start)
     seekFromTimeline(clip.start)
@@ -459,7 +472,7 @@ export function App() {
                 fades={clips.map(settingsOf)}
                 pendingStart={pendingStart}
                 selectedIds={selectedIds}
-                onSelect={(clip) => setSelectedIds([clip.id])}
+                onSelect={selectClip}
                 onSeek={seekFromTimeline}
                 onDragStart={() => dispatch({ type: 'checkpoint' })}
                 onFadeSeconds={(seconds) => changeSettings({ fadeSeconds: seconds })}

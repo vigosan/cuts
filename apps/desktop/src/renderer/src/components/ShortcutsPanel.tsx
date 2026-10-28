@@ -31,7 +31,7 @@ const GROUPS: Group[] = [
     title: 'clips',
     items: [
       { label: 'reorder', combos: [{ key: '↑', with: ['alt'] }, { key: '↓', with: ['alt'] }] },
-      { label: 'selectMore', combos: [{ key: t.shortcuts.click, with: ['mod'] }] },
+      { label: 'selectMore', combos: [{ key: t.shortcuts.click, with: ['shift'] }, { key: t.shortcuts.click, with: ['mod'] }] },
       { label: 'dragFree', combos: [{ key: t.shortcuts.drag, with: ['alt'] }] },
       { label: 'undo', combos: [{ key: 'Z', with: ['mod'] }] },
       { label: 'redo', combos: [{ key: 'Z', with: ['shift', 'mod'] }] }
