@@ -51,6 +51,26 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
+## Novedades de la 1.3
+
+### Español
+
+- Las marcas caen en el beat: al marcar con I y O o al arrastrar un borde, Cuts lo lleva al golpe más cercano. Con ⌥ marcas o arrastras justo donde estás.
+- S parte en dos el clip que está bajo el cursor, con sus fundidos y su encuadre.
+- ⇧⌘E guarda el fotograma actual como imagen, con el mismo formato y encuadre que los clips, para abrir el carrusel con una foto.
+- Pulsa ? (o Ayuda › Atajos de teclado) para ver todos los atajos.
+- Cuts te avisa de los clips que pasan del 20, que ya no caben en el mismo carrusel.
+- En Mac, abre vídeos desde el Finder con "Abrir con", arrastrándolos al icono del Dock o desde Archivo › Abrir recientes.
+
+### English
+
+- Marks land on the beat: when you mark with I and O or drag an edge, Cuts moves it to the nearest kick. Hold ⌥ to mark or drag exactly where you are.
+- S splits the clip under the playhead in two, keeping its fades and framing.
+- ⇧⌘E saves the current frame as an image, with the same format and framing as the clips, so the carousel can open with a photo.
+- Press ? (or Help › Keyboard Shortcuts) to see every shortcut.
+- Cuts warns about clips past the 20th, which no longer fit in the same carousel.
+- On Mac, open videos from the Finder with Open With, by dragging them onto the Dock icon or from File › Open Recent.
+
 ## Novedades de la 1.2.1
 
 ### Español
