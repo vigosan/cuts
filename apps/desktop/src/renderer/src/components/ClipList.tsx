@@ -17,9 +17,9 @@ type Props = {
   clips: Clip[]
   time: number
   videoFades: VideoFade[]
-  selectedId: string | null
+  selectedIds: string[]
   loopingId: string | null
-  onSelect: (clip: Clip) => void
+  onSelect: (clip: Clip, additive?: boolean) => void
   onPlay: (clip: Clip) => void
   onSetStart: (clip: Clip) => void
   onSetEnd: (clip: Clip) => void
@@ -36,7 +36,7 @@ export function ClipList({
   clips,
   time,
   videoFades,
-  selectedId,
+  selectedIds,
   loopingId,
   onSelect,
   onPlay,
@@ -69,7 +69,7 @@ export function ClipList({
         const past = isPastCarousel(index)
         const dropTarget = dragIndex !== null && overIndex === index && dragIndex !== index
         const now = formatTime(time)
-        const selected = clip.id === selectedId
+        const selected = selectedIds.includes(clip.id)
         const fades = videoFades[index] !== 'none'
         const fadeTitle = videoFades[index] === 'white' ? t.fadeToWhite : t.fadeToBlack
         return (
@@ -80,7 +80,7 @@ export function ClipList({
             data-past-carousel={past}
             aria-current={selected}
             onClick={(e) => {
-              if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip)
+              if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip, e.metaKey || e.ctrlKey)
             }}
             draggable
             onDragStart={(e) => {
@@ -127,7 +127,7 @@ export function ClipList({
                 className={selected ? timeButton : 'px-1 tabular-nums'}
                 title={selected ? t.moveStartTo(now) : undefined}
                 disabled={selected && time >= clip.end}
-                onClick={() => (selected ? onSetStart(clip) : onSelect(clip))}
+                onClick={(e) => (e.metaKey || e.ctrlKey ? onSelect(clip, true) : selected ? onSetStart(clip) : onSelect(clip))}
               >
                 {formatTime(clip.start)}
               </button>
@@ -137,7 +137,7 @@ export function ClipList({
                 className={selected ? timeButton : 'px-1 tabular-nums'}
                 title={selected ? t.moveEndTo(now) : undefined}
                 disabled={selected && time <= clip.start}
-                onClick={() => (selected ? onSetEnd(clip) : onSelect(clip))}
+                onClick={(e) => (e.metaKey || e.ctrlKey ? onSelect(clip, true) : selected ? onSetEnd(clip) : onSelect(clip))}
               >
                 {formatTime(clip.end)}
               </button>

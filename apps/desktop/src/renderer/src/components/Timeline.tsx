@@ -36,7 +36,7 @@ type Props = {
   clips: Clip[]
   fades: ClipFade[]
   pendingStart: number | null
-  selectedId: string | null
+  selectedIds: string[]
   onSelect: (clip: Clip) => void
   onSeek: (time: number) => void
   onClipChange: (clip: Clip) => void
@@ -55,7 +55,7 @@ export function Timeline({
   time,
   clips,
   fades,
-  selectedId,
+  selectedIds,
   onSelect,
   pendingStart,
   onSeek,
@@ -218,7 +218,7 @@ export function Timeline({
       ))}
       {clips.map((clip, index) => {
         const fade = fades[index]
-        const selected = clip.id === selectedId
+        const selected = selectedIds.includes(clip.id)
         const roomy = ((clip.end - clip.start) / viewSpan) * width >= ROOMY_CLIP_PX
         const fadeColor = fade.videoFade === 'white' ? 'from-white/80' : 'from-black/80'
         const handle = `absolute inset-y-0 w-3 cursor-ew-resize after:absolute after:inset-y-3 after:w-1 after:rounded-full after:bg-white after:shadow-[0_0_0_1px_rgb(0_0_0/0.4)] ${!roomy ? 'after:hidden' : selected ? '' : 'after:opacity-0 group-hover:after:opacity-100'}`
@@ -228,7 +228,7 @@ export function Timeline({
             data-testid={`clip-block-${index + 1}`}
             data-fade-in={fades[index].videoFade !== 'none' && index > 0}
             data-fade-out={fades[index].videoFade !== 'none'}
-            aria-current={clip.id === selectedId}
+            aria-current={selected}
             className={`group absolute inset-y-0.5 min-w-3 cursor-grab rounded-md shadow-[0_0_0_1px_rgb(0_0_0/0.5)] active:cursor-grabbing ${selected ? 'z-10 border-[3px] border-white' : 'border-2 border-white/70 hover:border-white'}`}
             style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
             onClick={(e) => e.stopPropagation()}

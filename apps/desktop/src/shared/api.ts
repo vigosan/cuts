@@ -3,7 +3,7 @@ import type { ClipSettings } from '@cuts/core/fades'
 import type { ClipFraming } from '@cuts/core/framing'
 import type { OutputFormat } from '@cuts/core/formats'
 
-export type ExportClip = Clip & ClipSettings
+export type ExportClip = Clip & ClipSettings & { position: number }
 
 export type Session = {
   clips: Clip[]

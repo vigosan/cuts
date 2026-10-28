@@ -12,8 +12,8 @@ const request: ExportRequest = {
   baseName: 'sesion',
   format: 'original',
   clips: [
-    { id: 'a', start: 100, end: 150, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5 },
-    { id: 'b', start: 300, end: 340, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5 }
+    { id: 'a', start: 100, end: 150, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, position: 0 },
+    { id: 'b', start: 300, end: 340, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, position: 1 }
   ]
 }
 
@@ -39,6 +39,18 @@ describe('exportClips', () => {
     expect(result).toEqual({ ok: true, files: [join('/Movies/Instagram', 'sesion-1.mp4'), join('/Movies/Instagram', 'sesion-2.mp4')] })
     const outputs = vi.mocked(d.run).mock.calls.map(([, args]) => args.at(-1))
     expect(outputs).toEqual([join('/Movies/Instagram', 'sesion-1.mp4'), join('/Movies/Instagram', 'sesion-2.mp4')])
+  })
+
+  it('names each clip by its place in the carousel, so exporting only clip 3 replaces sesion-3.mp4', async () => {
+    const result = await exportClips({ ...request, clips: [{ ...request.clips[1], position: 2 }] }, deps())
+    expect(result).toEqual({ ok: true, files: [join('/Movies/Instagram', 'sesion-3.mp4')] })
+  })
+
+  it('keeps the image fade-in of a clip exported alone unless it opens the carousel', async () => {
+    const d = deps()
+    await exportClips({ ...request, clips: [{ ...request.clips[1], videoFade: 'black', position: 2 }] }, d)
+    const args = vi.mocked(d.run).mock.calls[0][1]
+    expect(args[args.indexOf('-vf') + 1]).toContain('fade=t=in')
   })
 
   it('reports progress per clip as a fraction of its length', async () => {

@@ -4,7 +4,7 @@ import { CloseIcon } from './icons'
 
 type Modifier = 'alt' | 'shift' | 'mod'
 type Combo = { key: string; with?: Modifier[] }
-type Label = Exclude<keyof typeof t.shortcuts, 'title' | 'mark' | 'play' | 'clips' | 'file' | 'space' | 'drag'>
+type Label = Exclude<keyof typeof t.shortcuts, 'title' | 'mark' | 'play' | 'clips' | 'file' | 'space' | 'drag' | 'click'>
 type Group = { title: 'mark' | 'play' | 'clips' | 'file'; items: { label: Label; combos: Combo[] }[] }
 
 const GROUPS: Group[] = [
@@ -31,6 +31,7 @@ const GROUPS: Group[] = [
     title: 'clips',
     items: [
       { label: 'reorder', combos: [{ key: '↑', with: ['alt'] }, { key: '↓', with: ['alt'] }] },
+      { label: 'selectMore', combos: [{ key: t.shortcuts.click, with: ['mod'] }] },
       { label: 'dragFree', combos: [{ key: t.shortcuts.drag, with: ['alt'] }] },
       { label: 'undo', combos: [{ key: 'Z', with: ['mod'] }] },
       { label: 'redo', combos: [{ key: 'Z', with: ['shift', 'mod'] }] }

@@ -11,7 +11,8 @@ export type ExportState =
   | { status: 'error'; error: string }
 
 type Props = {
-  clipCount: number
+  positions: number[]
+  partial: boolean
   canExport: boolean
   baseName: string
   folder: string | null
@@ -110,7 +111,11 @@ export function ExportPanel(p: Props) {
                 ? p.canShare
                   ? t.share
                   : t.showInFolder
-                : t.exportClips(p.clipCount)}
+                : p.partial
+                  ? p.positions.length === 1
+                    ? t.exportClip(p.positions[0] + 1)
+                    : t.exportSelected(p.positions.length)
+                  : t.exportClips(p.positions.length)}
           </span>
         </button>
       </div>
@@ -135,10 +140,11 @@ export function ExportPanel(p: Props) {
             {p.state.error}
           </span>
         )}
-        {p.state.status === 'idle' && p.baseName && p.clipCount > 0 && p.destination && (
-          <span data-testid="export-preview" title={`${p.destination}/${fileName(0)}`}>
-            {fileName(0)}
-            {p.clipCount > 1 ? ` … ${fileName(p.clipCount - 1)}` : ''}
+        {p.state.status === 'idle' && p.baseName && p.positions.length > 0 && p.destination && (
+          <span data-testid="export-preview" title={`${p.destination}/${fileName(p.positions[0])}`}>
+            {p.partial
+              ? p.positions.map(fileName).join(', ')
+              : `${fileName(0)}${p.positions.length > 1 ? ` … ${fileName(p.positions.length - 1)}` : ''}`}
           </span>
         )}
       </p>

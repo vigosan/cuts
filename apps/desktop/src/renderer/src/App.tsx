@@ -50,14 +50,18 @@ export function App() {
   const [folder, setFolder] = useState<string | null>(() => loadPreferences().folder)
   const [defaultSettings, setDefaultSettings] = useState<ClipSettings>(() => loadPreferences().settings)
   const [clipSettings, setClipSettings] = useState<Record<string, ClipSettings>>({})
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const settingsOf = (clip: Clip) => clipSettings[clip.id] ?? defaultSettings
-  const selectedIndex = clips.findIndex((clip) => clip.id === selectedId)
-  const selectedClip = selectedIndex === -1 ? null : clips[selectedIndex]
+  const selectedClips = clips.filter((clip) => selectedIds.includes(clip.id))
+  const selectedClip = selectedClips.length === 1 ? selectedClips[0] : null
+  const selectedIndex = selectedClip ? clips.indexOf(selectedClip) : -1
   const changeSettings = (change: Partial<ClipSettings>) => {
-    if (selectedClip) {
-      setClipSettings({ ...clipSettings, [selectedClip.id]: { ...settingsOf(selectedClip), ...change } })
+    if (selectedClips.length > 0) {
+      setClipSettings({
+        ...clipSettings,
+        ...Object.fromEntries(selectedClips.map((clip) => [clip.id, { ...settingsOf(clip), ...change }]))
+      })
     } else {
       const settings = { ...defaultSettings, ...change }
       setDefaultSettings(settings)
@@ -70,7 +74,7 @@ export function App() {
   const openedPath = useRef<string | null>(null)
   const [fps, setFps] = useState(DEFAULT_FPS)
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
-  const shownSettings = selectedClip ? settingsOf(selectedClip) : defaultSettings
+  const shownSettings = selectedClips.length > 0 ? settingsOf(selectedClips[0]) : defaultSettings
   const target = formatSize(format)
   const [lastExport, setExportState] = useState<ExportState>({ status: 'idle' })
   const [zoom, setZoom] = useState<Zoom>(null)
@@ -110,7 +114,7 @@ export function App() {
     setExportState({ status: 'idle' })
     setViewStart(0)
     setClipSettings({})
-    setSelectedId(null)
+    setSelectedIds([])
     dispatch({ type: 'reset', resetHistory: true })
     setRestoredFor(null)
     openedPath.current = path
@@ -143,7 +147,7 @@ export function App() {
     return () => clearTimeout(timer)
   }, [videoPath, restoredFor, clips, clipSettings, defaultSettings, format, baseName])
 
-  const exportInputs = [clips, clipSettings, defaultSettings, format, baseName, folder]
+  const exportInputs = [clips, clipSettings, defaultSettings, format, baseName, folder, selectedIds]
   const [exportedWith, setExportedWith] = useState(exportInputs)
   const outdated = exportedWith.some((input, index) => input !== exportInputs[index])
   const exportState: ExportState =
@@ -205,17 +209,19 @@ export function App() {
 
   const destination = videoPath && folder ? `${folder}/${defaultBaseName(videoPath)}` : null
 
+  const exported = selectedClips.length > 0 ? selectedClips : clips
+
   const runExport = async () => {
     if (!videoPath || !destination) return
     setExportedWith(exportInputs)
-    setExportState({ status: 'running', progress: clips.map(() => 0) })
+    setExportState({ status: 'running', progress: exported.map(() => 0) })
     const result = await window.api
       .exportClips({
         input: videoPath,
         folder: destination,
         baseName,
         format,
-        clips: clips.map((clip) => ({ ...clip, ...settingsOf(clip) }))
+        clips: exported.map((clip) => ({ ...clip, ...settingsOf(clip), position: clips.indexOf(clip) }))
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
@@ -236,9 +242,13 @@ export function App() {
 
   const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, seekTo })
 
-  const pickClip = (clip: Clip) => {
-    if (clip.id === selectedId) return setSelectedId(null)
-    setSelectedId(clip.id)
+  const pickClip = (clip: Clip, additive = false) => {
+    if (additive) {
+      setSelectedIds(selectedIds.includes(clip.id) ? selectedIds.filter((id) => id !== clip.id) : [...selectedIds, clip.id])
+      return
+    }
+    if (selectedClip?.id === clip.id) return setSelectedIds([])
+    setSelectedIds([clip.id])
     setViewStart(viewStartForClip(clip, duration, zoom))
     setTime(clip.start)
     seekFromTimeline(clip.start)
@@ -448,8 +458,8 @@ export function App() {
                 clips={clips}
                 fades={clips.map(settingsOf)}
                 pendingStart={pendingStart}
-                selectedId={selectedClip?.id ?? null}
-                onSelect={(clip) => setSelectedId(clip.id)}
+                selectedIds={selectedIds}
+                onSelect={(clip) => setSelectedIds([clip.id])}
                 onSeek={seekFromTimeline}
                 onDragStart={() => dispatch({ type: 'checkpoint' })}
                 onFadeSeconds={(seconds) => changeSettings({ fadeSeconds: seconds })}
@@ -487,7 +497,7 @@ export function App() {
                       aria-label={t.clearClips}
                       onClick={() => {
                         dispatch({ type: 'reset' })
-                        setSelectedId(null)
+                        setSelectedIds([])
                       }}
                     >
                       <TrashIcon className="size-3.5" />
@@ -502,7 +512,7 @@ export function App() {
                 clips={clips}
                 time={time}
                 videoFades={clips.map((clip) => settingsOf(clip).videoFade)}
-                selectedId={selectedClip?.id ?? null}
+                selectedIds={selectedIds}
                 onSelect={pickClip}
                 onPlay={playClip}
                 loopingId={loopingId}
@@ -514,14 +524,15 @@ export function App() {
             </div>
             {clips.length > 0 && (
               <ClipControls
-                clipNumber={selectedIndex === -1 ? null : selectedIndex + 1}
+                selectedNumbers={selectedClips.map((clip) => clips.indexOf(clip) + 1)}
                 settings={shownSettings}
                 format={format}
                 onChange={changeSettings}
               />
             )}
             <ExportPanel
-              clipCount={clips.length}
+              positions={exported.map((clip) => clips.indexOf(clip))}
+              partial={selectedClips.length > 0}
               canExport={canExport}
               baseName={baseName}
               folder={folder}

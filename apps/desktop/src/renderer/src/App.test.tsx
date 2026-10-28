@@ -197,6 +197,7 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:02:10')
     expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:02:40')
     expect(screen.getByTestId('clip-row-3')).toHaveTextContent('00:05:00')
+    await userEvent.click(screen.getByTestId('clip-row-1'))
     await userEvent.click(screen.getByTestId('choose-folder'))
     await act(() => userEvent.click(screen.getByTestId('export')))
     const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
@@ -457,6 +458,7 @@ describe('App', () => {
     fireEvent.pointerMove(window, { clientX: 60 })
     fireEvent.pointerUp(window, { clientX: 60 })
     expect(screen.getByTestId('fade-seconds')).toHaveValue('2')
+    await userEvent.click(screen.getByTestId('clip-row-1'))
     await userEvent.click(screen.getByTestId('choose-folder'))
     await act(() => userEvent.click(screen.getByTestId('export')))
     const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
@@ -620,6 +622,7 @@ describe('App', () => {
     await userEvent.click(screen.getByTestId('clip-row-2'))
     expect(screen.getByTestId('fade-video')).toHaveValue('white')
     expect(screen.getByTestId('fade-audio')).toHaveValue('none')
+    await userEvent.click(screen.getByTestId('clip-row-2'))
     await userEvent.click(screen.getByTestId('choose-folder'))
     await act(() => userEvent.click(screen.getByTestId('export')))
     const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
@@ -697,6 +700,76 @@ describe('App', () => {
     await markClip(next, 100, 150)
     expect(screen.getByTestId('fade-video')).toHaveValue('black')
     expect(screen.getByTestId('format')).toHaveValue('original')
+  })
+
+  it('exports only the selected clip, keeping its carousel number, so one clip can be redone without the rest', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportClips(3))
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportClip(2))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips.map((c) => [c.start, c.position])).toEqual([[200, 1]])
+  })
+
+  it('selects several clips with Command-click, changes their settings together and exports just those', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    fireEvent.click(screen.getByTestId('clip-row-3'), { metaKey: true })
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByTestId('clip-row-3')).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportSelected(2))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips.map((c) => [c.position, c.videoFade])).toEqual([[0, 'none'], [2, 'none']])
+  })
+
+  it('adds a clip to the selection with Command-click on its times too, since people click anywhere on the row', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    fireEvent.click(screen.getByTestId('clip-set-start-2'), { metaKey: true })
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+    fireEvent.click(screen.getByTestId('clip-set-start-1'), { metaKey: true })
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClip(2))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
+  })
+
+  it('selects with Control-click on Windows, where Command does not exist', async () => {
+    api.platform = 'win32'
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    fireEvent.click(screen.getByTestId('clip-row-2'), { ctrlKey: true })
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsForClips(2))
+  })
+
+  it('offers to export again when the selection changes after exporting, so the new choice can be exported', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    expect(await screen.findByTestId('export-done')).toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportClip(2))
   })
 
   it('applies fade changes to every clip when none is selected', async () => {
@@ -1013,6 +1086,7 @@ describe('App', () => {
     await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
     await userEvent.click(screen.getByTestId('clip-row-2'))
     await userEvent.click(screen.getByTestId('framing-fit'))
+    await userEvent.click(screen.getByTestId('clip-row-2'))
     await userEvent.click(screen.getByTestId('choose-folder'))
     await act(() => userEvent.click(screen.getByTestId('export')))
     const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
