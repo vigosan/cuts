@@ -58,8 +58,9 @@ describe("site content", () => {
     for (const lang of LANGS) expect(content[lang].home.version).toContain(VERSION);
   });
 
-  it("shows the framing and dark mode screenshots too", () => {
-    expect(SCREENSHOTS).toEqual(["overview", "timeline", "framing", "dark"]);
+  it("opens with the drops video instead of a still screenshot of the same screen, so the app is not shown twice in a row", () => {
+    expect(SCREENSHOTS).toEqual(["timeline", "framing", "dark"]);
+    expect(Object.keys(DARK_SCREENSHOTS)).toEqual(SCREENSHOTS);
   });
 
   it("has the drop suggestion video and its poster in both languages and themes, so the section is never empty or out of theme", () => {

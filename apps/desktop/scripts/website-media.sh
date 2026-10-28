@@ -49,8 +49,6 @@ done
 
 for lang in en es; do
   for name in 1-overview 2-zoom 3-dark 4-framing; do cp "$WORK/light/$lang-$name.png" "$STORE/$lang-$name.png"; done
-  cp "$WORK/light/$lang-1-overview.png" "$WEB/$lang-overview.png"
-  cp "$WORK/dark/$lang-1-overview.png" "$WEB/$lang-overview-dark.png"
   cp "$WORK/light/$lang-timeline.png" "$WEB/$lang-timeline.png"
   cp "$WORK/dark/$lang-timeline.png" "$WEB/$lang-timeline-dark.png"
   sips -z 1000 1600 "$WORK/light/$lang-4-framing.png" --out "$WEB/$lang-framing.png" >/dev/null

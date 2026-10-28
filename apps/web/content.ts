@@ -6,8 +6,8 @@ export const CONTACT = "hello@vicent.io";
 export const REPO = "https://github.com/vigosan/cuts";
 export const UPDATED = "2026-10-26";
 export const VERSION = "1.5";
-export const SCREENSHOTS = ["overview", "timeline", "framing", "dark"] as const;
-export const DARK_SCREENSHOTS = { overview: "overview-dark", timeline: "timeline-dark", framing: "framing-dark", dark: "light" } as const;
+export const SCREENSHOTS = ["timeline", "framing", "dark"] as const;
+export const DARK_SCREENSHOTS = { timeline: "timeline-dark", framing: "framing-dark", dark: "light" } as const;
 export const DROPS_VIDEO = {
   video: "drops.mp4",
   poster: "drops-poster.jpg",
@@ -101,7 +101,6 @@ export const content = {
       shortcuts: "Press [?] to see every keyboard shortcut.",
       privacyTitle: "Private by design",
       privacy: "Everything happens on your computer. No account, no uploads, no tracking.",
-      screenshotAlt: "Cuts with a long video, six clips marked and one selected",
       timelineTitle: "A timeline like a video editor",
       timelineText:
         "Frames and the waveform show where every moment is. The clip you select stays clear, with edges you can drag and its fades drawn at each end.",
@@ -232,7 +231,6 @@ export const content = {
       shortcuts: "Pulsa [?] para ver todos los atajos de teclado.",
       privacyTitle: "Privada por diseño",
       privacy: "Todo ocurre en tu ordenador. Sin cuentas, sin subidas, sin rastreo.",
-      screenshotAlt: "Cuts con un vídeo largo, seis clips marcados y uno seleccionado",
       timelineTitle: "Una línea de tiempo como la de un editor de vídeo",
       timelineText:
         "Los fotogramas y la forma de onda te enseñan dónde está cada momento. El clip que seleccionas se ve limpio, con bordes que puedes arrastrar y sus fundidos dibujados en cada extremo.",

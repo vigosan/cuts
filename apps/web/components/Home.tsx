@@ -31,13 +31,6 @@ export async function Home({ c }: { c: Content }) {
         <p className="max-w-xl text-pretty">{c.home.intro}</p>
         <Download home={c.home} lang={c.lang} downloads={downloads} />
       </section>
-      <Screenshot
-        src={`/screenshots/${c.lang}-overview.png`}
-        dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.overview}.png`}
-        alt={c.home.screenshotAlt}
-        width={2880}
-        height={1800}
-      />
       <article className="flex flex-col gap-6">
         <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100">{c.home.dropsTitle}</h2>
         <p>{c.home.dropsText}</p>
