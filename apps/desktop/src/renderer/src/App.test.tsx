@@ -165,6 +165,46 @@ describe('App', () => {
     expect(screen.getByTestId('export')).toBeEnabled()
   })
 
+  it('splits the clip under the playhead with S, keeping both halves with its fades, so a long take becomes two slides without marking again', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 160)
+    await markClip(video, 300, 330)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
+    seek(video, 130)
+    await userEvent.keyboard('s')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:02:10')
+    expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:02:10')
+    expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:02:40')
+    expect(screen.getByTestId('clip-row-3')).toHaveTextContent('00:05:00')
+    await userEvent.click(screen.getByTestId('choose-folder'))
+    await act(() => userEvent.click(screen.getByTestId('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips.map((c) => c.videoFade)).toEqual(['white', 'white', 'black'])
+  })
+
+  it('undoes a split with Command-Z, so a cut in the wrong place costs nothing', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 160)
+    seek(video, 130)
+    await userEvent.keyboard('s')
+    act(() => menuCommand('undo'))
+    expect(screen.queryByTestId('clip-row-2')).not.toBeInTheDocument()
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:02:40')
+  })
+
+  it('does nothing with S when the playhead is outside every clip', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 160)
+    seek(video, 200)
+    await userEvent.keyboard('s')
+    expect(screen.queryByTestId('clip-row-2')).not.toBeInTheDocument()
+  })
+
   it('marks with the I and O keys like in Final Cut', async () => {
     render(<App />)
     const video = await loadVideo()

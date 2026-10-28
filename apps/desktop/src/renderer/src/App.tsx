@@ -81,6 +81,15 @@ export function App() {
   const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(videoRef, duration)
   const markStart = () => dispatch({ type: 'markStart', time: now() })
   const markEnd = () => dispatch({ type: 'markEnd', time: now(), id: crypto.randomUUID() })
+  const split = () => {
+    const time = now()
+    const inside = (clip: Clip) => clip.start < time && time < clip.end
+    const clip = selectedClip && inside(selectedClip) ? selectedClip : clips.find(inside)
+    if (!clip) return
+    const newId = crypto.randomUUID()
+    if (clipSettings[clip.id]) setClipSettings({ ...clipSettings, [newId]: clipSettings[clip.id] })
+    dispatch({ type: 'split', id: clip.id, time, newId })
+  }
 
   const load = (path: string) => {
     setVideoPath(path)
@@ -144,6 +153,7 @@ export function App() {
     const actions: Record<string, () => void> = {
       i: markStart,
       o: markEnd,
+      s: split,
       ' ': togglePlay,
       ArrowLeft: () => seekTo(now() - SEEK_STEP),
       ArrowRight: () => seekTo(now() + SEEK_STEP)

@@ -12,6 +12,7 @@ export type ClipsAction = Meta &
   | { type: 'setEnd'; id: string; time: number }
   | { type: 'replace'; clip: Clip }
   | { type: 'reorder'; from: number; to: number }
+  | { type: 'split'; id: string; time: number; newId: string }
   | { type: 'restore'; clips: Clip[] }
   | { type: 'add'; clips: Clip[] }
   | { type: 'reset' }
@@ -54,6 +55,14 @@ export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState
       const clips = [...state.clips]
       const [moved] = clips.splice(action.from, 1)
       clips.splice(action.to, 0, moved)
+      return { ...state, clips }
+    }
+    case 'split': {
+      const index = state.clips.findIndex((clip) => clip.id === action.id)
+      const clip = state.clips[index]
+      if (!clip || action.time <= clip.start || action.time >= clip.end) return state
+      const clips = [...state.clips]
+      clips.splice(index, 1, { ...clip, end: action.time }, { id: action.newId, start: action.time, end: clip.end })
       return { ...state, clips }
     }
     case 'restore':

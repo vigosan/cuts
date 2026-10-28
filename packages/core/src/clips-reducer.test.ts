@@ -104,4 +104,26 @@ describe('clipsReducer', () => {
     const clips = [{ id: 'a', start: 10, end: 20 }]
     expect(clipsReducer(pending, { type: 'restore', clips })).toEqual({ clips, pendingStart: null })
   })
+
+  it('splits a clip at the playhead into two halves that sit together in the carousel', () => {
+    const marked = run(
+      initialClipsState,
+      { type: 'markStart', time: 100 },
+      { type: 'markEnd', time: 160, id: 'a' },
+      { type: 'markStart', time: 300 },
+      { type: 'markEnd', time: 330, id: 'b' }
+    )
+    const state = clipsReducer(marked, { type: 'split', id: 'a', time: 130, newId: 'a2' })
+    expect(state.clips).toEqual([
+      { id: 'a', start: 100, end: 130 },
+      { id: 'a2', start: 130, end: 160 },
+      { id: 'b', start: 300, end: 330 }
+    ])
+  })
+
+  it('does not split at an edge of the clip, which would leave an empty half', () => {
+    const marked = run(initialClipsState, { type: 'markStart', time: 100 }, { type: 'markEnd', time: 160, id: 'a' })
+    expect(clipsReducer(marked, { type: 'split', id: 'a', time: 100, newId: 'a2' })).toBe(marked)
+    expect(clipsReducer(marked, { type: 'split', id: 'a', time: 160, newId: 'a2' })).toBe(marked)
+  })
 })
