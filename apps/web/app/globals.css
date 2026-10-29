@@ -58,14 +58,6 @@
       animation-timeline: --track;
     }
 
-    .scroll-zoom {
-      transform-origin: 36.66% 42%;
-      will-change: transform;
-      animation: zoom linear both;
-      animation-timeline: view();
-      animation-range: cover 30% cover 65%;
-    }
-
     .scroll-wipe {
       animation: wipe linear both;
       animation-timeline: view();
@@ -115,15 +107,6 @@
   40%,
   60% {
     color: #ef4444;
-  }
-}
-
-@keyframes zoom {
-  from {
-    transform: none;
-  }
-  to {
-    transform: translate(13.34%, 8%) scale(1.42);
   }
 }
 

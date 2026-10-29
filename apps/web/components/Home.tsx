@@ -99,24 +99,13 @@ export async function Home({ c }: { c: Content }) {
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.framingTitle}</h2>
         <p className="max-w-2xl text-pretty">{c.home.framingText}</p>
-        <div className={`${frame} overflow-clip`}>
-          <img
-            src={`/screenshots/${c.lang}-framing.png`}
-            alt={c.home.framingAlt}
-            width={1600}
-            height={1000}
-            loading="lazy"
-            className="scroll-zoom block w-full dark:hidden"
-          />
-          <img
-            src={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.framing}.png`}
-            alt={c.home.framingAlt}
-            width={1600}
-            height={1000}
-            loading="lazy"
-            className="scroll-zoom hidden w-full dark:block"
-          />
-        </div>
+        <Screenshot
+          src={`/screenshots/${c.lang}-framing.png`}
+          dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.framing}.png`}
+          alt={c.home.framingAlt}
+          width={1600}
+          height={1000}
+        />
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.darkTitle}</h2>
