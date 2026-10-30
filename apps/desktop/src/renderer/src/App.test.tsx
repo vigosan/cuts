@@ -49,7 +49,9 @@ function makeApi(): Api {
       updateReady = callback
       return () => {}
     }),
-    restartToUpdate: vi.fn()
+    restartToUpdate: vi.fn(),
+    recentVideos: vi.fn(async () => []),
+    openRecent: vi.fn(async () => null)
   }
 }
 
@@ -96,6 +98,48 @@ async function markClip(video: HTMLVideoElement, start: number, end: number) {
 }
 
 describe('App', () => {
+  it('lists the recently opened videos on the start screen with their folder and clips, so a set in progress is one click away', async () => {
+    vi.mocked(api.recentVideos).mockResolvedValue([
+      { path: VIDEO, name: '2026-10-22 22-33-13.mov', folder: 'Movies', openedAt: Date.now(), clips: 10 },
+      { path: '/Users/vicent/Desktop/ensayo.mov', name: 'ensayo.mov', folder: 'Desktop', openedAt: Date.now(), clips: 0 }
+    ])
+    render(<App />)
+    const first = await screen.findByTestId('recent-video-1')
+    expect(first).toHaveTextContent('2026-10-22 22-33-13.mov')
+    expect(first).toHaveTextContent('Movies')
+    expect(first).toHaveTextContent(t.openedOn(Date.now(), Date.now()))
+    expect(first).toHaveTextContent(t.recentClips(10))
+    expect(screen.getByTestId('recent-video-2')).toHaveTextContent(t.recentClips(0))
+  })
+
+  it('opens a recent video with one click, with the clips it had', async () => {
+    vi.mocked(api.recentVideos).mockResolvedValue([{ path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2 }])
+    vi.mocked(api.openRecent).mockResolvedValue(VIDEO)
+    render(<App />)
+    await userEvent.click(await screen.findByTestId('recent-video-1'))
+    expect(api.openRecent).toHaveBeenCalledWith(VIDEO)
+    expect(await screen.findByTestId('video')).toBeInTheDocument()
+    expect(api.loadSession).toHaveBeenCalledWith(VIDEO)
+  })
+
+  it('drops a recent video that can no longer be opened, instead of leaving a link that does nothing', async () => {
+    vi.mocked(api.recentVideos).mockResolvedValue([
+      { path: '/Volumes/USB/gone.mov', name: 'gone.mov', folder: 'USB', openedAt: Date.now(), clips: 4 },
+      { path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2 }
+    ])
+    render(<App />)
+    await userEvent.click(await screen.findByTestId('recent-video-1'))
+    await waitFor(() => expect(screen.getByTestId('recent-video-1')).toHaveTextContent('set.mov'))
+    expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('video')).not.toBeInTheDocument()
+  })
+
+  it('shows no recent list before any video was opened, so a first launch is just the drop area', async () => {
+    render(<App />)
+    await waitFor(() => expect(api.recentVideos).toHaveBeenCalled())
+    expect(screen.queryByTestId('recent-videos')).not.toBeInTheDocument()
+  })
+
   it('offers to restart once a new version has downloaded, so the update applies without hunting for it', async () => {
     render(<App />)
     expect(screen.queryByTestId('update-ready')).not.toBeInTheDocument()

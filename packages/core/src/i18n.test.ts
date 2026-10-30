@@ -33,6 +33,22 @@ describe('messagesFor', () => {
     expect(messagesFor('es').fadeSeconds(0.5)).toBe('0,5 s')
   })
 
+  it('counts the clips of a recent video in words, and says when it has none instead of printing a bare zero', () => {
+    expect(messagesFor('en').recentClips(0)).toBe('No clips')
+    expect(messagesFor('en').recentClips(1)).toBe('1 clip')
+    expect(messagesFor('es').recentClips(10)).toBe('10 clips')
+    expect(messagesFor('es').recentClips(0)).toBe('Sin clips')
+  })
+
+  it('says when a recent video was opened as today, yesterday or its date, so the list reads like a calendar', () => {
+    const now = new Date(2026, 9, 30, 9, 0).getTime()
+    expect(messagesFor('en').openedOn(new Date(2026, 9, 30, 0, 5).getTime(), now)).toBe('Today')
+    expect(messagesFor('es').openedOn(new Date(2026, 9, 29, 23, 50).getTime(), now)).toBe('Ayer')
+    expect(messagesFor('en').openedOn(new Date(2026, 9, 18, 12).getTime(), now)).toBe('Oct 18')
+    expect(messagesFor('es').openedOn(new Date(2026, 9, 18, 12).getTime(), now)).toBe('18 oct')
+    expect(messagesFor('en').openedOn(new Date(2025, 11, 2, 12).getTime(), now)).toBe('Dec 2, 2025')
+  })
+
   it('translates every message into every supported language', () => {
     const keys = Object.keys(messagesFor(FALLBACK_LOCALE)).sort()
     for (const locale of SUPPORTED_LOCALES) expect(Object.keys(messagesFor(locale)).sort()).toEqual(keys)

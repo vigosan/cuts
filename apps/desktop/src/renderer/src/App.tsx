@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
-import type { ExportResult } from '@shared/api'
+import type { ExportResult, RecentVideo } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { mediaUrl } from '@shared/media-url'
 import { isSupportedVideo } from '@shared/video-formats'
@@ -10,6 +10,7 @@ import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
 import { CloseIcon, FilmIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
+import { RecentVideos } from './components/RecentVideos'
 import { ShortcutsPanel } from './components/ShortcutsPanel'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from '@cuts/core/clips-reducer'
@@ -297,6 +298,14 @@ export function App() {
   })
   useEffect(() => window.api.onOpenPath((path) => onOpenPath(path)), [])
 
+  const [recents, setRecents] = useState<RecentVideo[]>([])
+  useEffect(() => void window.api.recentVideos().then(setRecents), [])
+  const openRecent = async (path: string) => {
+    const opened = await window.api.openRecent(path)
+    if (opened) load(opened)
+    else setRecents((current) => current.filter((recent) => recent.path !== path))
+  }
+
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
 
@@ -349,19 +358,22 @@ export function App() {
 
       {!videoPath ? (
         <main className="flex flex-1 items-center justify-center p-8">
-          <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-3xl border border-dashed border-ink-3/40 bg-surface px-8 py-14 text-center">
-            <FilmIcon className="size-10 text-ink-3" />
-            <div className="flex flex-col gap-1">
-              <p className="text-lg font-medium">{t.dropTitle}</p>
-              <p className="text-sm text-ink-2">{t.dropSubtitle}</p>
+          <div className="flex w-full max-w-md flex-col gap-6">
+            <div className="flex w-full flex-col items-center gap-4 rounded-3xl border border-dashed border-ink-3/40 bg-surface px-8 py-14 text-center">
+              <FilmIcon className="size-10 text-ink-3" />
+              <div className="flex flex-col gap-1">
+                <p className="text-lg font-medium">{t.dropTitle}</p>
+                <p className="text-sm text-ink-2">{t.dropSubtitle}</p>
+              </div>
+              <button
+                data-testid="open-video"
+                className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover"
+                onClick={openVideo}
+              >
+                {t.chooseVideo}
+              </button>
             </div>
-            <button
-              data-testid="open-video"
-              className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover"
-              onClick={openVideo}
-            >
-              {t.chooseVideo}
-            </button>
+            {recents.length > 0 && <RecentVideos recents={recents} onOpen={(path) => void openRecent(path)} />}
           </div>
         </main>
       ) : (

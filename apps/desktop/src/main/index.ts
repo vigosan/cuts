@@ -12,6 +12,7 @@ import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg }
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { existingAncestor } from './paths'
+import { forgetRecent, loadRecents, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
 import { loadSession, saveSession } from './sessions'
 import { UPDATE_CHECK_INTERVAL_MS, updatesEnabled } from './updates'
 import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
@@ -90,9 +91,11 @@ app.whenReady().then(() => {
   )
   app.setAboutPanelOptions({ credits: t.aboutCredits })
   const openedVideos = new Set<string>()
-  const allowVideo = (path: string) => {
+  const recentsFile = join(app.getPath('userData'), 'recent-videos.json')
+  const allowVideo = (path: string, bookmark?: string) => {
     openedVideos.add(path)
     app.addRecentDocument(path)
+    if (!process.mas || bookmark) void rememberRecent(recentsFile, { path, openedAt: Date.now(), bookmark })
   }
   const opened = (path: string) => {
     if (!openedVideos.has(path)) throw new Error('This video was not opened in Cuts')
@@ -108,10 +111,11 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
-      filters: [{ name: t.videoFilter, extensions: VIDEO_EXTENSIONS }]
+      filters: [{ name: t.videoFilter, extensions: VIDEO_EXTENSIONS }],
+      securityScopedBookmarks: process.mas === true
     })
     if (result.canceled) return null
-    allowVideo(result.filePaths[0])
+    allowVideo(result.filePaths[0], result.bookmarks?.[0])
     return result.filePaths[0]
   })
 
@@ -195,6 +199,30 @@ app.whenReady().then(() => {
   const sessionsDir = join(app.getPath('userData'), 'sessions')
   ipcMain.handle('load-session', (_event, videoPath: string) => loadSession(sessionsDir, videoPath))
   ipcMain.on('save-session', (_event, videoPath: string, session: Session) => void saveSession(sessionsDir, videoPath, session))
+
+  const exists = (entry: RecentEntry) => {
+    const stop = entry.bookmark ? (app.startAccessingSecurityScopedResource(entry.bookmark) as () => void) : undefined
+    try {
+      return existsSync(entry.path)
+    } finally {
+      stop?.()
+    }
+  }
+  ipcMain.handle('recent-videos', async () => {
+    const recents = (await loadRecents(recentsFile)).filter(exists)
+    return Promise.all(recents.map(async (entry) => toRecentVideo(entry, (await loadSession(sessionsDir, entry.path))?.clips.length ?? 0)))
+  })
+  ipcMain.handle('open-recent', async (_event, path: string) => {
+    const entry = (await loadRecents(recentsFile)).find((recent) => recent.path === path)
+    if (!entry) return null
+    if (entry.bookmark) app.startAccessingSecurityScopedResource(entry.bookmark)
+    if (!existsSync(path)) {
+      await forgetRecent(recentsFile, path)
+      return null
+    }
+    allowVideo(path, entry.bookmark)
+    return path
+  })
 
   ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')).catch(() => app.getPath('videos')))
 

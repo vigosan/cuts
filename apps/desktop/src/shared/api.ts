@@ -33,6 +33,8 @@ export type ExportResult = { ok: true; files: string[] } | { ok: false; error: s
 
 export type ExportProgress = { index: number; ratio: number }
 
+export type RecentVideo = { path: string; name: string; folder: string; openedAt: number; clips: number }
+
 export type Api = {
   platform: NodeJS.Platform
   pathForFile(file: File): string
@@ -57,4 +59,6 @@ export type Api = {
   saveSession(videoPath: string, session: Session): void
   waveform(path: string): Promise<Float32Array>
   frameRate(path: string): Promise<number>
+  recentVideos(): Promise<RecentVideo[]>
+  openRecent(path: string): Promise<string | null>
 }

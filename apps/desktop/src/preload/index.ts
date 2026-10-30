@@ -56,7 +56,9 @@ const api: Api = {
     ipcRenderer.on('update-ready', listener)
     return () => ipcRenderer.removeListener('update-ready', listener)
   },
-  restartToUpdate: () => ipcRenderer.send('restart-to-update')
+  restartToUpdate: () => ipcRenderer.send('restart-to-update'),
+  recentVideos: () => ipcRenderer.invoke('recent-videos'),
+  openRecent: (path) => ipcRenderer.invoke('open-recent', path)
 }
 
 contextBridge.exposeInMainWorld('api', api)

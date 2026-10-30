@@ -17,6 +17,14 @@ export function resolveLocale(preferred: readonly string[]): Locale {
 
 const isOne = (locale: Locale, n: number) => new Intl.PluralRules(locale).select(n) === 'one'
 const decimal = (locale: Locale, n: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(n)
+const startOfDay = (time: number) => new Date(time).setHours(0, 0, 0, 0)
+const day = (locale: Locale, time: number, now: number, today: string, yesterday: string) => {
+  const days = Math.round((startOfDay(now) - startOfDay(time)) / 86_400_000)
+  if (days === 0) return today
+  if (days === 1) return yesterday
+  const sameYear = new Date(time).getFullYear() === new Date(now).getFullYear()
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric' }).format(time)
+}
 
 function english(locale: Locale) {
   return {
@@ -24,6 +32,9 @@ function english(locale: Locale) {
     dropTitle: 'Drop a video here',
     dropSubtitle: 'Mark the best moments and export them as clips.',
     chooseVideo: 'Choose video…',
+    recentVideos: 'Recent',
+    recentClips: (n: number) => (n === 0 ? 'No clips' : isOne(locale, n) ? `${n} clip` : `${n} clips`),
+    openedOn: (time: number, now: number) => day(locale, time, now, 'Today', 'Yesterday'),
     videoUnplayable: 'This video can’t be played.',
     unsupportedVideo: 'Cuts opens MOV, MP4, M4V, MKV and WebM videos.',
     close: 'Close',
@@ -166,6 +177,9 @@ function spanish(locale: Locale): Messages {
     dropTitle: 'Arrastra aquí un vídeo',
     dropSubtitle: 'Marca los mejores momentos y expórtalos como clips.',
     chooseVideo: 'Elegir vídeo…',
+    recentVideos: 'Recientes',
+    recentClips: (n) => (n === 0 ? 'Sin clips' : isOne(locale, n) ? `${n} clip` : `${n} clips`),
+    openedOn: (time, now) => day(locale, time, now, 'Hoy', 'Ayer'),
     videoUnplayable: 'No se puede reproducir este vídeo.',
     unsupportedVideo: 'Cuts abre vídeos MOV, MP4, M4V, MKV y WebM.',
     close: 'Cerrar',
