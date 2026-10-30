@@ -29,6 +29,7 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 2. Instalarla desde la app TestFlight del Mac (reemplaza la de `/Applications`).
 3. Comprobar a mano, con un vídeo real:
    - abrir un vídeo, marcar clips, cerrar la app y volver a abrir el mismo vídeo: los clips siguen ahí;
+   - abrir un vídeo con "Elegir vídeo…", cerrar la app y volver a abrirla: el vídeo sale en Recientes con sus clips y se abre al pulsarlo;
    - deshacer y rehacer con ⌘Z y ⇧⌘Z;
    - avanzar fotograma a fotograma con `,` y `.` (con ⇧, un segundo), y J, K, L;
    - ▶ en un clip: suena el carrusel desde ahí, clip tras clip, en bucle;
