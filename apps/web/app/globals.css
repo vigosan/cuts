@@ -2,6 +2,10 @@
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+@theme {
+  --color-accent: #ef4444;
+}
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -33,7 +37,7 @@
 
     .scroll-playhead-head {
       height: 100%;
-      border-left: 2px solid #ef4444;
+      border-left: 2px solid var(--color-accent);
       will-change: transform;
       animation: playhead linear both;
       animation-timeline: scroll(root);
@@ -89,7 +93,7 @@
 @keyframes track {
   0%,
   100% {
-    opacity: 0.4;
+    opacity: 0.7;
   }
   40%,
   60% {
@@ -106,7 +110,7 @@
   }
   40%,
   60% {
-    color: #ef4444;
+    color: var(--color-accent);
   }
 }
 

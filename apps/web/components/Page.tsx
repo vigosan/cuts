@@ -3,19 +3,19 @@ import { CONTACT, content, REPO, type Content } from "@/content";
 import { LangSwitch } from "./LangSwitch";
 import { ThemeToggle } from "./ThemeToggle";
 
-export const link = "underline font-medium hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-400 rounded px-1";
+export const link = "underline font-medium hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 rounded px-1";
 
 type Route = keyof Content["routes"];
 
 export function Page({ c, current, children }: { c: Content; current: Route; children: React.ReactNode }) {
   return (
     <div
-      className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-12 font-sans text-gray-600 dark:text-gray-400 antialiased lg:gap-16 lg:py-16"
+      className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-10 px-6 py-12 font-sans text-gray-600 dark:text-gray-400 antialiased lg:gap-16 lg:py-16"
     >
       <header className="flex items-center justify-between">
         <Link
           href={c.routes.home}
-          className="flex items-center gap-3 rounded focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className="flex items-center gap-3 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400"
         >
           <img src="/icon.png" alt="" width={36} height={36} />
           <span className="font-semibold text-gray-900 dark:text-gray-50">Cuts</span>

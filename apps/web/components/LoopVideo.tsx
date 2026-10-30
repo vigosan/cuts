@@ -8,7 +8,14 @@ type Props = { src: string; poster: string; label: string; width: number; height
 function Video({ src, poster, label, width, height, className }: Props & { className: string }) {
   const video = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) void video.current?.play().catch(() => {});
+    const element = video.current;
+    if (!element || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) void element.play().catch(() => {});
+      else element.pause();
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
   return (
     <video

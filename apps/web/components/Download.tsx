@@ -9,7 +9,7 @@ import { link } from "./Page";
 const PLATFORMS: OS[] = ["mac", "windows", "linux"];
 
 const base =
-  "inline-flex items-center gap-3 rounded-lg px-5 py-2.5 font-medium transition focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-neutral-950";
+  "inline-flex items-center gap-3 rounded-lg px-5 py-2.5 font-medium transition-[background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950";
 const button = `${base} bg-gray-800 text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white`;
 const outline = `${base} border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:border-gray-500 dark:hover:border-gray-400`;
 
@@ -21,13 +21,24 @@ function ArrowDown() {
   );
 }
 
-export function Download({ home, lang, downloads, brew = false }: { home: Content["home"]; lang: Lang; downloads: number | null; brew?: boolean }) {
-  const [os, setOs] = useState<OS | null>(null);
-  useEffect(() => setOs(detectOS(navigator.userAgent)), []);
+function Meta({ items }: { items: string[] }) {
+  return (
+    <p className="flex flex-wrap justify-center gap-x-4 font-mono text-xs text-gray-500 dark:text-gray-400">
+      {items.map((item) => (
+        <span key={item}>{item}</span>
+      ))}
+    </p>
+  );
+}
 
-  const meta = [home.free, home.version, downloads !== null && formatDownloads(downloads, lang, home.downloads)]
-    .filter(Boolean)
-    .join(" · ");
+export function Download({ home, lang, downloads, brew = false }: { home: Content["home"]; lang: Lang; downloads: number | null; brew?: boolean }) {
+  const [detected, setDetected] = useState<OS | null | undefined>(undefined);
+  useEffect(() => setDetected(detectOS(navigator.userAgent)), []);
+  const os = detected === undefined ? "mac" : detected;
+
+  const meta = [home.free, home.version, downloads !== null && formatDownloads(downloads, lang, home.downloads)].filter(
+    (item): item is string => Boolean(item),
+  );
 
   if (!os) {
     return (
@@ -40,20 +51,18 @@ export function Download({ home, lang, downloads, brew = false }: { home: Conten
             </a>
           ))}
         </div>
-        <p className="font-mono text-xs text-gray-400 dark:text-gray-500">{meta}</p>
+        <Meta items={meta} />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className={`flex flex-col items-center gap-3 transition-opacity duration-200 ease-out ${detected === undefined ? "opacity-0" : ""}`}>
       <a data-testid="download" href={DOWNLOADS[os]} className={button}>
         <ArrowDown />
         {home.download[os]}
       </a>
-      <p className="font-mono text-xs text-gray-400 dark:text-gray-500">
-        {meta} · {home.requirements[os]}
-      </p>
+      <Meta items={[...meta, home.requirements[os]]} />
       <p className="text-sm">
         {home.download.also}{" "}
         {PLATFORMS.filter((platform) => platform !== os).map((platform, index) => (

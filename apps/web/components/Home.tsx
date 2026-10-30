@@ -70,8 +70,8 @@ export async function Home({ c }: { c: Content }) {
               </h3>
               <ul className="flex flex-col gap-3 leading-relaxed">
                 {group.items.map((item, itemIndex) => (
-                  <li key={item} className="grid grid-cols-[2.5rem_1fr]">
-                    <span className="font-mono text-xs leading-7 tabular-nums text-gray-300 dark:text-gray-700">
+                  <li key={item} className="sm:grid sm:grid-cols-[2.5rem_1fr]">
+                    <span className="hidden font-mono text-xs leading-7 tabular-nums text-gray-400 sm:inline dark:text-gray-600">
                       {groupIndex + 1}.{itemIndex + 1}
                     </span>
                     <span>
