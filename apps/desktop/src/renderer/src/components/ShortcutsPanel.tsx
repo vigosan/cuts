@@ -100,7 +100,7 @@ export function ShortcutsPanel({ platform, onClose }: { platform: NodeJS.Platfor
         <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
           {GROUPS.map((group) => (
             <section key={group.title}>
-              <h3 className="mb-2 text-xs font-medium tracking-wide text-ink-3 uppercase">{t.shortcuts[group.title]}</h3>
+              <h3 className="mb-2 text-sm font-medium text-ink">{t.shortcuts[group.title]}</h3>
               <dl className="flex flex-col gap-1.5 text-sm">
                 {group.items.map((item) => (
                   <div key={item.label} className="flex items-center justify-between gap-4">

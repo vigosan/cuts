@@ -31,13 +31,13 @@ export function ClipControls({ settings, format, onChange }: Props) {
         </div>
       )}
       <div className="grid grid-cols-[1fr_1fr_4.5rem] gap-x-2 gap-y-1">
-        <label htmlFor="fade-video" className="text-[11px] text-ink-3">
+        <label htmlFor="fade-video" className="text-xs text-ink-3">
           {t.fadeLabels.image}
         </label>
-        <label htmlFor="fade-audio" className="text-[11px] text-ink-3">
+        <label htmlFor="fade-audio" className="text-xs text-ink-3">
           {t.fadeLabels.audio}
         </label>
-        <label htmlFor="fade-seconds" className="text-[11px] text-ink-3">
+        <label htmlFor="fade-seconds" className="text-xs text-ink-3">
           {t.fadeLabels.length}
         </label>
         <span className="relative">

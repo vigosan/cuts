@@ -643,7 +643,7 @@ function MarkButton({
       onClick={onClick}
     >
       {children}
-      <kbd className="rounded bg-surface px-1.5 font-sans text-[11px] text-ink-3">{shortcut}</kbd>
+      <kbd className="rounded bg-surface px-1.5 font-sans text-xs text-ink-3">{shortcut}</kbd>
     </button>
   )
 }
