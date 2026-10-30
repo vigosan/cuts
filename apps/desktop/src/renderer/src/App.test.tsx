@@ -1270,6 +1270,29 @@ describe('App', () => {
     expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
   })
 
+  it('offers the suggestions from the empty clip list, where a new video has nothing yet and the first clip will appear', async () => {
+    const peaks = new Float32Array(4880 * 50)
+    for (let i = 0; i < peaks.length; i++) {
+      const second = Math.floor(i / 50)
+      peaks[i] = second >= 980 && second < 1000 ? 0.02 : second >= 1000 && second < 1030 ? 0.3 : 0.2
+    }
+    vi.mocked(api.waveform).mockResolvedValue(peaks)
+    render(<App />)
+    await loadVideo()
+    expect(screen.getByTestId('suggest-empty')).toHaveTextContent(t.suggestMoments)
+    await userEvent.click(screen.getByTestId('suggest-empty'))
+    await waitFor(() => expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:16:10'))
+    expect(screen.queryByTestId('suggest-empty')).not.toBeInTheDocument()
+  })
+
+  it('names the clip count with the carousel title, so the number is not read as a stray figure beside the delete button', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 1000, 1060)
+    await markClip(video, 3000, 3030)
+    expect(screen.getByRole('heading', { name: `${t.carousel} 2` })).toBeInTheDocument()
+  })
+
   it('keeps the clips marked while the suggestions are being read, since reading a whole session takes seconds', async () => {
     let finish: (value: Float32Array) => void = () => {}
     vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))

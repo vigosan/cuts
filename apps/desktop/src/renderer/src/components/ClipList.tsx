@@ -11,7 +11,7 @@ import {
 } from '@cuts/core/clips'
 import type { VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
-import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PauseIcon, PlayIcon } from './icons'
+import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
 
 export type SelectMode = 'only' | 'toggle' | 'range'
 
@@ -29,10 +29,13 @@ type Props = {
   onSetEnd: (clip: Clip) => void
   onDelete: (clip: Clip) => void
   onReorder: (from: number, to: number) => void
+  suggesting: boolean
+  onSuggest: () => void
 }
 
 const iconButton =
   'grid size-7 place-items-center rounded-md text-ink-3 transition-colors hover:bg-sunken hover:text-ink'
+const key = 'rounded bg-sunken px-1.5 font-sans text-xs text-ink-2'
 const timeButton =
   'rounded-md px-1 tabular-nums transition-colors hover:bg-accent-soft hover:text-accent disabled:pointer-events-none'
 
@@ -47,15 +50,37 @@ export function ClipList({
   onSetStart,
   onSetEnd,
   onDelete,
-  onReorder
+  onReorder,
+  suggesting,
+  onSuggest
 }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
 
   if (clips.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center px-6 py-10">
-        <p className="text-sm text-ink-3">{t.noClips}</p>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center text-sm text-ink-2">
+        <p>{t.noClips}</p>
+        <p className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <kbd className={key}>I</kbd>
+            {t.markStart}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className={key}>O</kbd>
+            {t.markEnd}
+          </span>
+        </p>
+        <button
+          data-testid="suggest-empty"
+          className="flex h-8 items-center gap-1.5 rounded-lg bg-sunken px-3 font-medium text-ink transition-[background-color,color,transform] duration-150 ease-out hover:bg-accent-soft hover:text-accent active:scale-[0.97] disabled:cursor-default"
+          aria-busy={suggesting}
+          disabled={suggesting}
+          onClick={onSuggest}
+        >
+          {suggesting ? <SpinnerIcon className="size-3.5" /> : <SparkleIcon className="size-3.5" />}
+          {t.suggestMoments}
+        </button>
       </div>
     )
   }

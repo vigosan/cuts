@@ -488,7 +488,10 @@ export function App() {
 
           <aside className="flex shrink-0 flex-col overflow-hidden rounded-2xl bg-surface lg:w-[23rem]">
             <div className="flex h-12 items-center justify-between px-4 pt-3">
-              <h2 className="text-sm font-semibold">{t.carousel}</h2>
+              <h2 className="flex items-baseline gap-1.5 text-sm font-semibold">
+                {t.carousel}{' '}
+                {clips.length > 0 && <span className="text-xs font-normal tabular-nums text-ink-3">{clips.length}</span>}
+              </h2>
               <span className="flex items-center gap-1">
                 <button
                   data-testid="suggest"
@@ -502,21 +505,18 @@ export function App() {
                   {suggesting ? <SpinnerIcon className="size-3.5" /> : <SparkleIcon className="size-3.5" />}
                 </button>
                 {clips.length > 0 && (
-                  <>
-                    <button
-                      data-testid="clear-clips"
-                      className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
-                      title={t.clearClips}
-                      aria-label={t.clearClips}
-                      onClick={() => {
-                        dispatch({ type: 'reset' })
-                        setSelectedIds([])
-                      }}
-                    >
-                      <TrashIcon className="size-3.5" />
-                    </button>
-                    <span className="ml-1 text-xs text-ink-3">{clips.length}</span>
-                  </>
+                  <button
+                    data-testid="clear-clips"
+                    className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+                    title={t.clearClips}
+                    aria-label={t.clearClips}
+                    onClick={() => {
+                      dispatch({ type: 'reset' })
+                      setSelectedIds([])
+                    }}
+                  >
+                    <TrashIcon className="size-3.5" />
+                  </button>
                 )}
               </span>
             </div>
@@ -528,6 +528,8 @@ export function App() {
                 selectedIds={selectedIds}
                 onSelect={pickClip}
                 onPlay={playClip}
+                suggesting={suggesting}
+                onSuggest={() => void suggest(videoPath)}
                 loopingId={loopingId}
                 onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
                 onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}
