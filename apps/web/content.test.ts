@@ -92,6 +92,14 @@ describe("site content", () => {
     expect(workflow).toContain("repository: vigosan/homebrew-cuts");
   });
 
+  it("keeps the intro under the headline to one short sentence, so the download button stays in the first screen", () => {
+    for (const lang of LANGS) expect(content[lang].home.intro.split(/\s+/).length, lang).toBeLessThanOrEqual(20);
+  });
+
+  it("titles the site without long dashes, which read as machine-written in a browser tab or a shared link", () => {
+    for (const lang of LANGS) expect(content[lang].meta.title, lang).not.toMatch(/[—–]/);
+  });
+
   it("tells in the privacy policy that the app goes online to check for updates, instead of claiming it never does", () => {
     for (const lang of LANGS) {
       const text = content[lang].privacy.sections.flatMap((section) => section.body).join(" ");

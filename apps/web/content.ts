@@ -40,7 +40,7 @@ export const content = {
     theme: { system: "Theme: system", light: "Theme: light", dark: "Theme: dark" },
     routes: { home: "/", privacy: "/privacy", support: "/support", ffmpeg: "/ffmpeg" },
     meta: {
-      title: "Cuts — cut your best moments into clips",
+      title: "Cuts: cut your best moments into clips",
       image: "/og-en.png",
       description:
         "An app for Mac, Windows and Linux to mark the best moments of a long video and export them as short clips, ready for an Instagram carousel.",
@@ -48,7 +48,7 @@ export const content = {
     home: {
       tagline: "Cut your best moments into clips",
       intro:
-        "Cuts listens to your session, finds the drops and turns them into clips ready for your carousel. Fine-tune them, frame them for Instagram and export them all at once, numbered in order.",
+        "Cuts listens to your session, finds the drops and turns them into clips ready for your Instagram carousel.",
       free: "Free",
       requirements: { mac: "macOS 13 or later", windows: "Windows 10 or later", linux: "AppImage x86_64" },
       download: { mac: "Download for Mac", windows: "Download for Windows", linux: "Download for Linux", also: "Also for" },
@@ -171,7 +171,7 @@ export const content = {
     theme: { system: "Tema: sistema", light: "Tema: claro", dark: "Tema: oscuro" },
     routes: { home: "/es", privacy: "/es/privacidad", support: "/es/soporte", ffmpeg: "/es/ffmpeg" },
     meta: {
-      title: "Cuts — corta tus mejores momentos en clips",
+      title: "Cuts: corta tus mejores momentos en clips",
       image: "/og-es.png",
       description:
         "Una app para Mac, Windows y Linux que marca los mejores momentos de un vídeo largo y los exporta como clips cortos, listos para un carrusel de Instagram.",
@@ -179,7 +179,7 @@ export const content = {
     home: {
       tagline: "Corta tus mejores momentos en clips",
       intro:
-        "Cuts escucha tu sesión, encuentra los subidones y los convierte en clips listos para el carrusel. Retócalos, encuádralos para Instagram y expórtalos todos de una vez, numerados en orden.",
+        "Cuts escucha tu sesión, encuentra los subidones y los convierte en clips listos para tu carrusel de Instagram.",
       free: "Gratis",
       requirements: { mac: "macOS 13 o posterior", windows: "Windows 10 o posterior", linux: "AppImage x86_64" },
       download: { mac: "Descargar para Mac", windows: "Descargar para Windows", linux: "Descargar para Linux", also: "También para" },

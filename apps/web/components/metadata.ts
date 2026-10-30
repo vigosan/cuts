@@ -4,7 +4,7 @@ import { content, SITE_URL, type Content } from "@/content";
 export function metadataFor(c: Content, route: keyof Content["routes"], title?: string): Metadata {
   return {
     metadataBase: new URL(SITE_URL),
-    title: title ? `${title} — Cuts` : c.meta.title,
+    title: title ? `${title} · Cuts` : c.meta.title,
     description: c.meta.description,
     icons: { icon: "/icon.png", apple: "/icon.png" },
     alternates: {
