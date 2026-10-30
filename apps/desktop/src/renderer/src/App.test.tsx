@@ -1433,7 +1433,7 @@ describe('App', () => {
     const button = screen.getByTestId('export')
     expect(button).toHaveTextContent('Exporting 2 of 2')
     expect(button).toContainElement(screen.getByTestId('export-progress'))
-    expect(screen.getByTestId('export-progress')).toHaveStyle({ width: '50%' })
+    expect(screen.getByTestId('export-progress')).toHaveStyle({ transform: 'scaleX(0.5)' })
     expect(screen.getByTestId('export-status')).toBe(status)
     expect(status).toContainElement(screen.getByTestId('export-cancel'))
   })

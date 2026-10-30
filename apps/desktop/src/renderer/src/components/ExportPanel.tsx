@@ -85,7 +85,7 @@ export function ExportPanel(p: Props) {
         {p.state.status === 'done' && p.canShare && (
           <button
             data-testid="reveal"
-            className="h-10 flex-1 rounded-xl bg-sunken text-sm font-medium text-ink transition-colors hover:bg-accent-soft hover:text-accent"
+            className="h-10 flex-1 rounded-xl bg-sunken text-sm font-medium text-ink transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-soft hover:text-accent"
             onClick={() => p.state.status === 'done' && p.onReveal(p.state.files[0])}
           >
             {t.showInFinder}
@@ -93,15 +93,15 @@ export function ExportPanel(p: Props) {
         )}
         <button
           data-testid="export"
-          className={`relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition-colors ${running ? 'cursor-default' : 'hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3'}`}
+          className={`relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] ${running ? 'cursor-default' : 'hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3'}`}
           disabled={!p.canExport || running}
           onClick={() => (p.state.status === 'done' ? (p.canShare ? p.onShare(p.state.files) : p.onReveal(p.state.files[0])) : p.onExport())}
         >
           {running && (
             <span
               data-testid="export-progress"
-              className="absolute inset-y-0 left-0 bg-on-accent/20 transition-[width]"
-              style={{ width: `${overall * 100}%` }}
+              className="absolute inset-0 origin-left bg-on-accent/20 transition-transform"
+              style={{ transform: `scaleX(${overall})` }}
             />
           )}
           <span className="relative">

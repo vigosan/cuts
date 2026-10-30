@@ -357,7 +357,7 @@ export function App() {
             </div>
             <button
               data-testid="open-video"
-              className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
+              className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover"
               onClick={openVideo}
             >
               {t.chooseVideo}
@@ -410,7 +410,7 @@ export function App() {
               <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
                 <button
                   data-testid="play"
-                  className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-canvas transition-opacity hover:opacity-85"
+                  className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-canvas transition duration-150 ease-out active:scale-[0.97] hover:opacity-85"
                   title={playing ? t.pause : t.play}
                   aria-label={playing ? t.pause : t.play}
                   onClick={togglePlay}
@@ -582,7 +582,7 @@ export function App() {
             key={unsupportedDrops}
             data-testid="unsupported-video"
             role="status"
-            className="relative flex items-center gap-2 overflow-hidden rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20"
+            className="relative flex items-center gap-2 overflow-hidden rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20 transition duration-200 ease-out starting:translate-y-2 starting:opacity-0 motion-reduce:starting:translate-y-0"
           >
             {t.unsupportedVideo}
             <button
@@ -605,12 +605,12 @@ export function App() {
           <div
             data-testid="update-ready"
             role="status"
-            className="flex items-center gap-3 rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20"
+            className="flex items-center gap-3 rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20 transition duration-200 ease-out starting:translate-y-2 starting:opacity-0 motion-reduce:starting:translate-y-0"
           >
             {t.updateReady(updateVersion)}
             <button
               data-testid="restart-to-update"
-              className="h-8 rounded-lg bg-accent px-3 font-medium text-on-accent transition-colors hover:bg-accent-hover"
+              className="h-8 rounded-lg bg-accent px-3 font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover"
               onClick={window.api.restartToUpdate}
             >
               {t.restartToUpdate}
@@ -638,7 +638,7 @@ function MarkButton({
   return (
     <button
       data-testid={testId}
-      className="flex h-8 items-center gap-1.5 rounded-lg bg-sunken px-2.5 text-sm font-medium transition-colors hover:bg-accent-soft hover:text-accent"
+      className="flex h-8 items-center gap-1.5 rounded-lg bg-sunken px-2.5 text-sm font-medium transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-soft hover:text-accent"
       title={`${title} (${shortcut})`}
       onClick={onClick}
     >
