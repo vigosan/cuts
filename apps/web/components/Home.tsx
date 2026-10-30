@@ -6,6 +6,8 @@ import { LoopVideo } from "./LoopVideo";
 import { Page } from "./Page";
 import { frame, Screenshot } from "./Screenshot";
 
+const wide = "lg:-mx-24 xl:-mx-40";
+
 const heading = "text-2xl font-semibold tracking-tight text-balance text-gray-900 dark:text-gray-50";
 
 function Keys({ text }: { text: string }) {
@@ -31,13 +33,13 @@ export async function Home({ c }: { c: Content }) {
       <div aria-hidden className="scroll-playhead">
         <div className="scroll-playhead-head" />
       </div>
-      <section className="flex flex-col items-center gap-6 pt-4 text-center lg:pt-10">
+      <section className="flex flex-col items-center gap-6 text-center lg:pt-4">
         <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance text-gray-900 sm:text-5xl dark:text-gray-50">
           {c.home.tagline}
         </h1>
         <p className="max-w-xl text-lg text-pretty">{c.home.intro}</p>
         <Download home={c.home} lang={c.lang} downloads={downloads} />
-        <div className="scroll-straighten mt-6 w-full">
+        <div className={`scroll-straighten mt-6 self-stretch ${wide}`}>
           <LoopVideo
             src={`/screenshots/${c.lang}-${DROPS_VIDEO.video}`}
             poster={`/screenshots/${c.lang}-${DROPS_VIDEO.poster}`}
@@ -88,28 +90,34 @@ export async function Home({ c }: { c: Content }) {
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.timelineTitle}</h2>
         <p className="max-w-2xl text-pretty">{c.home.timelineText}</p>
-        <Screenshot
-          src={`/screenshots/${c.lang}-timeline.png`}
-          dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.timeline}.png`}
-          alt={c.home.timelineAlt}
-          width={2032}
-          height={312}
-        />
+        <div className={wide}>
+          <Screenshot
+            src={`/screenshots/${c.lang}-timeline.png`}
+            dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.timeline}.png`}
+            alt={c.home.timelineAlt}
+            width={2032}
+            height={312}
+          />
+        </div>
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.framingTitle}</h2>
         <p className="max-w-2xl text-pretty">{c.home.framingText}</p>
-        <Screenshot
-          src={`/screenshots/${c.lang}-framing.png`}
-          dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.framing}.png`}
-          alt={c.home.framingAlt}
-          width={1600}
-          height={1000}
-        />
+        <div className={wide}>
+          <Screenshot
+            src={`/screenshots/${c.lang}-framing.png`}
+            dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.framing}.png`}
+            alt={c.home.framingAlt}
+            width={1600}
+            height={1000}
+          />
+        </div>
       </article>
-      <article className="flex flex-col gap-6">
-        <h2 className={heading}>{c.home.darkTitle}</h2>
-        <p className="max-w-2xl text-pretty">{c.home.darkText}</p>
+      <article className={`grid items-center gap-6 lg:grid-cols-[1fr_2fr] lg:gap-12 ${wide}`}>
+        <div className="flex flex-col gap-6">
+          <h2 className={heading}>{c.home.darkTitle}</h2>
+          <p className="text-pretty">{c.home.darkText}</p>
+        </div>
         <div className="relative">
           <img
             src={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.dark}.png`}
@@ -131,7 +139,7 @@ export async function Home({ c }: { c: Content }) {
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.privacyTitle}</h2>
-        <p className="max-w-2xl text-pretty">{c.home.privacy}</p>
+        <p className="text-xl font-medium tracking-tight text-balance text-gray-900 sm:text-3xl dark:text-gray-50">{c.home.privacy}</p>
       </article>
       <section data-testid="closing" className="flex flex-col items-center gap-6 border-t border-gray-200 pt-16 text-center dark:border-gray-800">
         <h2 className={heading}>{c.home.closingTitle}</h2>
