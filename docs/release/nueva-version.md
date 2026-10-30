@@ -51,6 +51,24 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
+## Novedades de la 1.6
+
+### Español
+
+- Tus vídeos recientes en la pantalla de inicio, con su carpeta, cuándo lo abriste y cuántos clips tiene: un clic y sigues donde lo dejaste.
+- Con la lista de clips vacía, "Sugerir momentos" está a la vista, junto a las teclas I y O.
+- Lista de clips más limpia: la duración es solo texto y se colorea cuando pasa de 59 s, y el número de clips va junto a "Carrusel".
+- Textos secundarios más legibles, en claro y en oscuro.
+- Los botones responden al pulsarlos y los avisos aparecen con suavidad.
+
+### English
+
+- Your recent videos on the start screen, with their folder, when you opened them and how many clips they have: one click and you pick up where you left off.
+- With an empty clip list, Suggest moments is right there, next to the I and O keys.
+- A cleaner clip list: durations are plain text and turn colour past 59 s, and the clip count sits next to Carousel.
+- Easier to read secondary text, in light and dark.
+- Buttons respond when you press them and notices ease in.
+
 ## Novedades de la 1.5
 
 ### Español
