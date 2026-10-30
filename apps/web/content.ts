@@ -4,7 +4,7 @@ export type Lang = (typeof LANGS)[number];
 export const SITE_URL = "https://cuts.vicent.io";
 export const CONTACT = "hello@vicent.io";
 export const REPO = "https://github.com/vigosan/cuts";
-export const UPDATED = "2026-10-26";
+export const UPDATED = "2026-10-31";
 export const VERSION = "1.6";
 export const SCREENSHOTS = ["timeline", "framing", "dark"] as const;
 export const DARK_SCREENSHOTS = { timeline: "timeline-dark", framing: "framing-dark", dark: "light" } as const;
@@ -38,6 +38,11 @@ export const content = {
     other: "es",
     switchLabel: "Español",
     theme: { system: "Theme: system", light: "Theme: light", dark: "Theme: dark" },
+    consent: {
+      text: "May this website use Google Analytics cookies to count visits? The app never tracks you.",
+      accept: "Accept",
+      decline: "Decline",
+    },
     routes: { home: "/", privacy: "/privacy", support: "/support", ffmpeg: "/ffmpeg" },
     meta: {
       title: "Cuts: cut your best moments into clips",
@@ -131,7 +136,10 @@ export const content = {
         {
           heading: "This website",
           body: [
-            "This website uses no cookies and no analytics. It is hosted on Vercel, which processes technical request data, such as your IP address, to deliver the pages.",
+            "This website is hosted on Vercel, which processes technical request data, such as your IP address, to deliver the pages.",
+            "If you accept, the website uses Google Analytics, a service of Google Ireland Limited, to count visits and see which pages are read. It sets cookies (_ga and _ga_ followed by an ID) that last up to two years and sends Google data such as the pages you visit, your browser, device and approximate location. Google may process this data outside the European Union under its standard contractual clauses. If you decline, or until you answer, Google Analytics is never loaded.",
+            "The website also stores your language, your answer about analytics for six months, and, in your browser only, your light or dark theme.",
+            "You can change your answer at any time with Cookies at the bottom of every page, which also deletes the Google Analytics cookies.",
           ],
         },
         {
@@ -163,13 +171,18 @@ export const content = {
         openh264: "OpenH264 license (BSD 2-Clause)",
       },
     },
-    footer: { privacy: "Privacy", support: "Support", ffmpeg: "FFmpeg", github: "GitHub", by: "Made by" },
+    footer: { privacy: "Privacy", support: "Support", ffmpeg: "FFmpeg", cookies: "Cookies", github: "GitHub", by: "Made by" },
   },
   es: {
     lang: "es",
     other: "en",
     switchLabel: "English",
     theme: { system: "Tema: sistema", light: "Tema: claro", dark: "Tema: oscuro" },
+    consent: {
+      text: "¿Puede esta web usar cookies de Google Analytics para contar las visitas? La app nunca te rastrea.",
+      accept: "Aceptar",
+      decline: "Rechazar",
+    },
     routes: { home: "/es", privacy: "/es/privacidad", support: "/es/soporte", ffmpeg: "/es/ffmpeg" },
     meta: {
       title: "Cuts: corta tus mejores momentos en clips",
@@ -263,7 +276,10 @@ export const content = {
         {
           heading: "Esta web",
           body: [
-            "Esta web no usa cookies ni analítica. Está alojada en Vercel, que procesa datos técnicos de las peticiones, como tu dirección IP, para servir las páginas.",
+            "Esta web está alojada en Vercel, que procesa datos técnicos de las peticiones, como tu dirección IP, para servir las páginas.",
+            "Si aceptas, la web usa Google Analytics, un servicio de Google Ireland Limited, para contar las visitas y ver qué páginas se leen. Guarda cookies (_ga y _ga_ seguida de un identificador) que duran hasta dos años y envía a Google datos como las páginas que visitas, tu navegador, tu dispositivo y tu ubicación aproximada. Google puede tratar estos datos fuera de la Unión Europea con sus cláusulas contractuales tipo. Si rechazas, o mientras no respondas, Google Analytics nunca se carga.",
+            "La web también guarda tu idioma, tu respuesta sobre la analítica durante seis meses y, solo en tu navegador, el tema claro u oscuro.",
+            "Puedes cambiar tu respuesta cuando quieras con Cookies, al pie de cada página, que además borra las cookies de Google Analytics.",
           ],
         },
         {
@@ -295,7 +311,7 @@ export const content = {
         openh264: "Licencia de OpenH264 (BSD 2-Clause)",
       },
     },
-    footer: { privacy: "Privacidad", support: "Soporte", ffmpeg: "FFmpeg", github: "GitHub", by: "Hecho por" },
+    footer: { privacy: "Privacidad", support: "Soporte", ffmpeg: "FFmpeg", cookies: "Cookies", github: "GitHub", by: "Hecho por" },
   },
 } as const;
 

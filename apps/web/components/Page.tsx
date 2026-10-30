@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CONTACT, content, REPO, type Content } from "@/content";
+import { CookieSettings } from "./Analytics";
 import { LangSwitch } from "./LangSwitch";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -38,6 +39,7 @@ export function Page({ c, current, children }: { c: Content; current: Route; chi
         <Link href={c.routes.ffmpeg} className={link}>
           {c.footer.ffmpeg}
         </Link>
+        <CookieSettings label={c.footer.cookies} className={link} />
         <a href={REPO} className={link}>
           {c.footer.github}
         </a>
