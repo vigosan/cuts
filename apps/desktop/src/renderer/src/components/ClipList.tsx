@@ -178,9 +178,9 @@ export function ClipList({
               <span
                 data-testid={`clip-duration-${n}`}
                 title={over ? t.overLimit(MAX_CLIP_SECONDS) : undefined}
-                className="relative flex w-full items-center justify-center rounded-full bg-accent-soft py-0.5 text-xs font-medium text-ink tabular-nums"
+                className={`flex items-center gap-1.5 text-xs font-medium tabular-nums ${over ? 'text-warn' : 'text-ink-2'}`}
               >
-                {over && <span className="absolute left-2.5 size-1.5 rounded-full bg-warn" />}
+                {over && <span className="size-1.5 rounded-full bg-warn" />}
                 {formatDuration(clipDuration(clip))}
               </span>
             </span>
