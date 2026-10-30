@@ -21,7 +21,7 @@ function ArrowDown() {
   );
 }
 
-export function Download({ home, lang, downloads }: { home: Content["home"]; lang: Lang; downloads: number | null }) {
+export function Download({ home, lang, downloads, brew = false }: { home: Content["home"]; lang: Lang; downloads: number | null; brew?: boolean }) {
   const [os, setOs] = useState<OS | null>(null);
   useEffect(() => setOs(detectOS(navigator.userAgent)), []);
 
@@ -65,7 +65,7 @@ export function Download({ home, lang, downloads }: { home: Content["home"]; lan
           </span>
         ))}
       </p>
-      {os === "mac" && (
+      {brew && os === "mac" && (
         <p className="text-sm">
           {home.brew}{" "}
           <code data-testid="brew" className="select-all rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-800 dark:bg-neutral-800 dark:text-gray-200">

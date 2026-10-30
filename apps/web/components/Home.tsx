@@ -37,11 +37,7 @@ export async function Home({ c }: { c: Content }) {
         </h1>
         <p className="max-w-xl text-lg text-pretty">{c.home.intro}</p>
         <Download home={c.home} lang={c.lang} downloads={downloads} />
-      </section>
-      <article className="flex flex-col gap-6">
-        <h2 className={heading}>{c.home.dropsTitle}</h2>
-        <p className="max-w-2xl text-pretty">{c.home.dropsText}</p>
-        <div className="scroll-straighten">
+        <div className="scroll-straighten mt-6 w-full">
           <LoopVideo
             src={`/screenshots/${c.lang}-${DROPS_VIDEO.video}`}
             poster={`/screenshots/${c.lang}-${DROPS_VIDEO.poster}`}
@@ -52,6 +48,10 @@ export async function Home({ c }: { c: Content }) {
             height={900}
           />
         </div>
+      </section>
+      <article className="flex flex-col gap-6">
+        <h2 className={heading}>{c.home.dropsTitle}</h2>
+        <p className="max-w-2xl text-pretty">{c.home.dropsText}</p>
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.featuresTitle}</h2>
@@ -135,7 +135,7 @@ export async function Home({ c }: { c: Content }) {
       </article>
       <section data-testid="closing" className="flex flex-col items-center gap-6 border-t border-gray-200 pt-16 text-center dark:border-gray-800">
         <h2 className={heading}>{c.home.closingTitle}</h2>
-        <Download home={c.home} lang={c.lang} downloads={downloads} />
+        <Download home={c.home} lang={c.lang} downloads={downloads} brew />
       </section>
     </Page>
   );
