@@ -37,8 +37,9 @@ ws.onopen = async () => {
   await sleep(2000)
   await evalJs(`(async () => { const v = document.querySelector('[data-testid=video]'); v.muted = true; v.currentTime = 1396; await new Promise(r => v.onseeked = r) })()`)
   await waitForTimeline()
+  await evalJs(`window.api.waveform('${data.files[0]}').then(() => true)`)
   await sleep(1500)
-  const target = await evalJs(`(() => { const r = document.querySelector('[data-testid=suggest]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+  const target = await evalJs(`(() => { const r = document.querySelector('[data-testid=suggest-empty]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
   await evalJs(`(() => {
     const c = document.createElement('div')
     c.id = 'fake-cursor'
