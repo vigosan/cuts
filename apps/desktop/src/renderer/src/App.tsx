@@ -9,6 +9,7 @@ import { ClipList, type SelectMode } from './components/ClipList'
 import { ExportPanel, exportLabel, exportProgress, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
+import { FitPreview } from './components/FitPreview'
 import { CloseIcon, FilmIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
 import { RecentVideos } from './components/RecentVideos'
 import { ShortcutsPanel } from './components/ShortcutsPanel'
@@ -496,7 +497,7 @@ export function App() {
                 ref={videoRef}
                 data-testid="video"
                 src={mediaUrl(videoPath)}
-                className="max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none"
+                className={`max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none ${target && shownSettings.framing === 'fit' ? 'opacity-0' : ''}`}
                 onClick={togglePlay}
                 onTimeUpdate={(e) => {
                   keepLooping(e.currentTarget)
@@ -528,6 +529,9 @@ export function App() {
                   <SpinnerIcon className="size-4" />
                   {t.loadingVideo}
                 </p>
+              )}
+              {target && videoSize && shownSettings.framing === 'fit' && (
+                <FitPreview videoRef={videoRef} targetWidth={target.width} targetHeight={target.height} />
               )}
               {videoError && (
                 <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">

@@ -1313,6 +1313,19 @@ describe('App', () => {
     expect(clips.map((c) => c.framing)).toEqual(['crop', 'fit'])
   })
 
+  it('previews Fit as the exported frame, the whole video over its blurred copy, so choosing it shows what will be posted', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.selectOptions(screen.getByTestId('format'), '1:1')
+    expect(screen.queryByTestId('fit-preview')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('framing-fit'))
+    expect(screen.getByTestId('fit-preview')).toBeInTheDocument()
+    expect(screen.queryByTestId('crop-frame')).not.toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByTestId('format'), 'original')
+    expect(screen.queryByTestId('fit-preview')).not.toBeInTheDocument()
+  })
+
   it('moves the crop zone by dragging the frame over the video, to keep the part that matters in shot', async () => {
     render(<App />)
     const video = await loadVideo()
