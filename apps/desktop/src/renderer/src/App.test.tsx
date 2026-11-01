@@ -1227,6 +1227,25 @@ describe('App', () => {
     expect(api.thumbnail).toHaveBeenCalledWith(VIDEO, expect.any(Number))
   })
 
+  it('says the video and its frames are loading instead of showing a blank black box and an empty strip', async () => {
+    vi.mocked(api.thumbnail).mockReturnValue(new Promise(() => {}))
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    expect(screen.getByTestId('video-loading')).toHaveTextContent(t.loadingVideo)
+    const video = screen.getByTestId('video') as HTMLVideoElement
+    Object.defineProperty(video, 'duration', { configurable: true, value: 4880 })
+    fireEvent(video, new Event('loadedmetadata'))
+    expect(screen.queryByTestId('video-loading')).not.toBeInTheDocument()
+    expect(screen.getByTestId('filmstrip-loading')).toHaveTextContent(t.loadingFrames)
+  })
+
+  it('stops saying the frames are loading once the first ones arrive', async () => {
+    render(<App />)
+    await loadVideo()
+    await screen.findAllByTestId('filmstrip-frame')
+    expect(screen.queryByTestId('filmstrip-loading')).not.toBeInTheDocument()
+  })
+
   it('reads the waveform once per video, since decoding a whole session takes a few seconds', async () => {
     render(<App />)
     const video = await loadVideo()

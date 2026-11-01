@@ -444,6 +444,12 @@ export function App() {
                   onChange={changeSettings}
                 />
               )}
+              {duration === 0 && !videoError && (
+                <p data-testid="video-loading" className="absolute flex items-center gap-2 text-sm text-white/70">
+                  <SpinnerIcon className="size-4" />
+                  {t.loadingVideo}
+                </p>
+              )}
               {videoError && (
                 <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">
                   {t.videoUnplayable}

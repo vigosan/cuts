@@ -192,6 +192,11 @@ export function Timeline({
       }}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-14 overflow-hidden">
+        {frames.size === 0 && tiles.length > 0 && (
+          <p data-testid="filmstrip-loading" className="grid h-full place-items-center text-xs text-ink-2 motion-safe:animate-pulse">
+            {t.loadingFrames}
+          </p>
+        )}
         {tiles.map((tile) =>
           frames.has(tile.time) ? (
             <img
