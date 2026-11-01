@@ -39,6 +39,9 @@ export function Page({ c, current, children }: { c: Content; current: Route; chi
         <Link href={c.routes.ffmpeg} className={link}>
           {c.footer.ffmpeg}
         </Link>
+        <Link href={c.routes.stats} className={link}>
+          {c.footer.stats}
+        </Link>
         <CookieSettings label={c.footer.cookies} className={link} />
         <a href={REPO} className={link}>
           {c.footer.github}

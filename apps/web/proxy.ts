@@ -13,5 +13,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/privacy", "/support", "/ffmpeg"],
+  matcher: ["/", "/privacy", "/support", "/ffmpeg", "/stats"],
 };
