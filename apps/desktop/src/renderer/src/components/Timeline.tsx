@@ -277,7 +277,7 @@ export function Timeline({
                   onPointerDown={(e) => startFadeDrag(e, clip, side)}
                 />
               ))}
-            <span className="pointer-events-none absolute top-1 left-1 rounded bg-black/60 px-1 text-[10px] leading-4 font-semibold text-white tabular-nums">
+            <span className="pointer-events-none absolute top-1 left-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold text-white tabular-nums">
               {index + 1}
             </span>
             <div
@@ -322,7 +322,7 @@ function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left:
       <span
         data-testid="pending-clip-time"
         data-outside={outside}
-        className={`absolute top-1 rounded px-1 text-[10px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${over ? 'bg-warn' : 'bg-accent'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
+        className={`absolute top-1 rounded px-1 text-[11px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${over ? 'bg-warn' : 'bg-accent'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
       >
         {formatDuration(elapsed)}
       </span>

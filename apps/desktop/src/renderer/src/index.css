@@ -11,7 +11,7 @@
   --line: rgb(0 0 0 / 0.07);
   --ink: #1c1c1e;
   --ink-2: #5c5b58;
-  --ink-3: #75736f;
+  --ink-3: #6b6965;
   --accent: #1c1c1e;
   --accent-hover: #3a3a3c;
   --accent-soft: rgb(28 28 30 / 0.07);
@@ -29,7 +29,7 @@
     --line: rgb(255 255 255 / 0.07);
     --ink: #f2f1ef;
     --ink-2: #b5b4b1;
-    --ink-3: #92918e;
+    --ink-3: #9a9996;
     --accent: #f2f1ef;
     --accent-hover: #ffffff;
     --accent-soft: rgb(255 255 255 / 0.09);
