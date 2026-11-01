@@ -1,0 +1,45 @@
+name: Stats
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency: stats
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check out the stats branch of the releases repo, or start it
+        run: |
+          dir="$RUNNER_TEMP/stats"
+          git init -q -b stats "$dir"
+          git -C "$dir" remote add origin "https://x-access-token:${RELEASES_TOKEN}@github.com/vigosan/cuts-releases.git"
+          if git -C "$dir" fetch --depth=1 origin stats; then
+            git -C "$dir" reset --hard FETCH_HEAD
+          fi
+        env:
+          RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      - run: node apps/web/scripts/stats-snapshot.ts "$RUNNER_TEMP/stats/stats.json"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit the snapshot
+        working-directory: ${{ runner.temp }}/stats
+        run: |
+          git add stats.json
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m "Record download stats for $(date -u +%F)"
+          git push origin stats
