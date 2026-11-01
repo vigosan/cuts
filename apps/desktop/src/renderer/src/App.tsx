@@ -194,6 +194,7 @@ export function App() {
   }
 
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [dragDepth, setDragDepth] = useState(0)
   const [exportOpen, setExportOpen] = useState(false)
   const exportArea = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -370,8 +371,15 @@ export function App() {
       data-testid="app"
       className="flex h-screen flex-col bg-canvas text-ink"
       onDragOver={(e) => e.preventDefault()}
+      onDragEnter={(e) => {
+        if (Array.from(e.dataTransfer.types).includes('Files')) setDragDepth((depth) => depth + 1)
+      }}
+      onDragLeave={(e) => {
+        if (Array.from(e.dataTransfer.types).includes('Files')) setDragDepth((depth) => Math.max(0, depth - 1))
+      }}
       onDrop={(e) => {
         e.preventDefault()
+        setDragDepth(0)
         const file = e.dataTransfer.files[0]
         if (!file || exporting) return
         if (!isSupportedVideo(file.name)) {
@@ -685,6 +693,13 @@ export function App() {
             />
           </aside>
         </main>
+      )}
+
+      {dragDepth > 0 && (
+        <div
+          data-testid="drop-highlight"
+          className="pointer-events-none fixed inset-0 z-40 bg-accent-soft ring-[3px] ring-accent/60 ring-inset"
+        />
       )}
 
       {shortcutsOpen && <ShortcutsPanel platform={window.api.platform} onClose={() => setShortcutsOpen(false)} />}

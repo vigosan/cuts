@@ -170,6 +170,26 @@ describe('App', () => {
     expect(api.restartToUpdate).toHaveBeenCalled()
   })
 
+  it('lights up the whole window while a file is dragged over it, so it is clear the drop will land anywhere', () => {
+    render(<App />)
+    const app = screen.getByTestId('app')
+    fireEvent.dragEnter(app, { dataTransfer: { types: ['Files'] } })
+    expect(screen.getByTestId('drop-highlight')).toBeInTheDocument()
+    fireEvent.dragLeave(app, { dataTransfer: { types: ['Files'] } })
+    expect(screen.queryByTestId('drop-highlight')).not.toBeInTheDocument()
+    fireEvent.dragEnter(app, { dataTransfer: { types: ['Files'] } })
+    fireEvent.drop(app, { dataTransfer: { types: ['Files'], files: [] } })
+    expect(screen.queryByTestId('drop-highlight')).not.toBeInTheDocument()
+  })
+
+  it('does not light up the window while a clip is dragged to reorder it, since that drop stays in the list', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    fireEvent.dragEnter(screen.getByTestId('clip-row-1'), { dataTransfer: { types: ['text/plain'] } })
+    expect(screen.queryByTestId('drop-highlight')).not.toBeInTheDocument()
+  })
+
   it('loads the dropped video by its path so the file is streamed, not copied', async () => {
     render(<App />)
     const file = new File([''], '2026-10-22 22-33-13.mov')
