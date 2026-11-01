@@ -27,18 +27,27 @@ type Props = {
   canShare: boolean
 }
 
+export function exportProgress(state: ExportState): { overall: number; finished: number } {
+  if (state.status !== 'running') return { overall: 0, finished: 0 }
+  return {
+    overall: state.progress.reduce((a, b) => a + b, 0) / Math.max(1, state.progress.length),
+    finished: state.progress.filter((r) => r >= 1).length
+  }
+}
+
+export function exportLabel(positions: number[], partial: boolean): string {
+  if (!partial) return t.exportClips(positions.length)
+  return positions.length === 1 ? t.exportClip(positions[0] + 1) : t.exportSelected(positions.length)
+}
+
 export function ExportPanel(p: Props) {
   const running = p.state.status === 'running'
-  const overall =
-    p.state.status === 'running'
-      ? p.state.progress.reduce((a, b) => a + b, 0) / Math.max(1, p.state.progress.length)
-      : 0
-  const finished = p.state.status === 'running' ? p.state.progress.filter((r) => r >= 1).length : 0
+  const { overall, finished } = exportProgress(p.state)
   const folderName = p.folder?.split(/[\\/]/).filter(Boolean).slice(-2).join('/')
   const fileName = (index: number) => outputFileName(safeBaseName(p.baseName), index)
 
   return (
-    <section data-testid="export-panel" className="flex flex-col gap-3 border-t border-line p-4">
+    <section data-testid="export-panel" className="flex flex-col gap-3 p-4">
       <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-sm">
         <label htmlFor="base-name" className="text-ink-2">
           {t.name}
@@ -100,11 +109,7 @@ export function ExportPanel(p: Props) {
                 ? p.canShare
                   ? t.share
                   : t.showInFolder
-                : p.partial
-                  ? p.positions.length === 1
-                    ? t.exportClip(p.positions[0] + 1)
-                    : t.exportSelected(p.positions.length)
-                  : t.exportClips(p.positions.length)}
+                : exportLabel(p.positions, p.partial)}
           </span>
         </button>
       </div>
