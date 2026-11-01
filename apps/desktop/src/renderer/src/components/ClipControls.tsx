@@ -1,5 +1,4 @@
 import { FADE_OPTIONS } from '@cuts/core/clips'
-import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type ClipSettings, type VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
 import { field } from './field'
@@ -8,32 +7,15 @@ import { ImageIcon, SpeakerIcon } from './icons'
 type Props = {
   scope: string
   settings: ClipSettings
-  format: OutputFormat
   onChange: (change: Partial<ClipSettings>) => void
 }
 
-export function ClipControls({ scope, settings, format, onChange }: Props) {
+export function ClipControls({ scope, settings, onChange }: Props) {
   return (
     <section data-testid="fade-controls" className="flex flex-col gap-2 border-t border-line px-4 pt-3 pb-4">
       <p data-testid="settings-scope" className="text-xs font-medium text-ink-2">
         {scope}
       </p>
-      {formatSize(format) && (
-        <div className="flex rounded-lg bg-sunken p-0.5 text-sm" role="group" aria-label={t.framing}>
-          {(['crop', 'fit'] as const).map((framing) => (
-            <button
-              key={framing}
-              data-testid={`framing-${framing}`}
-              aria-pressed={settings.framing === framing}
-              title={framing === 'crop' ? t.framingCropHint : t.framingFitHint}
-              className={`flex-1 rounded-md px-2 py-1 transition-colors ${settings.framing === framing ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
-              onClick={() => onChange({ framing })}
-            >
-              {framing === 'crop' ? t.framingCrop : t.framingFit}
-            </button>
-          ))}
-        </div>
-      )}
       <div className="grid grid-cols-[1fr_1fr_4.5rem] gap-x-2 gap-y-1">
         <label htmlFor="fade-video" className="text-xs text-ink-3">
           {t.fadeLabels.image}

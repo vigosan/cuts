@@ -1,5 +1,4 @@
 import { outputFileName, safeBaseName } from '@cuts/core/clips'
-import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import { t } from '../i18n'
 import { field } from './field'
 import { FolderIcon } from './icons'
@@ -17,11 +16,9 @@ type Props = {
   baseName: string
   folder: string | null
   destination: string | null
-  format: OutputFormat
   state: ExportState
   onBaseName: (value: string) => void
   onChooseFolder: () => void
-  onFormat: (value: OutputFormat) => void
   onExport: () => void
   onReveal: (path: string) => void
   onCancel: () => void
@@ -40,7 +37,7 @@ export function ExportPanel(p: Props) {
   const fileName = (index: number) => outputFileName(safeBaseName(p.baseName), index)
 
   return (
-    <section className="flex flex-col gap-3 border-t border-line p-4">
+    <section data-testid="export-panel" className="flex flex-col gap-3 border-t border-line p-4">
       <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-sm">
         <label htmlFor="base-name" className="text-ink-2">
           {t.name}
@@ -63,22 +60,6 @@ export function ExportPanel(p: Props) {
           <FolderIcon className="size-4 text-ink-3" />
           <span className={`truncate ${folderName ? '' : 'text-ink-3'}`}>{folderName ?? t.choose}</span>
         </button>
-        <label htmlFor="format" className="text-ink-2">
-          {t.format}
-        </label>
-        <select
-          id="format"
-          data-testid="format"
-          className={field}
-          value={p.format}
-          onChange={(e) => p.onFormat(e.target.value as OutputFormat)}
-        >
-          {FORMATS.map((f) => (
-            <option key={f.id} value={f.id}>
-              {t.formats[f.id]}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="flex gap-2">

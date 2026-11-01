@@ -1157,6 +1157,17 @@ describe('App', () => {
     expect(screen.getByTestId('framing-fit')).toHaveAttribute('aria-pressed', 'false')
   })
 
+  it('chooses the format and its framing right above the video, since both decide what the carousel shows, not how the files are saved', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    const toolbar = screen.getByTestId('video-toolbar')
+    expect(toolbar).toContainElement(screen.getByTestId('format'))
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    expect(toolbar).toContainElement(screen.getByTestId('framing-crop'))
+    expect(screen.getByTestId('export-panel')).not.toContainElement(screen.getByTestId('format'))
+  })
+
   it('exports the selected clip with the whole frame over a blurred background, leaving the others cropped', async () => {
     render(<App />)
     const video = await loadVideo()
