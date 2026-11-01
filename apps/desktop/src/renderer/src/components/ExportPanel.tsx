@@ -109,7 +109,7 @@ export function ExportPanel(p: Props) {
         </button>
       </div>
 
-      <p data-testid="export-status" className="h-4 truncate text-center text-xs leading-4 text-ink-3">
+      <p data-testid="export-status" className={`min-h-4 text-center text-xs leading-4 text-ink-3 ${p.state.status === 'error' ? '' : 'h-4 truncate'}`}>
         {p.state.status === 'running' && (
           <button
             data-testid="export-cancel"

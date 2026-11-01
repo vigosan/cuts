@@ -225,7 +225,7 @@ export function Timeline({
       {uncoveredRanges(clips, viewStart, viewStart + viewSpan).map((range) => (
         <div
           key={range.start}
-          className="pointer-events-none absolute inset-y-0 bg-black/40"
+          className="pointer-events-none absolute inset-y-0 bg-black/25 dark:bg-black/40"
           style={{ left: pct(range.start - viewStart), width: pct(range.end - range.start) }}
         />
       ))}
