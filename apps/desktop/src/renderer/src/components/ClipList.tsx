@@ -37,7 +37,7 @@ const iconButton =
   'grid size-7 place-items-center rounded-md text-ink-3 transition-colors hover:bg-sunken hover:text-ink'
 const key = 'rounded bg-sunken px-1.5 font-sans text-xs text-ink-2'
 const timeButton =
-  'rounded-md px-1 tabular-nums transition-colors hover:bg-accent-soft hover:text-accent disabled:pointer-events-none'
+  'group/time rounded-md px-1 tabular-nums transition-colors hover:bg-accent-soft hover:text-accent disabled:pointer-events-none'
 
 export function ClipList({
   clips,
@@ -158,7 +158,12 @@ export function ClipList({
                 disabled={selected && time >= clip.end}
                 onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetStart(clip) : onSelect(clip))}
               >
-                {formatTime(clip.start)}
+                <span className={selected ? 'group-hover/time:hidden' : undefined}>{formatTime(clip.start)}</span>
+                {selected && (
+                  <span data-testid={`clip-set-start-target-${n}`} className="hidden group-hover/time:inline">
+                    {now}
+                  </span>
+                )}
               </button>
               <span className="text-ink-3">→</span>
               <button
@@ -168,7 +173,12 @@ export function ClipList({
                 disabled={selected && time <= clip.start}
                 onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetEnd(clip) : onSelect(clip))}
               >
-                {formatTime(clip.end)}
+                <span className={selected ? 'group-hover/time:hidden' : undefined}>{formatTime(clip.end)}</span>
+                {selected && (
+                  <span data-testid={`clip-set-end-target-${n}`} className="hidden group-hover/time:inline">
+                    {now}
+                  </span>
+                )}
               </button>
               <span className="w-3 text-ink-3" title={fades ? fadeTitle : undefined}>
                 {fades && <FadeOutIcon data-testid={`clip-fade-out-${n}`} />}

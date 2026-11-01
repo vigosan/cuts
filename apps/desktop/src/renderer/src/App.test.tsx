@@ -462,6 +462,26 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:07:53')
   })
 
+  it('shows inside the time of the selected clip the playhead time a click will move it to, since there the click edits instead of selecting', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 383, 419)
+    expect(screen.queryByTestId('clip-set-end-target-1')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    seek(video, 473)
+    expect(screen.getByTestId('clip-set-end-1')).toContainElement(screen.getByTestId('clip-set-end-target-1'))
+    expect(screen.getByTestId('clip-set-end-target-1')).toHaveTextContent('00:07:53')
+    expect(screen.getByTestId('clip-set-start-target-1')).toHaveTextContent('00:07:53')
+  })
+
+  it('names the carousel actions in words, so suggesting is found without hovering and deleting everything says it can be undone', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    expect(screen.getByTestId('suggest')).toHaveTextContent(t.suggestShort)
+    expect(screen.getByTestId('clear-clips')).toHaveAttribute('title', t.clearClipsHint('⌘Z'))
+  })
+
   it('disables an adjustment that would put the start after the end, instead of silently ignoring the click', async () => {
     render(<App />)
     const video = await loadVideo()

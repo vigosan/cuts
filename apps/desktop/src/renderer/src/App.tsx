@@ -540,7 +540,7 @@ export function App() {
               <span className="flex items-center gap-1">
                 <button
                   data-testid="suggest"
-                  className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink disabled:hover:bg-transparent"
+                  className="flex h-6 items-center gap-1 rounded-md px-1.5 text-xs font-medium text-ink-2 transition-colors hover:bg-sunken hover:text-ink disabled:hover:bg-transparent"
                   title={t.suggestMoments}
                   aria-label={t.suggestMoments}
                   aria-busy={suggesting}
@@ -548,12 +548,13 @@ export function App() {
                   onClick={() => void suggest(videoPath)}
                 >
                   {suggesting ? <SpinnerIcon className="size-3.5" /> : <SparkleIcon className="size-3.5" />}
+                  {t.suggestShort}
                 </button>
                 {clips.length > 0 && (
                   <button
                     data-testid="clear-clips"
                     className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
-                    title={t.clearClips}
+                    title={t.clearClipsHint(window.api.platform === 'darwin' ? '⌘Z' : 'Ctrl+Z')}
                     aria-label={t.clearClips}
                     onClick={() => {
                       dispatch({ type: 'reset' })
