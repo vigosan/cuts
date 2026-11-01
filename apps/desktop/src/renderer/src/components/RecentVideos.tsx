@@ -13,9 +13,20 @@ export function RecentVideos({ recents, onOpen }: { recents: RecentVideo[]; onOp
             <button
               data-testid={`recent-video-${index + 1}`}
               title={recent.path}
-              className="flex w-full items-center gap-4 rounded-xl px-3 py-2 text-left transition duration-150 ease-out hover:bg-sunken active:scale-[0.99]"
+              className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition duration-150 ease-out hover:bg-sunken active:scale-[0.99]"
               onClick={() => onOpen(recent.path)}
             >
+              <span className="aspect-video w-20 shrink-0 overflow-hidden rounded-md bg-sunken ring-1 ring-line">
+                {recent.poster && (
+                  <img
+                    data-testid={`recent-poster-${index + 1}`}
+                    src={recent.poster}
+                    alt=""
+                    draggable={false}
+                    className="size-full object-cover"
+                  />
+                )}
+              </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm font-medium text-ink">{recent.name}</span>
                 <span className="truncate text-xs text-ink-2">

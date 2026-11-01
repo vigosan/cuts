@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { mkdir, realpath, rm } from 'node:fs/promises'
+import { mkdir, realpath, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
@@ -12,7 +12,7 @@ import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg }
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { existingAncestor } from './paths'
-import { forgetRecent, loadRecents, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
+import { forgetRecent, loadRecents, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
 import { loadSession, saveSession } from './sessions'
 import { UPDATE_CHECK_INTERVAL_MS, updatesEnabled } from './updates'
 import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
@@ -28,6 +28,7 @@ app.on('open-file', (event, path) => {
 })
 
 const THUMBNAIL_HEIGHT = 96
+const POSTER_HEIGHT = 180
 const DEFAULT_FRAME_RATE = 30
 
 function createWindow(): BrowserWindow {
@@ -92,10 +93,24 @@ app.whenReady().then(() => {
   app.setAboutPanelOptions({ credits: t.aboutCredits })
   const openedVideos = new Set<string>()
   const recentsFile = join(app.getPath('userData'), 'recent-videos.json')
+  const sessionsDir = join(app.getPath('userData'), 'sessions')
+  const postersDir = join(app.getPath('userData'), 'posters')
+  const savePoster = async (path: string) => {
+    const ffmpeg = bundledFfmpeg()
+    if (!ffmpeg) return
+    const session = await loadSession(sessionsDir, path)
+    const jpeg = await captureFfmpeg(ffmpeg, thumbnailArgs(path, posterTime(session?.clips ?? []), POSTER_HEIGHT))
+    if (jpeg.byteLength === 0) return
+    await mkdir(postersDir, { recursive: true })
+    await writeFile(posterFile(postersDir, path), jpeg)
+  }
   const allowVideo = (path: string, bookmark?: string) => {
     openedVideos.add(path)
     app.addRecentDocument(path)
-    if (!process.mas || bookmark) void rememberRecent(recentsFile, { path, openedAt: Date.now(), bookmark })
+    if (!process.mas || bookmark) {
+      void rememberRecent(recentsFile, { path, openedAt: Date.now(), bookmark })
+      savePoster(path).catch(() => {})
+    }
   }
   const opened = (path: string) => {
     if (!openedVideos.has(path)) throw new Error('This video was not opened in Cuts')
@@ -196,7 +211,6 @@ app.whenReady().then(() => {
     return lastWaveform.peaks
   })
 
-  const sessionsDir = join(app.getPath('userData'), 'sessions')
   ipcMain.handle('load-session', (_event, videoPath: string) => loadSession(sessionsDir, videoPath))
   ipcMain.on('save-session', (_event, videoPath: string, session: Session) => void saveSession(sessionsDir, videoPath, session))
 
@@ -210,7 +224,15 @@ app.whenReady().then(() => {
   }
   ipcMain.handle('recent-videos', async () => {
     const recents = (await loadRecents(recentsFile)).filter(exists)
-    return Promise.all(recents.map(async (entry) => toRecentVideo(entry, (await loadSession(sessionsDir, entry.path))?.clips.length ?? 0)))
+    return Promise.all(
+      recents.map(async (entry) =>
+        toRecentVideo(
+          entry,
+          (await loadSession(sessionsDir, entry.path))?.clips.length ?? 0,
+          await readPoster(posterFile(postersDir, entry.path))
+        )
+      )
+    )
   })
   ipcMain.handle('open-recent', async (_event, path: string) => {
     const entry = (await loadRecents(recentsFile)).find((recent) => recent.path === path)

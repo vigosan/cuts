@@ -106,8 +106,8 @@ async function inSheet(testId: string) {
 describe('App', () => {
   it('lists the recently opened videos on the start screen with their folder and clips, so a set in progress is one click away', async () => {
     vi.mocked(api.recentVideos).mockResolvedValue([
-      { path: VIDEO, name: '2026-10-22 22-33-13.mov', folder: 'Movies', openedAt: Date.now(), clips: 10 },
-      { path: '/Users/vicent/Desktop/ensayo.mov', name: 'ensayo.mov', folder: 'Desktop', openedAt: Date.now(), clips: 0 }
+      { path: VIDEO, name: '2026-10-22 22-33-13.mov', folder: 'Movies', openedAt: Date.now(), clips: 10, poster: null },
+      { path: '/Users/vicent/Desktop/ensayo.mov', name: 'ensayo.mov', folder: 'Desktop', openedAt: Date.now(), clips: 0, poster: null }
     ])
     render(<App />)
     const first = await screen.findByTestId('recent-video-1')
@@ -118,8 +118,18 @@ describe('App', () => {
     expect(screen.getByTestId('recent-video-2')).toHaveTextContent(t.recentClips(0))
   })
 
+  it('shows a frame of each recent video, so a set is recognised at a glance instead of by its file name', async () => {
+    vi.mocked(api.recentVideos).mockResolvedValue([
+      { path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2, poster: 'data:image/jpeg;base64,AQID' },
+      { path: '/Users/vicent/Desktop/ensayo.mov', name: 'ensayo.mov', folder: 'Desktop', openedAt: Date.now(), clips: 0, poster: null }
+    ])
+    render(<App />)
+    expect(await screen.findByTestId('recent-poster-1')).toHaveAttribute('src', 'data:image/jpeg;base64,AQID')
+    expect(screen.queryByTestId('recent-poster-2')).not.toBeInTheDocument()
+  })
+
   it('opens a recent video with one click, with the clips it had', async () => {
-    vi.mocked(api.recentVideos).mockResolvedValue([{ path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2 }])
+    vi.mocked(api.recentVideos).mockResolvedValue([{ path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2, poster: null }])
     vi.mocked(api.openRecent).mockResolvedValue(VIDEO)
     render(<App />)
     await userEvent.click(await screen.findByTestId('recent-video-1'))
@@ -130,8 +140,8 @@ describe('App', () => {
 
   it('drops a recent video that can no longer be opened, instead of leaving a link that does nothing', async () => {
     vi.mocked(api.recentVideos).mockResolvedValue([
-      { path: '/Volumes/USB/gone.mov', name: 'gone.mov', folder: 'USB', openedAt: Date.now(), clips: 4 },
-      { path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2 }
+      { path: '/Volumes/USB/gone.mov', name: 'gone.mov', folder: 'USB', openedAt: Date.now(), clips: 4, poster: null },
+      { path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2, poster: null }
     ])
     render(<App />)
     await userEvent.click(await screen.findByTestId('recent-video-1'))

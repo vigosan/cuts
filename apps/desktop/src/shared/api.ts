@@ -33,7 +33,7 @@ export type ExportResult = { ok: true; files: string[] } | { ok: false; error: s
 
 export type ExportProgress = { index: number; ratio: number }
 
-export type RecentVideo = { path: string; name: string; folder: string; openedAt: number; clips: number }
+export type RecentVideo = { path: string; name: string; folder: string; openedAt: number; clips: number; poster: string | null }
 
 export type Api = {
   platform: NodeJS.Platform

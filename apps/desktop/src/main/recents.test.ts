@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { forgetRecent, loadRecents, MAX_RECENTS, rememberRecent, toRecentVideo } from './recents'
+import { forgetRecent, loadRecents, MAX_RECENTS, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo } from './recents'
 
 const fileIn = () => join(mkdtempSync(join(tmpdir(), 'cuts-recents-')), 'recent-videos.json')
 
@@ -46,12 +46,33 @@ describe('recents', () => {
   })
 
   it('shows each video by its file name and the folder it is in, with its marked clips', () => {
-    expect(toRecentVideo({ path: '/Users/vicent/Movies/Sets/halloween.mp4', openedAt: 5, bookmark: 'b64' }, 3)).toEqual({
+    expect(toRecentVideo({ path: '/Users/vicent/Movies/Sets/halloween.mp4', openedAt: 5, bookmark: 'b64' }, 3, 'data:image/jpeg;base64,AA')).toEqual({
       path: '/Users/vicent/Movies/Sets/halloween.mp4',
       name: 'halloween.mp4',
       folder: 'Sets',
       openedAt: 5,
-      clips: 3
+      clips: 3,
+      poster: 'data:image/jpeg;base64,AA'
     })
+  })
+
+  it('keeps one poster file per video, so a set is recognised by a frame of it on the start screen', () => {
+    const a = posterFile('/posters', '/Users/vicent/Movies/a.mov')
+    expect(a).toMatch(/^\/posters\/[0-9a-f]+\.jpg$/)
+    expect(posterFile('/posters', '/Users/vicent/Movies/a.mov')).toBe(a)
+    expect(posterFile('/posters', '/Users/vicent/Movies/b.mov')).not.toBe(a)
+  })
+
+  it('takes the poster from the cover clip, or half a minute in when there are no clips, since the first frames are often black', () => {
+    expect(posterTime([{ id: 'a', start: 1405, end: 1450 }, { id: 'b', start: 100, end: 150 }])).toBe(1405)
+    expect(posterTime([])).toBe(30)
+  })
+
+  it('reads a saved poster as an image the start screen can show, and nothing when there is none yet', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cuts-posters-'))
+    const file = join(dir, 'p.jpg')
+    expect(await readPoster(file)).toBeNull()
+    writeFileSync(file, Buffer.from([1, 2, 3]))
+    expect(await readPoster(file)).toBe('data:image/jpeg;base64,AQID')
   })
 })
