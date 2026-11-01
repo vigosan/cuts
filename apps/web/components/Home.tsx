@@ -95,8 +95,8 @@ export async function Home({ c }: { c: Content }) {
             src={`/screenshots/${c.lang}-timeline.png`}
             dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.timeline}.png`}
             alt={c.home.timelineAlt}
-            width={2032}
-            height={312}
+            width={2144}
+            height={314}
           />
         </div>
       </article>
