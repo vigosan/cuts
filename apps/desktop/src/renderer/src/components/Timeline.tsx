@@ -3,6 +3,7 @@ import { formatDuration, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import { audioGain, nearestFadeSeconds, type ClipFade } from '@cuts/core/fades'
 import { dragClip, type DragMode } from '@cuts/core/drag-clip'
 import { filmstripTiles, PEAKS_PER_SECOND, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
+import { spacedLabels } from '@cuts/core/timeline-view'
 import { t } from '../i18n'
 import { useThumbnails } from '../useVideoPreview'
 import type { SelectMode } from './ClipList'
@@ -11,6 +12,7 @@ const DRAG_THRESHOLD_PX = 3
 const TILE_WIDTH_PX = 96
 const ROOMY_CLIP_PX = 28
 const PENDING_LABEL_PX = 40
+const NUMBER_LABEL_PX = 22
 
 const VOLUME_STEPS = 16
 
@@ -102,6 +104,10 @@ export function Timeline({
     })
   }, [peaks, viewStart, viewSpan, width, clips, fades])
   const pct = (t: number) => (viewSpan > 0 ? `${(t / viewSpan) * 100}%` : '0%')
+  const numbered = spacedLabels(
+    clips.map((clip) => (viewSpan > 0 ? ((clip.start - viewStart) / viewSpan) * width : 0)),
+    NUMBER_LABEL_PX
+  )
 
   const startDrag = (e: ReactPointerEvent<HTMLElement>, clip: Clip, mode: DragMode) => {
     e.stopPropagation()
@@ -282,9 +288,14 @@ export function Timeline({
                   onPointerDown={(e) => startFadeDrag(e, clip, side)}
                 />
               ))}
-            <span className="pointer-events-none absolute top-1 left-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold text-white tabular-nums">
-              {index + 1}
-            </span>
+            {numbered[index] && (
+              <span
+                data-testid={`clip-block-number-${index + 1}`}
+                className="pointer-events-none absolute top-1 left-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold text-white tabular-nums"
+              >
+                {index + 1}
+              </span>
+            )}
             <div
               data-testid={`clip-handle-start-${index + 1}`}
               className={`${handle} -left-1.5 after:left-1`}

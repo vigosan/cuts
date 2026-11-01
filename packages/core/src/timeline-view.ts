@@ -17,3 +17,14 @@ export function viewStartForClip(clip: Clip, duration: number, span: Zoom): numb
   const start = length <= span ? clip.start - (span - length) / 2 : clip.start - span / 3
   return Math.min(Math.max(0, start), duration - span)
 }
+
+export function spacedLabels(positions: number[], minGap: number): boolean[] {
+  const shown = positions.map(() => false)
+  let last = -Infinity
+  for (const index of positions.map((_, i) => i).sort((a, b) => positions[a] - positions[b])) {
+    if (positions[index] - last < minGap) continue
+    shown[index] = true
+    last = positions[index]
+  }
+  return shown
+}

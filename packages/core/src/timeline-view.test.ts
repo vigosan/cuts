@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextViewStart, viewStartForClip } from './timeline-view'
+import { nextViewStart, spacedLabels, viewStartForClip } from './timeline-view'
 
 const duration = 4880
 
@@ -41,5 +41,15 @@ describe('viewStartForClip', () => {
 
   it('shows the whole session when not zoomed', () => {
     expect(viewStartForClip({ id: 'a', start: 1000, end: 1060 }, duration, null)).toBe(0)
+  })
+})
+
+describe('spacedLabels', () => {
+  it('drops a clip number that would sit on top of the one before it in time, so the numbers never print over each other', () => {
+    expect(spacedLabels([0, 100, 110, 125], 20)).toEqual([true, true, false, true])
+  })
+
+  it('spaces the numbers by position on screen, not by carousel order, since a reordered clip can sit anywhere', () => {
+    expect(spacedLabels([300, 0, 10], 20)).toEqual([true, true, false])
   })
 })
