@@ -9,9 +9,8 @@ import {
   MAX_CLIP_SECONDS,
   type Clip
 } from '@cuts/core/clips'
-import type { VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
-import { CloseIcon, FadeInIcon, FadeOutIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
+import { CloseIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
 
 export type SelectMode = 'only' | 'toggle' | 'range'
 
@@ -20,7 +19,6 @@ const selectMode = (e: MouseEvent): SelectMode => (e.shiftKey ? 'range' : e.meta
 type Props = {
   clips: Clip[]
   time: number
-  videoFades: VideoFade[]
   selectedIds: string[]
   loopingId: string | null
   onSelect: (clip: Clip, mode?: SelectMode) => void
@@ -35,6 +33,7 @@ type Props = {
 
 const iconButton =
   'grid size-7 place-items-center rounded-md text-ink-3 transition-colors hover:bg-sunken hover:text-ink'
+const rowAction = 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
 const key = 'rounded bg-sunken px-1.5 font-sans text-xs text-ink-2'
 const timeButton =
   'group/time rounded-md px-1 tabular-nums transition-colors hover:bg-accent-soft hover:text-accent disabled:pointer-events-none'
@@ -42,7 +41,6 @@ const timeButton =
 export function ClipList({
   clips,
   time,
-  videoFades,
   selectedIds,
   loopingId,
   onSelect,
@@ -99,8 +97,6 @@ export function ClipList({
         const dropTarget = dragIndex !== null && overIndex === index && dragIndex !== index
         const now = formatTime(time)
         const selected = selectedIds.includes(clip.id)
-        const fades = videoFades[index] !== 'none'
-        const fadeTitle = videoFades[index] === 'white' ? t.fadeToWhite : t.fadeToBlack
         return (
           <li
             key={clip.id}
@@ -148,9 +144,6 @@ export function ClipList({
               {n}
             </span>
             <span className="flex flex-1 items-center text-sm text-ink">
-              <span className="w-3 text-ink-3" title={fades && index > 0 ? fadeTitle : undefined}>
-                {fades && index > 0 && <FadeInIcon data-testid={`clip-fade-in-${n}`} />}
-              </span>
               <button
                 data-testid={`clip-set-start-${n}`}
                 className={selected ? timeButton : 'px-1 tabular-nums'}
@@ -180,9 +173,6 @@ export function ClipList({
                   </span>
                 )}
               </button>
-              <span className="w-3 text-ink-3" title={fades ? fadeTitle : undefined}>
-                {fades && <FadeOutIcon data-testid={`clip-fade-out-${n}`} />}
-              </span>
             </span>
             <span className="flex w-[4.5rem] shrink-0 justify-end">
               <span
@@ -196,7 +186,7 @@ export function ClipList({
             </span>
             <button
               data-testid={`clip-play-${n}`}
-              className={`${iconButton} ${clip.id === loopingId ? 'bg-sunken text-ink' : ''}`}
+              className={`${iconButton} ${clip.id === loopingId ? 'bg-sunken text-ink' : selected ? '' : rowAction}`}
               title={clip.id === loopingId ? t.stopLoop : t.playClip}
               aria-label={clip.id === loopingId ? t.stopLoop : t.playClip}
               aria-pressed={clip.id === loopingId}
@@ -204,7 +194,7 @@ export function ClipList({
             >
               {clip.id === loopingId ? <PauseIcon className="size-3.5" /> : <PlayIcon className="size-3.5" />}
             </button>
-            <button data-testid={`clip-delete-${n}`} className={iconButton} title={t.deleteClip}
+            <button data-testid={`clip-delete-${n}`} className={`${iconButton} ${selected ? '' : rowAction}`} title={t.deleteClip}
               aria-label={t.deleteClip} onClick={() => onDelete(clip)}>
               <CloseIcon />
             </button>

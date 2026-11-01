@@ -730,20 +730,17 @@ describe('App', () => {
     expect(screen.getByTestId('clip-block-1').style.left).toBe(`${(300 / 4880) * 100}%`)
   })
 
-  it('shows where image fades happen, with the cover clip starting sharp, so the export is predictable', async () => {
+  it('shows where image fades happen on the timeline only, with the cover clip starting sharp, so the list stays a clean list of times', async () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
-    expect(screen.queryByTestId('clip-fade-in-1')).not.toBeInTheDocument()
-    expect(screen.getByTestId('clip-fade-out-1')).toBeInTheDocument()
-    expect(screen.getByTestId('clip-fade-in-2')).toBeInTheDocument()
     expect(screen.getByTestId('clip-cover-1')).toBeInTheDocument()
     expect(screen.getByTestId('clip-block-1')).toHaveAttribute('data-fade-in', 'false')
     expect(screen.getByTestId('clip-block-2')).toHaveAttribute('data-fade-in', 'true')
-    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
-    expect(screen.queryByTestId('clip-fade-out-1')).not.toBeInTheDocument()
     expect(screen.queryByTestId('clip-fade-in-2')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('clip-fade-out-1')).not.toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
     expect(screen.getByTestId('clip-block-2')).toHaveAttribute('data-fade-out', 'false')
   })
 

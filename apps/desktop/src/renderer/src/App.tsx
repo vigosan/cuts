@@ -643,7 +643,6 @@ export function App() {
               <ClipList
                 clips={clips}
                 time={time}
-                videoFades={clips.map((clip) => settingsOf(clip).videoFade)}
                 selectedIds={selectedIds}
                 onSelect={pickClip}
                 onPlay={playClip}

@@ -57,22 +57,6 @@ export function GripIcon({ className = 'size-3.5' }: IconProps) {
   )
 }
 
-export function FadeInIcon({ className = 'size-3', ...rest }: IconProps) {
-  return (
-    <svg {...rest} viewBox="0 0 12 12" fill="currentColor" aria-hidden className={`${base} ${className}`}>
-      <path d="M1 11 11 2v9Z" />
-    </svg>
-  )
-}
-
-export function FadeOutIcon({ className = 'size-3', ...rest }: IconProps) {
-  return (
-    <svg {...rest} viewBox="0 0 12 12" fill="currentColor" aria-hidden className={`${base} ${className}`}>
-      <path d="M1 2l10 9H1Z" />
-    </svg>
-  )
-}
-
 export function ImageIcon({ className = 'size-3.5' }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
