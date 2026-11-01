@@ -551,6 +551,13 @@ export function App() {
             </div>
             {clips.length > 0 && (
               <ClipControls
+                scope={
+                  selectedClips.length === 0
+                    ? t.settingsScopeAll
+                    : selectedClip
+                      ? t.settingsScopeClip(selectedIndex + 1)
+                      : t.settingsScopeSelected(selectedClips.length)
+                }
                 settings={shownSettings}
                 format={format}
                 onChange={changeSettings}

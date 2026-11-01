@@ -6,14 +6,18 @@ import { field } from './field'
 import { ImageIcon, SpeakerIcon } from './icons'
 
 type Props = {
+  scope: string
   settings: ClipSettings
   format: OutputFormat
   onChange: (change: Partial<ClipSettings>) => void
 }
 
-export function ClipControls({ settings, format, onChange }: Props) {
+export function ClipControls({ scope, settings, format, onChange }: Props) {
   return (
-    <section data-testid="fade-controls" className="flex flex-col gap-2 px-4 pb-4">
+    <section data-testid="fade-controls" className="flex flex-col gap-2 border-t border-line px-4 pt-3 pb-4">
+      <p data-testid="settings-scope" className="text-xs font-medium text-ink-2">
+        {scope}
+      </p>
       {formatSize(format) && (
         <div className="flex rounded-lg bg-sunken p-0.5 text-sm" role="group" aria-label={t.framing}>
           {(['crop', 'fit'] as const).map((framing) => (

@@ -677,13 +677,17 @@ describe('App', () => {
     ])
   })
 
-  it('puts no title above the settings, since the Export button already says which clips they apply to', async () => {
+  it('says above the fades which clips they will change, since a row clicked to review it quietly narrows them to that clip', async () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsScopeAll)
     await userEvent.click(screen.getByTestId('clip-row-2'))
-    expect(screen.getByTestId('fade-controls').querySelector('h3')).toBeNull()
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsScopeClip(2))
+    fireEvent.click(screen.getByTestId('clip-row-3'), { metaKey: true })
+    expect(screen.getByTestId('settings-scope')).toHaveTextContent(t.settingsScopeSelected(2))
   })
 
   it('names each fade menu with a visible label, so image, audio and length are told apart without hovering', async () => {
