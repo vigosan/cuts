@@ -29,9 +29,9 @@ const day = (locale: Locale, time: number, now: number, today: string, yesterday
 function english(locale: Locale) {
   return {
     replaceVideoConfirm: 'Open another video? Your marked clips will be lost.',
-    dropTitle: 'Drop a video here',
     dropSubtitle: 'Mark the best moments and export them as clips.',
     chooseVideo: 'Choose video…',
+    dropAnywhere: 'or drop it anywhere in this window',
     recentVideos: 'Recent',
     recentClips: (n: number) => (n === 0 ? 'No clips' : isOne(locale, n) ? `${n} clip` : `${n} clips`),
     openedOn: (time: number, now: number) => day(locale, time, now, 'Today', 'Yesterday'),
@@ -185,9 +185,9 @@ export type Messages = ReturnType<typeof english>
 function spanish(locale: Locale): Messages {
   return {
     replaceVideoConfirm: '¿Abrir otro vídeo? Se perderán los clips marcados.',
-    dropTitle: 'Arrastra aquí un vídeo',
     dropSubtitle: 'Marca los mejores momentos y expórtalos como clips.',
     chooseVideo: 'Elegir vídeo…',
+    dropAnywhere: 'o suéltalo en cualquier parte de la ventana',
     recentVideos: 'Recientes',
     recentClips: (n) => (n === 0 ? 'Sin clips' : isOne(locale, n) ? `${n} clip` : `${n} clips`),
     openedOn: (time, now) => day(locale, time, now, 'Hoy', 'Ayer'),

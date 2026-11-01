@@ -10,8 +10,9 @@ import { ExportPanel, exportLabel, exportProgress, type ExportState } from './co
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
 import { FitPreview } from './components/FitPreview'
-import { CloseIcon, FilmIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
+import { CloseIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
 import { RecentVideos } from './components/RecentVideos'
+import appIcon from '../../../build/icon.svg'
 import { ShortcutsPanel } from './components/ShortcutsPanel'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from '@cuts/core/clips-reducer'
@@ -470,24 +471,30 @@ export function App() {
       )}
 
       {!videoPath ? (
-        <main className="flex flex-1 items-center justify-center p-8">
-          <div className="flex w-full max-w-md flex-col gap-6">
-            <div className="flex w-full flex-col items-center gap-4 rounded-3xl border border-dashed border-ink-3/40 bg-surface px-8 py-14 text-center">
-              <FilmIcon className="size-10 text-ink-3" />
-              <div className="flex flex-col gap-1">
-                <p className="text-lg font-medium">{t.dropTitle}</p>
-                <p className="text-sm text-ink-2">{t.dropSubtitle}</p>
-              </div>
+        <main data-testid="welcome" className="flex min-h-0 flex-1">
+          <section className="flex flex-1 flex-col items-center justify-center gap-6 p-10 text-center">
+            <img src={appIcon} alt="" className="size-28 drop-shadow-lg" draggable={false} />
+            <div className="flex flex-col gap-1.5">
+              <h1 className="text-3xl font-semibold tracking-tight">Cuts</h1>
+              <p className="text-ink-2">{t.dropSubtitle}</p>
+            </div>
+            <div className="flex flex-col items-center gap-2.5">
               <button
                 data-testid="open-video"
-                className="mt-2 h-9 rounded-xl bg-accent px-5 text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover"
+                className="flex h-9 items-center gap-3 rounded-lg bg-accent px-4 text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover"
                 onClick={openVideo}
               >
                 {t.chooseVideo}
+                <span className="text-on-accent/60">{window.api.platform === 'darwin' ? '⌘O' : 'Ctrl+O'}</span>
               </button>
+              <p className="text-xs text-ink-3">{t.dropAnywhere}</p>
             </div>
-            {recents.length > 0 && <RecentVideos recents={recents} onOpen={(path) => void openRecent(path)} />}
-          </div>
+          </section>
+          {recents.length > 0 && (
+            <aside className="flex w-[22rem] shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
+              <RecentVideos recents={recents} onOpen={(path) => void openRecent(path)} />
+            </aside>
+          )}
         </main>
       ) : (
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">

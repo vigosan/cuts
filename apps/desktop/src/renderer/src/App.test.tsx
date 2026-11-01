@@ -140,6 +140,21 @@ describe('App', () => {
     expect(screen.queryByTestId('video')).not.toBeInTheDocument()
   })
 
+  it('greets with the app, its one action and its shortcut, and says the whole window takes a dropped video', async () => {
+    render(<App />)
+    expect(screen.getByTestId('welcome')).toHaveTextContent('Cuts')
+    expect(screen.getByTestId('open-video')).toHaveTextContent(t.chooseVideo)
+    expect(screen.getByTestId('open-video')).toHaveTextContent('⌘O')
+    expect(screen.getByTestId('welcome')).toHaveTextContent(t.dropAnywhere)
+    expect(screen.getByTestId('welcome')).not.toHaveTextContent('Drop a video here')
+  })
+
+  it('names the open shortcut Ctrl+O on Windows and Linux', () => {
+    api.platform = 'win32'
+    render(<App />)
+    expect(screen.getByTestId('open-video')).toHaveTextContent('Ctrl+O')
+  })
+
   it('shows no recent list before any video was opened, so a first launch is just the drop area', async () => {
     render(<App />)
     await waitFor(() => expect(api.recentVideos).toHaveBeenCalled())

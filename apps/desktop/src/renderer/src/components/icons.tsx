@@ -35,15 +35,6 @@ export function FolderIcon({ className = 'size-4' }: IconProps) {
   )
 }
 
-export function FilmIcon({ className = 'size-8' }: IconProps) {
-  return (
-    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
-      <rect x="4" y="7" width="24" height="18" rx="3" />
-      <path d="M13.5 12.5v7l6-3.5-6-3.5Z" fill="currentColor" stroke="none" />
-    </svg>
-  )
-}
-
 export function GripIcon({ className = 'size-3.5' }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={`${base} ${className}`}>
