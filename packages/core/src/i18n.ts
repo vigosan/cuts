@@ -55,6 +55,8 @@ function english(locale: Locale) {
     moveStartTo: (time: string) => `Move the start to ${time}`,
     moveEndTo: (time: string) => `Move the end to ${time}`,
     overLimit: (seconds: number) => `Longer than ${seconds} s: too long for a carousel`,
+    clipsOverLimit: (n: number, seconds: number) =>
+      isOne(locale, n) ? `${n} clip is longer than ${seconds} s, too long for a carousel` : `${n} clips are longer than ${seconds} s, too long for a carousel`,
     pastCarousel: (items: number) => `Past ${items} clips: this one won’t fit in the same carousel`,
     playClip: 'Play the carousel from here',
     stopLoop: 'Stop',
@@ -203,6 +205,8 @@ function spanish(locale: Locale): Messages {
     moveStartTo: (time) => `Mover el inicio a ${time}`,
     moveEndTo: (time) => `Mover el final a ${time}`,
     overLimit: (seconds) => `Más de ${seconds} s: no vale para carrusel`,
+    clipsOverLimit: (n, seconds) =>
+      isOne(locale, n) ? `${n} clip dura más de ${seconds} s y no vale para carrusel` : `${n} clips duran más de ${seconds} s y no valen para carrusel`,
     pastCarousel: (items) => `Más de ${items} clips: este no cabe en el mismo carrusel`,
     playClip: 'Reproducir el carrusel desde aquí',
     stopLoop: 'Parar',

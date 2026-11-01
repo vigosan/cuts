@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react'
-import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
+import { defaultBaseName, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
 import type { ExportResult, RecentVideo } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
@@ -575,6 +575,7 @@ export function App() {
             <ExportPanel
               positions={exported.map((clip) => clips.indexOf(clip))}
               partial={selectedClips.length > 0}
+              overLimit={exported.filter(isOverLimit).length}
               canExport={canExport}
               baseName={baseName}
               folder={folder}

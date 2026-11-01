@@ -216,6 +216,18 @@ describe('App', () => {
     expect(screen.getByTestId('export')).toBeEnabled()
   })
 
+  it('says beside Export how many clips are too long for a carousel, so a long clip is not discovered after posting', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 10, 40)
+    expect(screen.queryByTestId('over-limit-summary')).not.toBeInTheDocument()
+    await markClip(video, 100, 200)
+    await markClip(video, 300, 400)
+    expect(screen.getByTestId('over-limit-summary')).toHaveTextContent(t.clipsOverLimit(2, 59))
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    expect(screen.queryByTestId('over-limit-summary')).not.toBeInTheDocument()
+  })
+
   it('warns about clips past the 20th but still exports them, because the rest can go in a second carousel', async () => {
     render(<App />)
     const video = await loadVideo()

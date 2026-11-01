@@ -1,4 +1,4 @@
-import { outputFileName, safeBaseName } from '@cuts/core/clips'
+import { MAX_CLIP_SECONDS, outputFileName, safeBaseName } from '@cuts/core/clips'
 import { t } from '../i18n'
 import { field } from './field'
 import { FolderIcon } from './icons'
@@ -12,6 +12,7 @@ export type ExportState =
 type Props = {
   positions: number[]
   partial: boolean
+  overLimit: number
   canExport: boolean
   baseName: string
   folder: string | null
@@ -61,6 +62,13 @@ export function ExportPanel(p: Props) {
           <span className={`truncate ${folderName ? '' : 'text-ink-3'}`}>{folderName ?? t.choose}</span>
         </button>
       </div>
+
+      {p.overLimit > 0 && (
+        <p data-testid="over-limit-summary" className="flex items-center gap-1.5 text-xs text-warn">
+          <span className="size-1.5 shrink-0 rounded-full bg-warn" />
+          {t.clipsOverLimit(p.overLimit, MAX_CLIP_SECONDS)}
+        </p>
+      )}
 
       <div className="flex gap-2">
         {p.state.status === 'done' && p.canShare && (
