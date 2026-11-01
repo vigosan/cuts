@@ -12,7 +12,6 @@ import { CropFrame } from './components/CropFrame'
 import { CloseIcon, FilmIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
 import { RecentVideos } from './components/RecentVideos'
 import { ShortcutsPanel } from './components/ShortcutsPanel'
-import { VideoToolbar } from './components/VideoToolbar'
 import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from '@cuts/core/clips-reducer'
 import { withHistory } from '@cuts/core/history'
@@ -403,15 +402,6 @@ export function App() {
       ) : (
         <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-5 lg:flex-row lg:overflow-hidden">
           <section className="flex min-w-0 flex-col gap-3 lg:flex-1">
-            <VideoToolbar
-              format={format}
-              framing={shownSettings.framing}
-              onFormat={(chosen) => {
-                setFormat(chosen)
-                savePreferences({ format: chosen })
-              }}
-              onFraming={(framing) => changeSettings({ framing })}
-            />
             <div className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-2xl bg-black lg:min-h-0 lg:flex-1">
               <video
                 ref={videoRef}
@@ -589,19 +579,23 @@ export function App() {
                 onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
               />
             </div>
-            {clips.length > 0 && (
-              <ClipControls
-                scope={
-                  selectedClips.length === 0
-                    ? t.settingsScopeAll
-                    : selectedClip
-                      ? t.settingsScopeClip(selectedIndex + 1)
-                      : t.settingsScopeSelected(selectedClips.length)
-                }
-                settings={shownSettings}
-                onChange={changeSettings}
-              />
-            )}
+            <ClipControls
+              format={format}
+              onFormat={(chosen) => {
+                setFormat(chosen)
+                savePreferences({ format: chosen })
+              }}
+              hasClips={clips.length > 0}
+              scope={
+                selectedClips.length === 0
+                  ? t.settingsScopeAll
+                  : selectedClip
+                    ? t.settingsScopeClip(selectedIndex + 1)
+                    : t.settingsScopeSelected(selectedClips.length)
+              }
+              settings={shownSettings}
+              onChange={changeSettings}
+            />
             <ExportPanel
               positions={exported.map((clip) => clips.indexOf(clip))}
               partial={selectedClips.length > 0}

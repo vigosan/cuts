@@ -1282,14 +1282,16 @@ describe('App', () => {
     expect(screen.getByTestId('framing-fit')).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('chooses the format and its framing right above the video, since both decide what the carousel shows, not how the files are saved', async () => {
+  it('chooses the format beside the fades, with the framing under the line that says which clips it changes, leaving the video the whole height', async () => {
     render(<App />)
     const video = await loadVideo()
+    expect(screen.getByTestId('fade-controls')).toContainElement(screen.getByTestId('format'))
     await markClip(video, 100, 150)
-    const toolbar = screen.getByTestId('video-toolbar')
-    expect(toolbar).toContainElement(screen.getByTestId('format'))
     await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
-    expect(toolbar).toContainElement(screen.getByTestId('framing-crop'))
+    const controls = screen.getByTestId('fade-controls')
+    expect(controls).toContainElement(screen.getByTestId('framing-crop'))
+    expect(screen.getByTestId('format').compareDocumentPosition(screen.getByTestId('settings-scope'))).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(screen.getByTestId('settings-scope').compareDocumentPosition(screen.getByTestId('framing-crop'))).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     expect(screen.getByTestId('export-panel')).not.toContainElement(screen.getByTestId('format'))
   })
 
