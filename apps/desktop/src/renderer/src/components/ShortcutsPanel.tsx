@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 import { t } from '../i18n'
 import { CloseIcon } from './icons'
 
@@ -30,6 +30,10 @@ const GROUPS: Group[] = [
   {
     title: 'clips',
     items: [
+      { label: 'selectClip', combos: [{ key: '↑' }, { key: '↓' }] },
+      { label: 'moveEdge', combos: [{ key: 'I', with: ['shift'] }, { key: 'O', with: ['shift'] }] },
+      { label: 'deleteClips', combos: [{ key: '⌫' }] },
+      { label: 'deselect', combos: [{ key: 'Esc' }] },
       { label: 'reorder', combos: [{ key: '↑', with: ['alt'] }, { key: '↓', with: ['alt'] }] },
       { label: 'selectMore', combos: [{ key: t.shortcuts.click, with: ['shift'] }, { key: t.shortcuts.click, with: ['mod'] }] },
       { label: 'dragFree', combos: [{ key: t.shortcuts.drag, with: ['alt'] }] },
@@ -68,6 +72,14 @@ export function ShortcutsPanel({ platform, onClose }: { platform: NodeJS.Platfor
     window.addEventListener('keydown', listener)
     return () => window.removeEventListener('keydown', listener)
   }, [])
+  const closeRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const previous = document.activeElement
+    closeRef.current?.focus()
+    return () => {
+      if (previous instanceof HTMLElement) previous.focus()
+    }
+  }, [])
 
   const mac = platform === 'darwin'
   return (
@@ -88,6 +100,7 @@ export function ShortcutsPanel({ platform, onClose }: { platform: NodeJS.Platfor
             {t.shortcuts.title}
           </h2>
           <button
+            ref={closeRef}
             data-testid="close-shortcuts"
             className="grid size-7 place-items-center rounded-lg text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
             title={t.close}

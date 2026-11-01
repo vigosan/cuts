@@ -156,6 +156,42 @@ export function App() {
   const exportState: ExportState =
     outdated && (lastExport.status === 'done' || lastExport.status === 'error') ? { status: 'idle' } : lastExport
 
+  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, seekTo })
+
+  const selectClip = (clip: Clip, mode: SelectMode = 'only') => {
+    const from = clips.findIndex((other) => other.id === selectionAnchor.current)
+    if (mode === 'range' && from !== -1) {
+      const to = clips.indexOf(clip)
+      setSelectedIds(clips.slice(Math.min(from, to), Math.max(from, to) + 1).map((other) => other.id))
+      return
+    }
+    selectionAnchor.current = clip.id
+    if (mode === 'toggle') {
+      setSelectedIds(selectedIds.includes(clip.id) ? selectedIds.filter((id) => id !== clip.id) : [...selectedIds, clip.id])
+      return
+    }
+    setSelectedIds([clip.id])
+  }
+
+  const jumpToClip = (clip: Clip) => {
+    selectClip(clip)
+    setViewStart(viewStartForClip(clip, duration, zoom))
+    setTime(clip.start)
+    seekFromTimeline(clip.start)
+  }
+
+  const pickClip = (clip: Clip, mode: SelectMode = 'only') => {
+    if (mode !== 'only') return selectClip(clip, mode)
+    if (selectedClip?.id === clip.id) return setSelectedIds([])
+    jumpToClip(clip)
+  }
+
+  const deleteSelected = () => {
+    dispatch({ type: 'checkpoint' })
+    for (const id of selectedIds) dispatch({ type: 'remove', id, transient: true })
+    setSelectedIds([])
+  }
+
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   useEffect(() => window.api.onMenuShortcuts(() => setShortcutsOpen(true)), [])
 
@@ -169,7 +205,20 @@ export function App() {
       if (to >= 0 && to < clips.length) dispatch({ type: 'reorder', from: selectedIndex, to })
       return
     }
+    if (selectedClip && e.shiftKey && (e.code === 'KeyI' || e.code === 'KeyO')) {
+      e.preventDefault()
+      dispatch({ type: e.code === 'KeyI' ? 'setStart' : 'setEnd', id: selectedClip.id, time: now() })
+      return
+    }
+    const lastSelected = clips.findLastIndex((clip) => selectedIds.includes(clip.id))
     const actions: Record<string, () => void> = {
+      ...(clips.length > 0
+        ? {
+            ArrowDown: () => jumpToClip(clips[lastSelected === -1 ? 0 : Math.min(lastSelected + 1, clips.length - 1)]),
+            ArrowUp: () => jumpToClip(clips[lastSelected === -1 ? clips.length - 1 : Math.max(lastSelected - 1, 0)])
+          }
+        : {}),
+      ...(selectedIds.length > 0 ? { Escape: () => setSelectedIds([]), Backspace: deleteSelected, Delete: deleteSelected } : {}),
       i: () => markStart(),
       o: () => markEnd(),
       s: split,
@@ -242,32 +291,6 @@ export function App() {
   }
   const onMenuExportFrame = useEffectEvent(() => void runExportFrame())
   useEffect(() => window.api.onMenuExportFrame(() => onMenuExportFrame()), [])
-
-  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, seekTo })
-
-  const selectClip = (clip: Clip, mode: SelectMode = 'only') => {
-    const from = clips.findIndex((other) => other.id === selectionAnchor.current)
-    if (mode === 'range' && from !== -1) {
-      const to = clips.indexOf(clip)
-      setSelectedIds(clips.slice(Math.min(from, to), Math.max(from, to) + 1).map((other) => other.id))
-      return
-    }
-    selectionAnchor.current = clip.id
-    if (mode === 'toggle') {
-      setSelectedIds(selectedIds.includes(clip.id) ? selectedIds.filter((id) => id !== clip.id) : [...selectedIds, clip.id])
-      return
-    }
-    setSelectedIds([clip.id])
-  }
-
-  const pickClip = (clip: Clip, mode: SelectMode = 'only') => {
-    if (mode !== 'only') return selectClip(clip, mode)
-    if (selectedClip?.id === clip.id) return setSelectedIds([])
-    selectClip(clip)
-    setViewStart(viewStartForClip(clip, duration, zoom))
-    setTime(clip.start)
-    seekFromTimeline(clip.start)
-  }
 
   const suggest = async (path: string) => {
     setSuggesting(true)
