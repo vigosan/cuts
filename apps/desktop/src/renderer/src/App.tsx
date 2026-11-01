@@ -383,7 +383,7 @@ export function App() {
       {(window.api.platform === 'darwin' || videoPath) && (
         <header
           data-testid="toolbar"
-          className={`relative flex h-13 shrink-0 items-center px-3 ${window.api.platform === 'darwin' ? '[-webkit-app-region:drag]' : ''}`}
+          className={`relative flex h-13 shrink-0 items-center border-b border-line px-3 ${window.api.platform === 'darwin' ? '[-webkit-app-region:drag]' : ''}`}
         >
           {window.api.platform === 'darwin' && (
             <span
@@ -489,9 +489,9 @@ export function App() {
           </div>
         </main>
       ) : (
-        <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-5 lg:flex-row lg:overflow-hidden">
-          <section className="flex min-w-0 flex-col gap-3 lg:flex-1">
-            <div className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-2xl bg-black lg:min-h-0 lg:flex-1">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+          <section className="flex min-w-0 flex-col lg:flex-1">
+            <div className="relative flex min-h-56 items-center justify-center overflow-hidden bg-black lg:min-h-0 lg:flex-1">
               <video
                 ref={videoRef}
                 data-testid="video"
@@ -536,7 +536,7 @@ export function App() {
               )}
             </div>
 
-            <div className="flex flex-col gap-2 rounded-2xl bg-surface p-3">
+            <div className="flex flex-col gap-2 border-t border-line p-3">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
                 <button
                   data-testid="play"
@@ -616,7 +616,7 @@ export function App() {
             </div>
           </section>
 
-          <aside className="flex shrink-0 flex-col overflow-hidden rounded-2xl bg-surface lg:w-[23rem]">
+          <aside className="flex shrink-0 flex-col overflow-hidden border-line bg-surface max-lg:border-t lg:w-[23rem] lg:border-l">
             <div className="flex h-12 items-center justify-between px-4 pt-3">
               <h2 className="flex items-baseline gap-1.5 text-sm font-semibold">
                 {t.carousel}{' '}
