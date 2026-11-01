@@ -740,12 +740,11 @@ function MarkButton({
   return (
     <button
       data-testid={testId}
-      className="flex h-8 items-center gap-1.5 rounded-lg bg-sunken px-2.5 text-sm font-medium transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-soft hover:text-accent"
+      className="flex h-8 items-center rounded-lg bg-sunken px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-soft hover:text-accent"
       title={`${title} (${shortcut})`}
       onClick={onClick}
     >
       {children}
-      <kbd className="rounded bg-surface px-1.5 font-sans text-xs text-ink-3">{shortcut}</kbd>
     </button>
   )
 }

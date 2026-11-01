@@ -2,7 +2,7 @@ import { FADE_OPTIONS } from '@cuts/core/clips'
 import { FORMATS, formatSize, type OutputFormat } from '@cuts/core/formats'
 import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type ClipSettings, type VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
-import { field } from './field'
+import { popup } from './field'
 import { ImageIcon, SpeakerIcon } from './icons'
 
 type Props = {
@@ -24,7 +24,7 @@ export function ClipControls({ format, onFormat, hasClips, scope, settings, onCh
         <select
           id="format"
           data-testid="format"
-          className={field}
+          className={popup}
           value={format}
           onChange={(e) => onFormat(e.target.value as OutputFormat)}
         >
@@ -67,12 +67,12 @@ export function ClipControls({ format, onFormat, hasClips, scope, settings, onCh
               {t.fadeLabels.length}
             </label>
             <span className="relative">
-              <ImageIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
+              <ImageIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-ink-3" />
               <select
                 id="fade-video"
                 data-testid="fade-video"
                 title={t.imageFade}
-                className={`${field} pl-7`}
+                className={`${popup} pl-7`}
                 value={settings.videoFade}
                 onChange={(e) => onChange({ videoFade: e.target.value as VideoFade })}
               >
@@ -84,12 +84,12 @@ export function ClipControls({ format, onFormat, hasClips, scope, settings, onCh
               </select>
             </span>
             <span className="relative">
-              <SpeakerIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
+              <SpeakerIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-ink-3" />
               <select
                 id="fade-audio"
                 data-testid="fade-audio"
                 title={t.audioFade}
-                className={`${field} pl-7`}
+                className={`${popup} pl-7`}
                 value={settings.audioFade}
                 onChange={(e) => onChange({ audioFade: e.target.value as AudioFade })}
               >
@@ -104,7 +104,7 @@ export function ClipControls({ format, onFormat, hasClips, scope, settings, onCh
               id="fade-seconds"
               data-testid="fade-seconds"
               title={t.fadeLength}
-              className={`${field} disabled:opacity-40`}
+              className={`${popup} disabled:opacity-40`}
               value={settings.fadeSeconds}
               disabled={settings.videoFade === 'none' && settings.audioFade === 'none'}
               onChange={(e) => onChange({ fadeSeconds: Number(e.target.value) })}
