@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 
-export function useWaveform(path: string | null): Float32Array | null {
-  const [peaks, setPeaks] = useState<{ path: string; peaks: Float32Array } | null>(null)
+export function useWaveform(path: string | null): { peaks: Float32Array | null; analysing: boolean } {
+  const [peaks, setPeaks] = useState<{ path: string; peaks: Float32Array | null } | null>(null)
   useEffect(() => {
     if (!path) return
     let current = true
     window.api.waveform(path).then(
       (result) => current && setPeaks({ path, peaks: result }),
-      () => {}
+      () => current && setPeaks({ path, peaks: null })
     )
     return () => {
       current = false
     }
   }, [path])
-  return peaks?.path === path ? peaks.peaks : null
+  const done = peaks?.path === path
+  return { peaks: done ? peaks.peaks : null, analysing: path !== null && !done }
 }
 
 const NO_FRAMES = new Map<number, string>()

@@ -1311,6 +1311,23 @@ describe('App', () => {
     expect(screen.queryByTestId('filmstrip-loading')).not.toBeInTheDocument()
   })
 
+  it('says the audio is being analysed while the waveform is read, since a long set takes seconds and Suggest waits for it', async () => {
+    let finish: (value: Float32Array) => void = () => {}
+    vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    await loadVideo()
+    expect(screen.getByTestId('waveform-loading')).toHaveTextContent(t.analysingAudio)
+    await act(async () => finish(new Float32Array(4880 * 50).fill(0.5)))
+    expect(screen.queryByTestId('waveform-loading')).not.toBeInTheDocument()
+  })
+
+  it('stops saying the audio is being analysed when it cannot be read, so a video without sound is not left loading forever', async () => {
+    vi.mocked(api.waveform).mockRejectedValue(new Error('Output file does not contain any stream'))
+    render(<App />)
+    await loadVideo()
+    await waitFor(() => expect(screen.queryByTestId('waveform-loading')).not.toBeInTheDocument())
+  })
+
   it('moves the playhead on every frame while playing, since time updates arrive only four times a second and make it jump', async () => {
     const frames: FrameRequestCallback[] = []
     const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => frames.push(callback))

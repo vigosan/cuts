@@ -31,6 +31,7 @@ function volumePoints(fade: ClipFade, clipLength: number): string {
 type Props = {
   videoPath: string
   peaks: Float32Array | null
+  analysingAudio: boolean
   onBeat: (time: number) => number
   duration: number
   viewStart: number
@@ -53,6 +54,7 @@ type Props = {
 export function Timeline({
   videoPath,
   peaks,
+  analysingAudio,
   onBeat,
   duration,
   viewStart,
@@ -226,6 +228,14 @@ export function Timeline({
         data-testid="waveform"
         className="pointer-events-none absolute inset-x-0 bottom-0 h-8 w-full text-ink-3"
       />
+      {analysingAudio && (
+        <p
+          data-testid="waveform-loading"
+          className="pointer-events-none absolute inset-x-0 bottom-0 grid h-8 place-items-center text-xs text-ink-2 motion-safe:animate-pulse"
+        >
+          {t.analysingAudio}
+        </p>
+      )}
       {uncoveredRanges(clips, viewStart, viewStart + viewSpan).map((range) => (
         <div
           key={range.start}

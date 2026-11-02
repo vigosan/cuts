@@ -95,7 +95,7 @@ export function App() {
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
   const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(videoRef, duration)
-  const peaks = useWaveform(videoPath)
+  const { peaks, analysing } = useWaveform(videoPath)
   const onBeat = (time: number) => (peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
   const markStart = (free = false) => dispatch({ type: 'markStart', time: free ? now() : onBeat(now()) })
   const markEnd = (free = false) => dispatch({ type: 'markEnd', time: free ? now() : onBeat(now()), id: crypto.randomUUID() })
@@ -628,6 +628,7 @@ export function App() {
               <Timeline
                 videoPath={videoPath}
                 peaks={peaks}
+                analysingAudio={analysing}
                 onBeat={onBeat}
                 duration={duration}
                 viewStart={currentViewStart}
