@@ -130,7 +130,7 @@ export function ExportPanel(p: Props) {
           </span>
         )}
         {p.state.status === 'error' && (
-          <span data-testid="export-error" className="text-warn" title={p.state.error}>
+          <span data-testid="export-error" className="text-warn [overflow-wrap:anywhere]" title={p.state.error}>
             {p.state.error}
           </span>
         )}

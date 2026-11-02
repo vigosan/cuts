@@ -121,10 +121,42 @@ describe('exportClips', () => {
   })
 
   it('reports a folder that cannot be created instead of leaving the export hanging', async () => {
-    const d = deps({ ensureDir: vi.fn(async () => Promise.reject(new Error('EACCES: permission denied'))) })
+    const d = deps({ ensureDir: vi.fn(async () => Promise.reject(new Error('ENAMETOOLONG: name too long'))) })
     const result = await exportClips(request, d)
-    expect(result).toEqual({ ok: false, error: t.folderFailed('EACCES: permission denied') })
+    expect(result).toEqual({ ok: false, error: t.folderFailed('ENAMETOOLONG: name too long') })
     expect(d.run).not.toHaveBeenCalled()
+  })
+
+  it('asks for another folder when Cuts may not write there, instead of showing the system error code', async () => {
+    for (const code of ['EACCES', 'EPERM', 'EROFS']) {
+      const error = Object.assign(new Error(`${code}: operation not permitted, mkdir '/System/Cuts'`), { code })
+      const result = await exportClips(request, deps({ ensureDir: vi.fn(async () => Promise.reject(error)) }))
+      expect(result).toEqual({ ok: false, error: t.folderNotWritable })
+    }
+  })
+
+  it('asks for another folder when FFmpeg is denied writing a clip, instead of showing its raw output', async () => {
+    const run = vi.fn(async () => {
+      throw new Error("[out#0/mp4 @ 0xb85024a80] Error opening output /Movies/Instagram/sesion-1.mp4: Permission denied\nError opening output files: Permission denied")
+    })
+    const result = await exportClips(request, deps({ run }))
+    expect(result).toEqual({ ok: false, error: t.folderNotWritable })
+  })
+
+  it('names the disconnected disk when the folder is on a disk that is not mounted, so the fix is to plug it in', async () => {
+    const error = Object.assign(new Error("EACCES: permission denied, mkdir '/Volumes/Archivo'"), { code: 'EACCES' })
+    const d = deps({ ensureDir: vi.fn(async () => Promise.reject(error)) })
+    const result = await exportClips({ ...request, folder: '/Volumes/Archivo/Cuts/set' }, d)
+    expect(result).toEqual({ ok: false, error: t.diskMissing('Archivo') })
+    expect(d.run).not.toHaveBeenCalled()
+  })
+
+  it('says the disk is full when a clip runs out of space, since retrying the same folder would fail again', async () => {
+    const run = vi.fn(async () => {
+      throw new Error('Error writing trailer: No space left on device')
+    })
+    const result = await exportClips(request, deps({ run }))
+    expect(result).toEqual({ ok: false, error: t.diskFull })
   })
 
   it('deletes the half-written clip when a cut fails, so a broken file is never uploaded by mistake', async () => {
@@ -138,11 +170,11 @@ describe('exportClips', () => {
 
   it('still reports the failed clip when the half-written file cannot be deleted', async () => {
     const run = vi.fn(async () => {
-      throw new Error('No space left on device')
+      throw new Error('Invalid data found')
     })
     const remove = vi.fn(async () => Promise.reject(new Error('EPERM')))
     const result = await exportClips(request, deps({ run, remove }))
-    expect(result).toEqual({ ok: false, error: t.clipFailed(1, 'No space left on device') })
+    expect(result).toEqual({ ok: false, error: t.clipFailed(1, 'Invalid data found') })
   })
 
   it('reports a cancelled export as cancelled and never starts the next clip', async () => {
@@ -155,6 +187,7 @@ describe('exportClips', () => {
     expect(result).toEqual({ ok: false, error: t.exportCancelled })
     expect(run).toHaveBeenCalledTimes(1)
   })
+
 })
 
 describe('exportFrame', () => {
@@ -178,5 +211,14 @@ describe('exportFrame', () => {
 
   it('reports a missing FFmpeg instead of failing silently', async () => {
     expect(await exportFrame(frame, deps({ ffmpeg: null }))).toEqual({ ok: false, error: t.ffmpegMissing })
+  })
+
+  it('asks for another folder when the still cannot be written there, as the clips do', async () => {
+    const denied = Object.assign(new Error("EPERM: operation not permitted, mkdir '/System/Cuts'"), { code: 'EPERM' })
+    expect(await exportFrame(frame, deps({ ensureDir: vi.fn(async () => Promise.reject(denied)) }))).toEqual({ ok: false, error: t.folderNotWritable })
+    const run = vi.fn(async () => {
+      throw new Error('Error opening output /Movies/Instagram/sesion-0.jpg: Permission denied')
+    })
+    expect(await exportFrame(frame, deps({ run }))).toEqual({ ok: false, error: t.folderNotWritable })
   })
 })

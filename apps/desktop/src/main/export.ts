@@ -16,6 +16,19 @@ export type ExportDeps = {
   t: Messages
 }
 
+const NOT_ALLOWED = ['EACCES', 'EPERM', 'EROFS']
+
+function folderProblem(error: Error & { code?: string }, folder: string, deps: ExportDeps): string | null {
+  const { t } = deps
+  const disk = /^\/Volumes\/([^/]+)/.exec(folder)?.[1]
+  if (disk && !deps.exists(`/Volumes/${disk}`)) return t.diskMissing(disk)
+  if (error.code === 'ENOSPC' || error.message.includes('No space left on device')) return t.diskFull
+  if (NOT_ALLOWED.includes(error.code ?? '') || /Permission denied|Operation not permitted|Read-only file system/.test(error.message)) {
+    return t.folderNotWritable
+  }
+  return null
+}
+
 export async function exportClips(request: ExportRequest, deps: ExportDeps): Promise<ExportResult> {
   const { ffmpeg, t } = deps
   if (!ffmpeg) return { ok: false, error: t.ffmpegMissing }
@@ -23,7 +36,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
   try {
     await deps.ensureDir(request.folder)
   } catch (error) {
-    return { ok: false, error: t.folderFailed((error as Error).message) }
+    return { ok: false, error: folderProblem(error as Error, request.folder, deps) ?? t.folderFailed((error as Error).message) }
   }
   const names = request.clips.map((clip) => outputFileName(safeBaseName(request.baseName), clip.position))
   const files = names.map((name) => join(request.folder, name))
@@ -40,7 +53,10 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
     } catch (error) {
       await deps.remove(files[index]).catch(() => {})
       if (deps.cancelled()) return { ok: false, error: t.exportCancelled }
-      return { ok: false, error: t.clipFailed(clip.position + 1, (error as Error).message) }
+      return {
+        ok: false,
+        error: folderProblem(error as Error, request.folder, deps) ?? t.clipFailed(clip.position + 1, (error as Error).message)
+      }
     }
     deps.onProgress({ index, ratio: 1 })
   }
@@ -54,7 +70,7 @@ export async function exportFrame(request: FrameRequest, deps: ExportDeps): Prom
   try {
     await deps.ensureDir(request.folder)
   } catch (error) {
-    return { ok: false, error: t.folderFailed((error as Error).message) }
+    return { ok: false, error: folderProblem(error as Error, request.folder, deps) ?? t.folderFailed((error as Error).message) }
   }
   const name = frameFileName(safeBaseName(request.baseName))
   const file = join(request.folder, name)
@@ -64,7 +80,7 @@ export async function exportFrame(request: FrameRequest, deps: ExportDeps): Prom
     await deps.run(ffmpeg, buildFrameArgs({ ...request, output: file }), () => {})
   } catch (error) {
     await deps.remove(file).catch(() => {})
-    return { ok: false, error: (error as Error).message }
+    return { ok: false, error: folderProblem(error as Error, request.folder, deps) ?? (error as Error).message }
   }
   return { ok: true, files: [file] }
 }
