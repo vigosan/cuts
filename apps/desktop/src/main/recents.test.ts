@@ -1,6 +1,6 @@
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { forgetRecent, loadRecents, MAX_RECENTS, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo } from './recents'
 
@@ -58,7 +58,8 @@ describe('recents', () => {
 
   it('keeps one poster file per video, so a set is recognised by a frame of it on the start screen', () => {
     const a = posterFile('/posters', '/Users/vicent/Movies/a.mov')
-    expect(a).toMatch(/^\/posters\/[0-9a-f]+\.jpg$/)
+    expect(dirname(a)).toBe(join('/posters'))
+    expect(basename(a)).toMatch(/^[0-9a-f]+\.jpg$/)
     expect(posterFile('/posters', '/Users/vicent/Movies/a.mov')).toBe(a)
     expect(posterFile('/posters', '/Users/vicent/Movies/b.mov')).not.toBe(a)
   })
