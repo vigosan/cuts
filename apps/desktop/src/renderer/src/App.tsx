@@ -10,7 +10,7 @@ import { ExportPanel, exportLabel, exportProgress, type ExportState } from './co
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
 import { FitPreview } from './components/FitPreview'
-import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
+import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, StopIcon, TrashIcon } from './components/icons'
 import { Notice } from './components/Notice'
 import { RecentVideos } from './components/RecentVideos'
 import appIcon from '../../../build/icon.svg'
@@ -476,9 +476,10 @@ export function App() {
                     </span>
                     <span
                       data-testid="export-stop-label"
-                      className="invisible col-start-1 row-start-1 group-hover:visible group-focus-visible:visible"
+                      className="invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 group-hover:visible group-focus-visible:visible"
                     >
-                      {t.stopShort}
+                      <StopIcon data-testid="export-stop-icon" />
+                      {t.stopExport}
                     </span>
                   </span>
                 ) : (

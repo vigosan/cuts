@@ -35,6 +35,15 @@ export function CheckIcon({ className = 'size-3.5' }: IconProps) {
   )
 }
 
+export function StopIcon({ className = 'size-3.5', 'data-testid': testId }: IconProps) {
+  return (
+    <svg data-testid={testId} viewBox="0 0 16 16" fill="none" aria-hidden className={`${base} ${className}`}>
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="5.75" y="5.75" width="4.5" height="4.5" rx="0.75" fill="currentColor" />
+    </svg>
+  )
+}
+
 export function FolderIcon({ className = 'size-4' }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
