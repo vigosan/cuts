@@ -10,7 +10,8 @@ import { ExportPanel, exportLabel, exportProgress, type ExportState } from './co
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
 import { FitPreview } from './components/FitPreview'
-import { CloseIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
+import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
+import { Notice } from './components/Notice'
 import { RecentVideos } from './components/RecentVideos'
 import appIcon from '../../../build/icon.svg'
 import { ShortcutsPanel } from './components/ShortcutsPanel'
@@ -711,27 +712,13 @@ export function App() {
 
       <div className="fixed right-5 bottom-5 flex flex-col items-end gap-2">
         {unsupportedDrops > 0 && (
-          <div
+          <Notice
             key={unsupportedDrops}
-            data-testid="unsupported-video"
-            role="status"
-            className="relative flex items-center gap-2 overflow-hidden rounded-xl bg-surface py-2 pr-2 pl-4 text-sm shadow-lg ring-1 ring-ink-3/20 transition duration-200 ease-out starting:translate-y-2 starting:opacity-0 motion-reduce:starting:translate-y-0"
-          >
-            {t.unsupportedVideo}
-            <button
-              data-testid="close-unsupported-video"
-              className="grid size-7 place-items-center rounded-lg text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
-              title={t.close}
-              aria-label={t.close}
-              onClick={() => setUnsupportedDrops(0)}
-            >
-              <CloseIcon />
-            </button>
-            <span
-              className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent"
-              style={{ animation: `countdown ${NOTICE_MS}ms linear forwards` }}
-            />
-          </div>
+            testId="unsupported-video"
+            text={t.unsupportedVideo}
+            ms={NOTICE_MS}
+            onClose={() => setUnsupportedDrops(0)}
+          />
         )}
 
         {updateVersion && (
