@@ -16,7 +16,8 @@ with_app() {
   script=$2
   shift 2
   rm -rf "$WORK/userdata"
-  npx electron . --lang="$lang" --user-data-dir="$WORK/userdata" --remote-debugging-port=$PORT >/dev/null 2>&1 &
+  npx electron . --lang="$lang" --user-data-dir="$WORK/userdata" --remote-debugging-port=$PORT \
+    --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --disable-background-media-suspend >/dev/null 2>&1 &
   until curl -s "http://127.0.0.1:$PORT/json" | grep -q webSocketDebuggerUrl; do sleep 1; done
   ws=$(curl -s "http://127.0.0.1:$PORT/json" | grep webSocketDebuggerUrl | sed 's/.*"\(ws[^"]*\)".*/\1/')
   node "$ROOT/scripts/$script" "$ws" "$@"
