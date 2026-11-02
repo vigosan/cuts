@@ -1594,6 +1594,28 @@ describe('App', () => {
     expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
   })
 
+  it('gives the same carousel when Suggest is pressed twice, keeping the clips marked by hand, and undoes in one step', async () => {
+    const peaks = new Float32Array(4880 * 50).fill(0.2)
+    for (const second of [980, 2480]) {
+      peaks.fill(0.02, second * 50, (second + 20) * 50)
+      peaks.fill(0.3, (second + 20) * 50, (second + 50) * 50)
+    }
+    vi.mocked(api.waveform).mockResolvedValue(peaks)
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 3000, 3030)
+    await act(async () => userEvent.click(screen.getByTestId('suggest')))
+    const rows = () => screen.getAllByTestId(/^clip-row-\d+$/).map((row) => row.textContent)
+    const first = rows()
+    expect(first).toHaveLength(3)
+    await act(async () => userEvent.click(screen.getByTestId('suggest')))
+    expect(rows()).toEqual(first)
+    await act(async () => menuCommand('undo'))
+    expect(rows()).toEqual(first)
+    await act(async () => menuCommand('undo'))
+    expect(rows()).toHaveLength(1)
+  })
+
   it('offers the suggestions from the empty clip list, where a new video has nothing yet and the first clip will appear', async () => {
     const peaks = new Float32Array(4880 * 50)
     for (let i = 0; i < peaks.length; i++) {

@@ -14,18 +14,20 @@ export type ClipsAction = Meta &
   | { type: 'reorder'; from: number; to: number }
   | { type: 'split'; id: string; time: number; newId: string }
   | { type: 'restore'; clips: Clip[] }
-  | { type: 'add'; clips: Clip[] }
+  | { type: 'suggest'; clips: Clip[] }
   | { type: 'reset' }
   )
 
 export const initialClipsState: ClipsState = { clips: [], pendingStart: null }
+
+const owned = (clip: Clip): Clip => ({ id: clip.id, start: clip.start, end: clip.end })
 
 function updateClip(state: ClipsState, id: string, change: (clip: Clip) => Clip): ClipsState {
   return {
     ...state,
     clips: state.clips.map((clip) => {
       if (clip.id !== id) return clip
-      const next = change(clip)
+      const next = owned(change(clip))
       return next.end > next.start ? next : clip
     })
   }
@@ -62,16 +64,17 @@ export function clipsReducer(state: ClipsState, action: ClipsAction): ClipsState
       const clip = state.clips[index]
       if (!clip || action.time <= clip.start || action.time >= clip.end) return state
       const clips = [...state.clips]
-      clips.splice(index, 1, { ...clip, end: action.time }, { id: action.newId, start: action.time, end: clip.end })
+      clips.splice(index, 1, owned({ ...clip, end: action.time }), { id: action.newId, start: action.time, end: clip.end })
       return { ...state, clips }
     }
     case 'restore':
       return { clips: action.clips, pendingStart: null }
-    case 'add':
-      return {
-        ...state,
-        clips: [...state.clips, ...action.clips.filter((clip) => !state.clips.some((other) => overlaps(clip, other)))]
-      }
+    case 'suggest': {
+      const same = (a: Clip, b: Clip) => a.start === b.start && a.end === b.end
+      const kept = state.clips.filter((clip) => !clip.suggested || action.clips.some((moment) => same(clip, moment)))
+      const fresh = action.clips.filter((clip) => !kept.some((other) => overlaps(clip, other)))
+      return { ...state, clips: [...kept, ...fresh.map((clip) => ({ ...clip, suggested: true as const }))] }
+    }
     case 'reset':
       return initialClipsState
   }

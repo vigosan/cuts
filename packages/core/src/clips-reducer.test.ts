@@ -41,16 +41,62 @@ describe('clipsReducer', () => {
     expect(state.clips.map((c) => c.start)).toEqual([500, 100])
   })
 
-  it('adds clips after the current ones, skipping those that overlap a clip marked meanwhile', () => {
+  it('adds suggestions after the current clips, marked as suggested, skipping those that overlap a clip marked meanwhile', () => {
     const marked = run(initialClipsState, { type: 'markStart', time: 100 }, { type: 'markEnd', time: 150, id: 'clip-150' })
     const state = clipsReducer(marked, {
-      type: 'add',
+      type: 'suggest',
       clips: [
         { id: 'a', start: 140, end: 199 },
         { id: 'b', start: 300, end: 359 }
       ]
     })
     expect(state.clips.map((c) => c.id)).toEqual([marked.clips[0].id, 'b'])
+    expect(state.clips[1].suggested).toBe(true)
+  })
+
+  it('replaces the suggestions left untouched when suggesting again, so pressing Suggest never piles up clips', () => {
+    const state: ClipsState = {
+      pendingStart: null,
+      clips: [
+        { id: 'old', start: 100, end: 159, suggested: true },
+        { id: 'mine', start: 400, end: 430 },
+        { id: 'trimmed', start: 600, end: 650 }
+      ]
+    }
+    const next = clipsReducer(state, { type: 'suggest', clips: [{ id: 'new', start: 800, end: 859 }] })
+    expect(next.clips.map((c) => c.id)).toEqual(['mine', 'trimmed', 'new'])
+  })
+
+  it('keeps a suggestion that comes back with the same moment, with its place and settings, so suggesting twice changes nothing', () => {
+    const state: ClipsState = {
+      pendingStart: null,
+      clips: [
+        { id: 'mine', start: 10, end: 40 },
+        { id: 'kept', start: 100, end: 159, suggested: true },
+        { id: 'gone', start: 300, end: 359, suggested: true }
+      ]
+    }
+    const next = clipsReducer(state, {
+      type: 'suggest',
+      clips: [
+        { id: 'again', start: 100, end: 159 },
+        { id: 'new', start: 500, end: 559 }
+      ]
+    })
+    expect(next.clips.map((c) => c.id)).toEqual(['mine', 'kept', 'new'])
+  })
+
+  it('makes a suggestion the user\'s own once it is trimmed, moved or split, so suggesting again leaves it alone', () => {
+    const state: ClipsState = { pendingStart: null, clips: [{ id: 's', start: 100, end: 159, suggested: true }] }
+    for (const action of [
+      { type: 'setStart', id: 's', time: 110 },
+      { type: 'setEnd', id: 's', time: 150 },
+      { type: 'replace', clip: { id: 's', start: 120, end: 179, suggested: true } }
+    ] as const) {
+      expect(clipsReducer(state, action).clips[0].suggested).toBeUndefined()
+    }
+    const split = clipsReducer(state, { type: 'split', id: 's', time: 130, newId: 's2' })
+    expect(split.clips.map((c) => c.suggested)).toEqual([undefined, undefined])
   })
 
   it('removes a clip', () => {

@@ -327,9 +327,9 @@ export function App() {
       .finally(() => setSuggesting(false))
     if (openedPath.current !== path) return
     if (!peaks) return setSuggestNotice(t.suggestNoAudio)
-    const moments = suggestMoments({ peaks, peaksPerSecond: PEAKS_PER_SECOND, duration, clipLength: MAX_CLIP_SECONDS, existing: clips })
+    const moments = suggestMoments({ peaks, peaksPerSecond: PEAKS_PER_SECOND, duration, clipLength: MAX_CLIP_SECONDS, existing: clips.filter((clip) => !clip.suggested) })
     if (moments.length === 0) return setSuggestNotice(t.suggestNoneFound)
-    dispatch({ type: 'add', clips: moments.map((moment) => ({ id: crypto.randomUUID(), ...moment })) })
+    dispatch({ type: 'suggest', clips: moments.map((moment) => ({ id: crypto.randomUUID(), ...moment })) })
   }
 
   const exporting = exportState.status === 'running'

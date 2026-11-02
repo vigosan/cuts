@@ -3,7 +3,7 @@ export const MAX_CAROUSEL_ITEMS = 20
 export const FADE_SECONDS = 1
 export const FADE_OPTIONS = [0.5, 1, 2, 3, 5]
 
-export type Clip = { id: string; start: number; end: number }
+export type Clip = { id: string; start: number; end: number; suggested?: true }
 
 export function isPastCarousel(index: number): boolean {
   return index >= MAX_CAROUSEL_ITEMS
