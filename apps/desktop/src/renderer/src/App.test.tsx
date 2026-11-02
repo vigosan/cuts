@@ -1407,17 +1407,17 @@ describe('App', () => {
     expect(screen.getByTestId('framing-fit')).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('chooses the format beside the fades, with the framing under the line that says which clips it changes, leaving the video the whole height', async () => {
+  it('chooses the format with the name and folder, since it applies to every clip, and keeps the clip settings under the line that says which clips they change', async () => {
     render(<App />)
     const video = await loadVideo()
-    expect(screen.getByTestId('fade-controls')).toContainElement(screen.getByTestId('format'))
+    expect(screen.getByTestId('export-panel')).toContainElement(screen.getByTestId('format'))
     await markClip(video, 100, 150)
     await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
     const controls = screen.getByTestId('fade-controls')
+    expect(controls).not.toContainElement(screen.getByTestId('format'))
+    expect(controls.firstElementChild).toBe(screen.getByTestId('settings-scope'))
     expect(controls).toContainElement(screen.getByTestId('framing-crop'))
-    expect(screen.getByTestId('format').compareDocumentPosition(screen.getByTestId('settings-scope'))).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-    expect(screen.getByTestId('settings-scope').compareDocumentPosition(screen.getByTestId('framing-crop'))).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-    expect(screen.getByTestId('export-panel')).not.toContainElement(screen.getByTestId('format'))
+    expect(screen.getByTestId('video').closest('aside')).toBeNull()
   })
 
   it('exports the selected clip with the whole frame over a blurred background, leaving the others cropped', async () => {

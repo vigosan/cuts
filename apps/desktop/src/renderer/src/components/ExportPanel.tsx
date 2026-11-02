@@ -1,4 +1,5 @@
 import { MAX_CLIP_SECONDS, outputFileName, safeBaseName } from '@cuts/core/clips'
+import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import { t } from '../i18n'
 import { field } from './field'
 import { FolderIcon, StopIcon } from './icons'
@@ -15,6 +16,8 @@ type Props = {
   overLimit: number
   canExport: boolean
   baseName: string
+  format: OutputFormat
+  onFormat: (format: OutputFormat) => void
   folder: string | null
   destination: string | null
   state: ExportState
@@ -73,6 +76,22 @@ export function ExportPanel(p: Props) {
           <FolderIcon className="size-4 text-ink-3" />
           <span className={`truncate ${folderName ? '' : 'text-ink-3'}`}>{folderName ?? t.choose}</span>
         </button>
+        <label htmlFor="format" className="text-ink-2">
+          {t.format}
+        </label>
+        <select
+          id="format"
+          data-testid="format"
+          className={field}
+          value={p.format}
+          onChange={(e) => p.onFormat(e.target.value as OutputFormat)}
+        >
+          {FORMATS.map((f) => (
+            <option key={f.id} value={f.id}>
+              {t.formats[f.id]}
+            </option>
+          ))}
+        </select>
       </div>
 
       {p.overLimit > 0 && (

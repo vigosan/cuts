@@ -645,10 +645,6 @@ export function App() {
             </div>
             <ClipControls
               format={format}
-              onFormat={(chosen) => {
-                setFormat(chosen)
-                savePreferences({ format: chosen })
-              }}
               hasClips={clips.length > 0}
               scope={
                 selectedClips.length === 0
@@ -666,6 +662,11 @@ export function App() {
               overLimit={exported.filter(isOverLimit).length}
               canExport={canExport}
               baseName={baseName}
+              format={format}
+              onFormat={(chosen) => {
+                setFormat(chosen)
+                savePreferences({ format: chosen })
+              }}
               folder={folder}
               destination={destination}
               state={exportState}

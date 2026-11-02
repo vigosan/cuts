@@ -1,5 +1,5 @@
 import { FADE_OPTIONS } from '@cuts/core/clips'
-import { FORMATS, formatSize, type OutputFormat } from '@cuts/core/formats'
+import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { AUDIO_FADES, VIDEO_FADES, type AudioFade, type ClipSettings, type VideoFade } from '@cuts/core/fades'
 import { t } from '../i18n'
 import { popup } from './field'
@@ -7,117 +7,95 @@ import { ImageIcon, SpeakerIcon } from './icons'
 
 type Props = {
   format: OutputFormat
-  onFormat: (format: OutputFormat) => void
   hasClips: boolean
   scope: string
   settings: ClipSettings
   onChange: (change: Partial<ClipSettings>) => void
 }
 
-export function ClipControls({ format, onFormat, hasClips, scope, settings, onChange }: Props) {
+export function ClipControls({ format, hasClips, scope, settings, onChange }: Props) {
+  if (!hasClips) return null
   return (
-    <section data-testid="fade-controls" className="flex flex-col gap-3 border-t border-line px-4 pt-4 pb-4">
-      <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 text-sm">
-        <label htmlFor="format" className="text-ink-2">
-          {t.format}
+    <section data-testid="fade-controls" className="flex flex-col gap-2 border-t border-line p-4">
+      <p data-testid="settings-scope" className="text-xs font-medium text-ink-2">
+        {scope}
+      </p>
+      {formatSize(format) && (
+        <div className="flex rounded-lg bg-sunken p-0.5 text-sm" role="group" aria-label={t.framing}>
+          {(['crop', 'fit'] as const).map((framing) => (
+            <button
+              key={framing}
+              data-testid={`framing-${framing}`}
+              aria-pressed={settings.framing === framing}
+              title={framing === 'crop' ? t.framingCropHint : t.framingFitHint}
+              className={`flex-1 rounded-md px-2 py-1 transition-colors ${settings.framing === framing ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
+              onClick={() => onChange({ framing })}
+            >
+              {framing === 'crop' ? t.framingCrop : t.framingFit}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="grid grid-cols-[1fr_1fr_4.5rem] gap-x-2 gap-y-1">
+        <label htmlFor="fade-video" className="text-xs text-ink-3">
+          {t.fadeLabels.image}
         </label>
+        <label htmlFor="fade-audio" className="text-xs text-ink-3">
+          {t.fadeLabels.audio}
+        </label>
+        <label htmlFor="fade-seconds" className="text-xs text-ink-3">
+          {t.fadeLabels.length}
+        </label>
+        <span className="relative">
+          <ImageIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-ink-3" />
+          <select
+            id="fade-video"
+            data-testid="fade-video"
+            title={t.imageFade}
+            className={`${popup} pl-7`}
+            value={settings.videoFade}
+            onChange={(e) => onChange({ videoFade: e.target.value as VideoFade })}
+          >
+            {VIDEO_FADES.map((id) => (
+              <option key={id} value={id}>
+                {t.videoFades[id]}
+              </option>
+            ))}
+          </select>
+        </span>
+        <span className="relative">
+          <SpeakerIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-ink-3" />
+          <select
+            id="fade-audio"
+            data-testid="fade-audio"
+            title={t.audioFade}
+            className={`${popup} pl-7`}
+            value={settings.audioFade}
+            onChange={(e) => onChange({ audioFade: e.target.value as AudioFade })}
+          >
+            {AUDIO_FADES.map((id) => (
+              <option key={id} value={id}>
+                {t.audioFades[id]}
+              </option>
+            ))}
+          </select>
+        </span>
         <select
-          id="format"
-          data-testid="format"
-          className={popup}
-          value={format}
-          onChange={(e) => onFormat(e.target.value as OutputFormat)}
+          id="fade-seconds"
+          data-testid="fade-seconds"
+          title={t.fadeLength}
+          className={`${popup} disabled:opacity-40`}
+          value={settings.fadeSeconds}
+          disabled={settings.videoFade === 'none' && settings.audioFade === 'none'}
+          onChange={(e) => onChange({ fadeSeconds: Number(e.target.value) })}
         >
-          {FORMATS.map((f) => (
-            <option key={f.id} value={f.id}>
-              {t.formats[f.id]}
+          {FADE_OPTIONS.map((seconds) => (
+            <option key={seconds} value={seconds}>
+              {t.fadeSeconds(seconds)}
             </option>
           ))}
         </select>
       </div>
-      {hasClips && (
-        <div className="flex flex-col gap-2">
-          <p data-testid="settings-scope" className="text-xs font-medium text-ink-2">
-            {scope}
-          </p>
-          {formatSize(format) && (
-            <div className="flex rounded-lg bg-sunken p-0.5 text-sm" role="group" aria-label={t.framing}>
-              {(['crop', 'fit'] as const).map((framing) => (
-                <button
-                  key={framing}
-                  data-testid={`framing-${framing}`}
-                  aria-pressed={settings.framing === framing}
-                  title={framing === 'crop' ? t.framingCropHint : t.framingFitHint}
-                  className={`flex-1 rounded-md px-2 py-1 transition-colors ${settings.framing === framing ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
-                  onClick={() => onChange({ framing })}
-                >
-                  {framing === 'crop' ? t.framingCrop : t.framingFit}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="grid grid-cols-[1fr_1fr_4.5rem] gap-x-2 gap-y-1">
-            <label htmlFor="fade-video" className="text-xs text-ink-3">
-              {t.fadeLabels.image}
-            </label>
-            <label htmlFor="fade-audio" className="text-xs text-ink-3">
-              {t.fadeLabels.audio}
-            </label>
-            <label htmlFor="fade-seconds" className="text-xs text-ink-3">
-              {t.fadeLabels.length}
-            </label>
-            <span className="relative">
-              <ImageIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-ink-3" />
-              <select
-                id="fade-video"
-                data-testid="fade-video"
-                title={t.imageFade}
-                className={`${popup} pl-7`}
-                value={settings.videoFade}
-                onChange={(e) => onChange({ videoFade: e.target.value as VideoFade })}
-              >
-                {VIDEO_FADES.map((id) => (
-                  <option key={id} value={id}>
-                    {t.videoFades[id]}
-                  </option>
-                ))}
-              </select>
-            </span>
-            <span className="relative">
-              <SpeakerIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-ink-3" />
-              <select
-                id="fade-audio"
-                data-testid="fade-audio"
-                title={t.audioFade}
-                className={`${popup} pl-7`}
-                value={settings.audioFade}
-                onChange={(e) => onChange({ audioFade: e.target.value as AudioFade })}
-              >
-                {AUDIO_FADES.map((id) => (
-                  <option key={id} value={id}>
-                    {t.audioFades[id]}
-                  </option>
-                ))}
-              </select>
-            </span>
-            <select
-              id="fade-seconds"
-              data-testid="fade-seconds"
-              title={t.fadeLength}
-              className={`${popup} disabled:opacity-40`}
-              value={settings.fadeSeconds}
-              disabled={settings.videoFade === 'none' && settings.audioFade === 'none'}
-              onChange={(e) => onChange({ fadeSeconds: Number(e.target.value) })}
-            >
-              {FADE_OPTIONS.map((seconds) => (
-                <option key={seconds} value={seconds}>
-                  {t.fadeSeconds(seconds)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
     </section>
   )
 }
