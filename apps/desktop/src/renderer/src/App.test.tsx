@@ -1287,6 +1287,23 @@ describe('App', () => {
     expect(screen.getByTestId('filmstrip-loading')).toHaveTextContent(t.loadingFrames)
   })
 
+  it('says the picture cannot be shown when the video loads without one, as with ProRes, instead of leaving a silent black box', async () => {
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    const video = screen.getByTestId('video') as HTMLVideoElement
+    Object.defineProperty(video, 'duration', { configurable: true, value: 4880 })
+    Object.defineProperty(video, 'videoWidth', { configurable: true, value: 0 })
+    Object.defineProperty(video, 'videoHeight', { configurable: true, value: 0 })
+    fireEvent(video, new Event('loadedmetadata'))
+    expect(screen.getByTestId('video-no-picture')).toHaveTextContent(t.videoNoPicture)
+  })
+
+  it('shows no picture warning for a video whose picture plays', async () => {
+    render(<App />)
+    await loadVideo()
+    expect(screen.queryByTestId('video-no-picture')).not.toBeInTheDocument()
+  })
+
   it('stops saying the frames are loading once the first ones arrive', async () => {
     render(<App />)
     await loadVideo()

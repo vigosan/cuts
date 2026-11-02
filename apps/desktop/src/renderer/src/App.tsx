@@ -553,6 +553,11 @@ export function App() {
                   {t.videoUnplayable}
                 </p>
               )}
+              {!videoError && videoSize?.width === 0 && (
+                <p data-testid="video-no-picture" className="absolute mx-6 max-w-md rounded-lg bg-black/70 px-3 py-2 text-center text-sm text-white">
+                  {t.videoNoPicture}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-2 border-t border-line p-3">
