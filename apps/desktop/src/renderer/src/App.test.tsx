@@ -1581,6 +1581,33 @@ describe('App', () => {
     expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
   })
 
+  it('says the sound cannot be read when suggesting fails, as with a video without audio, instead of doing nothing', async () => {
+    vi.mocked(api.waveform).mockRejectedValue(new Error('Output file does not contain any stream'))
+    render(<App />)
+    await loadVideo()
+    await userEvent.click(screen.getByTestId('suggest'))
+    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.suggestNoAudio)
+  })
+
+  it('says no new moments were found when the suggestions come back empty, so the click is not mistaken for a broken button', async () => {
+    render(<App />)
+    await loadVideo()
+    await userEvent.click(screen.getByTestId('suggest'))
+    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.suggestNoneFound)
+    expect(screen.queryByTestId('clip-row-1')).not.toBeInTheDocument()
+  })
+
+  it('hides the suggestion notice after 5 seconds, so it never lingers over the work', async () => {
+    render(<App />)
+    await loadVideo()
+    vi.useFakeTimers()
+    await act(async () => screen.getByTestId('suggest').click())
+    expect(screen.getByTestId('suggest-notice')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(5000))
+    expect(screen.queryByTestId('suggest-notice')).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
   it('drops suggestions that arrive after another video was opened, so they never land on the wrong video', async () => {
     let finish: (value: Float32Array) => void = () => {}
     vi.mocked(api.waveform).mockReturnValue(new Promise((resolve) => (finish = resolve)))

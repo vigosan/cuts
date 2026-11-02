@@ -143,6 +143,13 @@ export function App() {
     return () => clearTimeout(timer)
   }, [unsupportedDrops])
 
+  const [suggestNotice, setSuggestNotice] = useState<string | null>(null)
+  useEffect(() => {
+    if (suggestNotice === null) return
+    const timer = setTimeout(() => setSuggestNotice(null), NOTICE_MS)
+    return () => clearTimeout(timer)
+  }, [suggestNotice])
+
   useEffect(() => {
     if (!videoPath || restoredFor !== videoPath) return
     const timer = setTimeout(
@@ -313,8 +320,10 @@ export function App() {
       .waveform(path)
       .catch(() => null)
       .finally(() => setSuggesting(false))
-    if (!peaks || openedPath.current !== path) return
+    if (openedPath.current !== path) return
+    if (!peaks) return setSuggestNotice(t.suggestNoAudio)
     const moments = suggestMoments({ peaks, peaksPerSecond: PEAKS_PER_SECOND, duration, clipLength: MAX_CLIP_SECONDS, existing: clips })
+    if (moments.length === 0) return setSuggestNotice(t.suggestNoneFound)
     dispatch({ type: 'add', clips: moments.map((moment) => ({ id: crypto.randomUUID(), ...moment })) })
   }
 
@@ -719,6 +728,10 @@ export function App() {
             ms={NOTICE_MS}
             onClose={() => setUnsupportedDrops(0)}
           />
+        )}
+
+        {suggestNotice && (
+          <Notice key={suggestNotice} testId="suggest-notice" text={suggestNotice} ms={NOTICE_MS} onClose={() => setSuggestNotice(null)} />
         )}
 
         {updateVersion && (
