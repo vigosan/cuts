@@ -27,14 +27,18 @@ function fadeFilters(prefix: string, duration: number, seconds: number, options 
 
 export type FrameOptions = ClipFraming & { input: string; output: string; time: number; format: OutputFormat }
 
+const quarter = (size: number) => Math.round(size / 8) * 2
+
 function framingFilters(o: ClipFraming & { format: OutputFormat }): string[] {
   const size = formatSize(o.format)
   if (!size) return []
   const { width: w, height: h } = size
   if (o.framing === 'fit') {
+    const bw = quarter(w)
+    const bh = quarter(h)
     return [
       'split=2[bg][fg];' +
-        `[bg]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},gblur=sigma=40,colorlevels=romax=0.7:gomax=0.7:bomax=0.7[b];` +
+        `[bg]scale=${bw}:${bh}:force_original_aspect_ratio=increase,crop=${bw}:${bh},gblur=sigma=10,colorlevels=romax=0.7:gomax=0.7:bomax=0.7,scale=${w}:${h}[b];` +
         `[fg]scale=${w}:${h}:force_original_aspect_ratio=decrease[f];` +
         '[b][f]overlay=(W-w)/2:(H-h)/2',
       'setsar=1'

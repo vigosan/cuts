@@ -98,11 +98,11 @@ describe('buildFfmpegArgs', () => {
     )
   })
 
-  it('fits the whole frame over a blurred, darker copy of itself when the clip uses the full framing', () => {
+  it('fits the whole frame over a blurred, darker copy of itself, blurred at a quarter size since it looks the same and exports in half the time', () => {
     const args = buildFfmpegArgs({ ...base, format: '4:5', framing: 'fit', videoFade: 'black' })
     expect(valueAfter(args, '-vf')).toBe(
       'split=2[bg][fg];' +
-        '[bg]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,gblur=sigma=40,colorlevels=romax=0.7:gomax=0.7:bomax=0.7[b];' +
+        '[bg]scale=270:338:force_original_aspect_ratio=increase,crop=270:338,gblur=sigma=10,colorlevels=romax=0.7:gomax=0.7:bomax=0.7,scale=1080:1350[b];' +
         '[fg]scale=1080:1350:force_original_aspect_ratio=decrease[f];' +
         '[b][f]overlay=(W-w)/2:(H-h)/2,setsar=1,fade=t=in:st=0:d=1,fade=t=out:st=58:d=1'
     )
