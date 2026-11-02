@@ -52,6 +52,30 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
+## Novedades de la 1.7
+
+### Español
+
+- Interfaz nueva al estilo Mac: el vídeo, la línea de tiempo y el carrusel ocupan toda la ventana, con menos ruido y los botones de cada clip solo al pasar por encima.
+- Exporta en un clic: nombre, carpeta y formato están siempre a mano bajo el carrusel. El botón muestra el progreso y, al pasar el cursor, se convierte en "Detener exportación" (también con ⌘.). Cada clip de la lista se marca al terminar.
+- "Encajar" se previsualiza tal como se exporta y ahora exporta en la mitad de tiempo.
+- Con varios clips, los ajustes dicen "Varios" cuando no coinciden y la lista marca qué clips van en Recortar y cuáles en Encajar. Cambiar un ajuste para todos ya no borra lo que pusiste en cada clip.
+- Volver a pulsar Sugerir momentos cambia las sugerencias que no has tocado en lugar de añadir más.
+- Recorre, borra, deselecciona y recorta los clips seleccionados con el teclado.
+- Avisos más claros: si un vídeo no se puede ver (como ProRes), si no tiene sonido para sugerir, mientras se analiza el audio y, si falla la exportación, qué hacer.
+- El cursor de reproducción avanza suave y la pantalla de inicio muestra un fotograma de cada vídeo reciente.
+
+### English
+
+- A new Mac-style interface: the video, timeline and carousel fill the window, with less clutter and each clip's buttons only on hover.
+- Export in one click: name, folder and format are always at hand under the carousel. The button shows the progress and, on hover, turns into Stop exporting (⌘. works too). Each clip in the list is ticked off as it finishes.
+- Fit previews exactly as it exports, and now exports in half the time.
+- With several clips, the settings say Mixed when they differ, and the list shows which clips are on Crop and which on Fit. Changing a setting for all clips no longer wipes what you set on each one.
+- Pressing Suggest moments again replaces the suggestions you haven't touched instead of adding more.
+- Step through, delete, deselect and trim the selected clips from the keyboard.
+- Clearer notices: when a video can't be shown (such as ProRes), when it has no sound to suggest from, while the audio is analysed and, if an export fails, what to do.
+- The playhead moves smoothly, and the start screen shows a frame of each recent video.
+
 ## Novedades de la 1.6
 
 ### Español
