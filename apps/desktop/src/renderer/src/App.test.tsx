@@ -1311,6 +1311,18 @@ describe('App', () => {
     expect(screen.queryByTestId('filmstrip-loading')).not.toBeInTheDocument()
   })
 
+  it('moves the playhead on every frame while playing, since time updates arrive only four times a second and make it jump', async () => {
+    const frames: FrameRequestCallback[] = []
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => frames.push(callback))
+    render(<App />)
+    const video = await loadVideo()
+    fireEvent(video, new Event('play'))
+    Object.defineProperty(video, 'currentTime', { configurable: true, writable: true, value: 1220 })
+    act(() => frames.splice(0).forEach((frame) => frame(0)))
+    expect(screen.getByTestId('playhead')).toHaveStyle({ left: '25%' })
+    raf.mockRestore()
+  })
+
   it('leaves the waveform as drawn while the video plays, since redrawing it on every time update wastes work during playback', async () => {
     const clearRect = vi.fn()
     const getContext = vi

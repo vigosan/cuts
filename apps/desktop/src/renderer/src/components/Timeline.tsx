@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { formatDuration, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import { audioGain, nearestFadeSeconds, type ClipFade } from '@cuts/core/fades'
 import { dragClip, type DragMode } from '@cuts/core/drag-clip'
@@ -36,6 +36,8 @@ type Props = {
   viewStart: number
   viewSpan: number
   time: number
+  videoRef: RefObject<HTMLVideoElement | null>
+  playing: boolean
   clips: Clip[]
   fades: ClipFade[]
   pendingStart: number | null
@@ -56,6 +58,8 @@ export function Timeline({
   viewStart,
   viewSpan,
   time,
+  videoRef,
+  playing,
   clips,
   fades,
   selectedIds,
@@ -317,10 +321,7 @@ export function Timeline({
           widthPx={viewSpan > 0 ? (Math.max(0, time - pendingStart) / viewSpan) * width : 0}
         />
       )}
-      <div
-        className="pointer-events-none absolute inset-y-0 z-20 w-0.5 -translate-x-1/2 rounded-full bg-red-500"
-        style={{ left: pct(time - viewStart) }}
-      />
+      <Playhead time={time} videoRef={videoRef} playing={playing} position={(now) => pct(now - viewStart)} />
     </div>
   )
 }
@@ -343,5 +344,35 @@ function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left:
         {formatDuration(elapsed)}
       </span>
     </div>
+  )
+}
+
+function Playhead({
+  time,
+  videoRef,
+  playing,
+  position
+}: {
+  time: number
+  videoRef: RefObject<HTMLVideoElement | null>
+  playing: boolean
+  position: (time: number) => string
+}) {
+  const [now, setNow] = useState(time)
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !playing) return
+    let frame = requestAnimationFrame(function follow() {
+      setNow(video.currentTime)
+      frame = requestAnimationFrame(follow)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [videoRef, playing])
+  return (
+    <div
+      data-testid="playhead"
+      className="pointer-events-none absolute inset-y-0 z-20 w-0.5 -translate-x-1/2 rounded-full bg-red-500"
+      style={{ left: position(playing ? now : time) }}
+    />
   )
 }

@@ -633,6 +633,8 @@ export function App() {
                 viewStart={currentViewStart}
                 viewSpan={viewSpan}
                 time={time}
+                videoRef={videoRef}
+                playing={playing}
                 clips={clips}
                 fades={fades}
                 pendingStart={pendingStart}
