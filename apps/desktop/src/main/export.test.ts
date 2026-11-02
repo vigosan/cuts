@@ -188,6 +188,16 @@ describe('exportClips', () => {
     expect(run).toHaveBeenCalledTimes(1)
   })
 
+  it('says how many clips were kept when cancelled after some finished, since those files stay in the folder', async () => {
+    let cancelled = false
+    const run = vi.fn(async () => {
+      if (run.mock.calls.length < 2) return
+      cancelled = true
+      throw new Error('killed')
+    })
+    const result = await exportClips(request, deps({ run, cancelled: () => cancelled }))
+    expect(result).toEqual({ ok: false, error: t.exportCancelledKept(1) })
+  })
 })
 
 describe('exportFrame', () => {

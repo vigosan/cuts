@@ -112,6 +112,8 @@ function english(locale: Locale) {
     cancel: 'Cancel',
     ffmpegMissing: 'FFmpeg is missing from the app. Reinstall Cuts to fix it.',
     exportCancelled: 'Export cancelled.',
+    exportCancelledKept: (n: number) =>
+      isOne(locale, n) ? `Export cancelled. ${n} clip was saved.` : `Export cancelled. ${n} clips were saved.`,
     clipFailed: (n: number, reason: string) => `Clip ${n} failed: ${reason}`,
     folderFailed: (reason: string) => `Couldn’t create the destination folder: ${reason}`,
     folderNotWritable: 'Cuts can’t save in this folder. Choose another folder.',
@@ -274,6 +276,8 @@ function spanish(locale: Locale): Messages {
     cancel: 'Cancelar',
     ffmpegMissing: 'Falta FFmpeg dentro de la app. Reinstala Cuts para solucionarlo.',
     exportCancelled: 'Exportación cancelada.',
+    exportCancelledKept: (n) =>
+      isOne(locale, n) ? `Exportación cancelada. Se guardó ${n} clip.` : `Exportación cancelada. Se guardaron ${n} clips.`,
     clipFailed: (n, reason) => `Falló el clip ${n}: ${reason}`,
     folderFailed: (reason) => `No se pudo crear la carpeta de destino: ${reason}`,
     folderNotWritable: 'Cuts no puede guardar en esta carpeta. Elige otra carpeta.',

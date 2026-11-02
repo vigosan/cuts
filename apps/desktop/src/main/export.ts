@@ -52,7 +52,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
       await deps.run(ffmpeg, args, (seconds) => deps.onProgress({ index, ratio: Math.min(1, seconds / length) }))
     } catch (error) {
       await deps.remove(files[index]).catch(() => {})
-      if (deps.cancelled()) return { ok: false, error: t.exportCancelled }
+      if (deps.cancelled()) return { ok: false, error: index === 0 ? t.exportCancelled : t.exportCancelledKept(index) }
       return {
         ok: false,
         error: folderProblem(error as Error, request.folder, deps) ?? t.clipFailed(clip.position + 1, (error as Error).message)
