@@ -648,6 +648,7 @@ export function App() {
                 onDelete={(clip) => dispatch({ type: 'remove', id: clip.id })}
                 onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
                 exportStatus={exportStatus}
+                framings={target && new Set(fades.map((fade) => fade.framing)).size > 1 ? fades.map((fade) => fade.framing) : null}
               />
             </div>
             <ClipControls

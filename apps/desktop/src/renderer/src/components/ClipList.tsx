@@ -10,7 +10,7 @@ import {
   type Clip
 } from '@cuts/core/clips'
 import { t } from '../i18n'
-import { CheckIcon, CloseIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
+import { CheckIcon, CloseIcon, CropIcon, FitIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
 
 export type SelectMode = 'only' | 'toggle' | 'range'
 
@@ -30,6 +30,7 @@ type Props = {
   suggesting: boolean
   onSuggest: () => void
   exportStatus: Record<string, number>
+  framings: ('crop' | 'fit')[] | null
 }
 
 const iconButton =
@@ -52,7 +53,8 @@ export function ClipList({
   onReorder,
   suggesting,
   onSuggest,
-  exportStatus
+  exportStatus,
+  framings
 }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
@@ -176,6 +178,17 @@ export function ClipList({
                 )}
               </button>
             </span>
+            {framings && (
+              <span
+                data-testid={`clip-framing-${n}`}
+                role="img"
+                aria-label={framings[index] === 'fit' ? t.framingFit : t.framingCrop}
+                title={framings[index] === 'fit' ? t.framingFit : t.framingCrop}
+                className="text-ink-3"
+              >
+                {framings[index] === 'fit' ? <FitIcon /> : <CropIcon />}
+              </span>
+            )}
             <span className="flex w-[4.5rem] shrink-0 items-center justify-end gap-1.5">
               {exportStatus[clip.id] === 1 && (
                 <span data-testid={`clip-exported-${n}`} role="img" aria-label={t.clipExported} className="text-ok">

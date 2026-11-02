@@ -1041,6 +1041,21 @@ describe('App', () => {
     expect(screen.getByTestId('fade-video')).toHaveValue('none')
   })
 
+  it('marks each row Crop or Fit only when the carousel mixes both, so the list stays clean when every clip is framed alike', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    expect(screen.queryByTestId(/^clip-framing-/)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    await userEvent.click(screen.getByTestId('framing-fit'))
+    expect(screen.getByTestId('clip-framing-1')).toHaveAccessibleName(t.framingCrop)
+    expect(screen.getByTestId('clip-framing-2')).toHaveAccessibleName(t.framingFit)
+    await userEvent.selectOptions(screen.getByTestId('format'), 'original')
+    expect(screen.queryByTestId(/^clip-framing-/)).not.toBeInTheDocument()
+  })
+
   it('shows the value every clip shares in All clips, even when each clip was set one by one', async () => {
     render(<App />)
     const video = await loadVideo()

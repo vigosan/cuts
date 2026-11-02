@@ -44,6 +44,23 @@ export function StopIcon({ className = 'size-3.5', 'data-testid': testId }: Icon
   )
 }
 
+export function CropIcon({ className = 'size-3.5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden className={`${base} ${className}`}>
+      <path d="M4.5 1.75v9.75h9.75M1.75 4.5h9.75v9.75" />
+    </svg>
+  )
+}
+
+export function FitIcon({ className = 'size-3.5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden className={`${base} ${className}`}>
+      <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1.5" />
+      <rect x="5" y="5.5" width="6" height="5" rx="0.5" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
 export function FolderIcon({ className = 'size-4' }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
