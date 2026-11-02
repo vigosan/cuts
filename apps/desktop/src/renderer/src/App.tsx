@@ -35,6 +35,12 @@ const DEFAULT_FPS = 30
 const clipsHistory = withHistory(clipsReducer)
 const APP_FOLDER = 'Cuts'
 
+function runningLabel(state: ExportState): string {
+  return state.status === 'running'
+    ? t.exportingClip(Math.min(exportProgress(state).finished + 1, state.progress.length), state.progress.length)
+    : ''
+}
+
 function zoomLabel(span: Zoom): string {
   if (span === null) return t.zoomAll
   return span >= 60 ? `${span / 60} min` : `${span} s`
@@ -219,6 +225,10 @@ export function App() {
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (shortcutsOpen) return
     if (exportOpen && e.key === 'Escape') return setExportOpen(false)
+    if (exportState.status === 'running' && e.metaKey && e.key === '.') {
+      e.preventDefault()
+      return window.api.cancelExport()
+    }
     if (e.target instanceof HTMLInputElement && e.target.type === 'text') return
     if (e.metaKey || e.ctrlKey) return
     if (e.altKey && selectedIndex !== -1 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
@@ -289,6 +299,7 @@ export function App() {
     if (!videoPath || !destination) return
     setExportedWith(exportInputs)
     setExportState({ status: 'running', progress: exported.map(() => 0) })
+    setExportOpen(false)
     const result = await window.api
       .exportClips({
         input: videoPath,
@@ -299,6 +310,7 @@ export function App() {
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
+    setExportOpen(true)
   }
 
   const runExportFrame = async () => {
@@ -433,27 +445,38 @@ export function App() {
                 data-testid="open-export"
                 aria-expanded={exportOpen}
                 aria-controls="export-sheet"
-                className="relative h-8 overflow-hidden rounded-lg bg-accent px-3.5 text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3"
+                aria-label={exportState.status === 'running' ? `${t.stopExport} (${runningLabel(exportState)})` : undefined}
+                className="group relative h-8 overflow-hidden rounded-lg bg-accent px-3.5 text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3"
                 disabled={clips.length === 0}
-                onClick={() => setExportOpen(!exportOpen)}
+                onClick={() => (exporting ? window.api.cancelExport() : setExportOpen(!exportOpen))}
               >
                 {exporting && (
                   <span
-                    className="absolute inset-0 origin-left bg-on-accent/20 transition-transform"
+                    data-testid="export-progress"
+                    className="absolute inset-0 origin-left bg-on-accent/20 transition-transform group-hover:opacity-0 group-focus-visible:opacity-0"
                     style={{ transform: `scaleX(${exportProgress(exportState).overall})` }}
                   />
                 )}
-                <span className="relative">
-                  {exportState.status === 'running'
-                    ? t.exportingClip(
-                        Math.min(exportProgress(exportState).finished + 1, exportState.progress.length),
-                        exportState.progress.length
-                      )
-                    : exportLabel(
-                        exported.map((clip) => clips.indexOf(clip)),
-                        selectedClips.length > 0
-                      )}
-                </span>
+                {exportState.status === 'running' ? (
+                  <span className="relative grid">
+                    <span className="col-start-1 row-start-1 group-hover:invisible group-focus-visible:invisible">
+                      {runningLabel(exportState)}
+                    </span>
+                    <span
+                      data-testid="export-stop-label"
+                      className="invisible col-start-1 row-start-1 group-hover:visible group-focus-visible:visible"
+                    >
+                      {t.stopShort}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="relative">
+                    {exportLabel(
+                      exported.map((clip) => clips.indexOf(clip)),
+                      selectedClips.length > 0
+                    )}
+                  </span>
+                )}
               </button>
               <div
                 id="export-sheet"
@@ -479,7 +502,6 @@ export function App() {
                   }}
                   onExport={runExport}
                   onReveal={window.api.reveal}
-                  onCancel={window.api.cancelExport}
                   onShare={window.api.share}
                   canShare={window.api.platform === 'darwin'}
                 />

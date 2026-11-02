@@ -22,7 +22,6 @@ type Props = {
   onChooseFolder: () => void
   onExport: () => void
   onReveal: (path: string) => void
-  onCancel: () => void
   onShare: (files: string[]) => void
   canShare: boolean
 }
@@ -42,7 +41,6 @@ export function exportLabel(positions: number[], partial: boolean): string {
 
 export function ExportPanel(p: Props) {
   const running = p.state.status === 'running'
-  const { overall, finished } = exportProgress(p.state)
   const folderName = p.folder?.split(/[\\/]/).filter(Boolean).slice(-2).join('/')
   const fileName = (index: number) => outputFileName(safeBaseName(p.baseName), index)
 
@@ -95,35 +93,13 @@ export function ExportPanel(p: Props) {
           disabled={!p.canExport || running}
           onClick={() => (p.state.status === 'done' ? (p.canShare ? p.onShare(p.state.files) : p.onReveal(p.state.files[0])) : p.onExport())}
         >
-          {running && (
-            <span
-              data-testid="export-progress"
-              className="absolute inset-0 origin-left bg-on-accent/20 transition-transform"
-              style={{ transform: `scaleX(${overall})` }}
-            />
-          )}
           <span className="relative">
-            {p.state.status === 'running'
-              ? t.exportingClip(Math.min(finished + 1, p.state.progress.length), p.state.progress.length)
-              : p.state.status === 'done'
-                ? p.canShare
-                  ? t.share
-                  : t.showInFolder
-                : exportLabel(p.positions, p.partial)}
+            {p.state.status === 'done' ? (p.canShare ? t.share : t.showInFolder) : exportLabel(p.positions, p.partial)}
           </span>
         </button>
       </div>
 
       <p data-testid="export-status" className={`min-h-4 text-center text-xs leading-4 text-ink-3 ${p.state.status === 'error' ? '' : 'h-4 truncate'}`}>
-        {p.state.status === 'running' && (
-          <button
-            data-testid="export-cancel"
-            className="cursor-pointer text-ink-2 underline-offset-2 hover:text-ink hover:underline"
-            onClick={p.onCancel}
-          >
-            {t.cancelExport}
-          </button>
-        )}
         {p.state.status === 'done' && (
           <span data-testid="export-done" className="text-ok">
             {t.exportedClips(p.state.files.length)}

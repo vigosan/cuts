@@ -1371,14 +1371,31 @@ describe('App', () => {
     expect(screen.getByTestId('export')).toHaveTextContent(/^Export$/)
   })
 
-  it('cancels a running export from the export panel', async () => {
+  it('stops a running export from the toolbar button that shows its progress, so stopping never needs a second control', async () => {
     vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
     await userEvent.click(await inSheet('export'))
-    await userEvent.click(await screen.findByTestId('export-cancel'))
+    const button = screen.getByTestId('open-export')
+    expect(button).toHaveTextContent(t.exportingClip(1, 2))
+    expect(button).toHaveAccessibleName(`${t.stopExport} (${t.exportingClip(1, 2)})`)
+    expect(screen.getByTestId('export-stop-label')).toHaveTextContent(t.stopShort)
+    await userEvent.click(button)
     expect(api.cancelExport).toHaveBeenCalled()
+  })
+
+  it('stops a running export with Command-period, the Mac shortcut for cancelling an operation', async () => {
+    vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.keyboard('{Meta>}.{/Meta}')
+    expect(api.cancelExport).not.toHaveBeenCalled()
+    await userEvent.click(await inSheet('export'))
+    await userEvent.keyboard('{Meta>}.{/Meta}')
+    expect(api.cancelExport).toHaveBeenCalledTimes(1)
   })
 
   it('offers the framing choice only for Instagram formats, since the original keeps the whole frame', async () => {
@@ -1751,7 +1768,7 @@ describe('App', () => {
     expect(api.share).toHaveBeenCalledWith(['/Movies/Cuts/x/x-1.mp4', '/Movies/Cuts/x/x-2.mp4'])
   })
 
-  it('shows the progress inside the export button, so the panel never changes height while exporting', async () => {
+  it('shows the progress on the toolbar button and closes the sheet while exporting, so there is one place to watch and stop it', async () => {
     let report: (progress: { index: number; ratio: number }) => void = () => {}
     vi.mocked(api.onExportProgress).mockImplementation((callback) => {
       report = callback
@@ -1762,15 +1779,25 @@ describe('App', () => {
     const video = await loadVideo()
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
-    const status = screen.getByTestId('export-status')
     await userEvent.click(await inSheet('export'))
+    expect(screen.getByTestId('export-sheet')).not.toBeVisible()
     act(() => report({ index: 0, ratio: 1 }))
-    const button = screen.getByTestId('export')
-    expect(button).toHaveTextContent('Exporting 2 of 2')
+    const button = screen.getByTestId('open-export')
+    expect(button).toHaveTextContent(t.exportingClip(2, 2))
     expect(button).toContainElement(screen.getByTestId('export-progress'))
     expect(screen.getByTestId('export-progress')).toHaveStyle({ transform: 'scaleX(0.5)' })
-    expect(screen.getByTestId('export-status')).toBe(status)
-    expect(status).toContainElement(screen.getByTestId('export-cancel'))
+  })
+
+  it('opens the sheet again with the result when the export ends, so sharing or the reason it stopped is right there', async () => {
+    let finish: (result: ExportResult) => void = () => {}
+    vi.mocked(api.exportClips).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(await inSheet('export'))
+    await act(async () => finish({ ok: false, error: t.exportCancelledKept(1) }))
+    expect(screen.getByTestId('export-sheet')).toBeVisible()
+    expect(screen.getByTestId('export-error')).toHaveTextContent(t.exportCancelledKept(1))
   })
 
   it('turns the export button into Share once the clips are ready, because sending them to the phone is the next step', async () => {
@@ -1849,18 +1876,6 @@ describe('App', () => {
     await act(async () => menuExportFrame())
     expect(screen.getByTestId('export-sheet')).toBeVisible()
     expect(screen.getByTestId('export-error')).toHaveTextContent(t.ffmpegMissing)
-  })
-
-  it('shows the export progress on the toolbar button too, so it is visible with the sheet closed', async () => {
-    vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
-    render(<App />)
-    const video = await loadVideo()
-    await markClip(video, 100, 150)
-    await markClip(video, 200, 250)
-    await userEvent.click(screen.getByTestId('open-export'))
-    await userEvent.click(await inSheet('export'))
-    await userEvent.keyboard('{Escape}')
-    expect(screen.getByTestId('open-export')).toHaveTextContent(t.exportingClip(1, 2))
   })
 
   it('shows the toolbar on Windows and Linux too, without the file name their native title bar already shows', async () => {
