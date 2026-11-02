@@ -1311,6 +1311,21 @@ describe('App', () => {
     expect(screen.queryByTestId('filmstrip-loading')).not.toBeInTheDocument()
   })
 
+  it('leaves the waveform as drawn while the video plays, since redrawing it on every time update wastes work during playback', async () => {
+    const clearRect = vi.fn()
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue({ clearRect, fillRect: vi.fn(), fillStyle: '' } as unknown as CanvasRenderingContext2D)
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await waitFor(() => expect(clearRect).toHaveBeenCalled())
+    const drawn = clearRect.mock.calls.length
+    for (let time = 151; time < 160; time++) seek(video, time)
+    expect(clearRect).toHaveBeenCalledTimes(drawn)
+    getContext.mockRestore()
+  })
+
   it('reads the waveform once per video, since decoding a whole session takes a few seconds', async () => {
     render(<App />)
     const video = await loadVideo()

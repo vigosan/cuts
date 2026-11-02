@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useReducer, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
 import type { ExportResult, RecentVideo } from '@shared/api'
@@ -58,6 +58,7 @@ export function App() {
   const selectionAnchor = useRef<string | null>(null)
 
   const settingsOf = (clip: Clip) => clipSettings[clip.id] ?? defaultSettings
+  const fades = useMemo(() => clips.map((clip) => clipSettings[clip.id] ?? defaultSettings), [clips, clipSettings, defaultSettings])
   const selectedClips = clips.filter((clip) => selectedIds.includes(clip.id))
   const selectedClip = selectedClips.length === 1 ? selectedClips[0] : null
   const selectedIndex = selectedClip ? clips.indexOf(selectedClip) : -1
@@ -633,7 +634,7 @@ export function App() {
                 viewSpan={viewSpan}
                 time={time}
                 clips={clips}
-                fades={clips.map(settingsOf)}
+                fades={fades}
                 pendingStart={pendingStart}
                 selectedIds={selectedIds}
                 onSelect={selectClip}
