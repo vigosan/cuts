@@ -6,11 +6,11 @@ import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { mediaUrl } from '@shared/media-url'
 import { isSupportedVideo } from '@shared/video-formats'
 import { ClipList, type SelectMode } from './components/ClipList'
-import { ExportPanel, exportLabel, exportProgress, type ExportState } from './components/ExportPanel'
+import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
 import { FitPreview } from './components/FitPreview'
-import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, StopIcon, TrashIcon } from './components/icons'
+import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
 import { Notice } from './components/Notice'
 import { RecentVideos } from './components/RecentVideos'
 import appIcon from '../../../build/icon.svg'
@@ -34,12 +34,6 @@ const NOTICE_MS = 5000
 const DEFAULT_FPS = 30
 const clipsHistory = withHistory(clipsReducer)
 const APP_FOLDER = 'Cuts'
-
-function runningLabel(state: ExportState): string {
-  return state.status === 'running'
-    ? t.exportingClip(Math.min(exportProgress(state).finished + 1, state.progress.length), state.progress.length)
-    : ''
-}
 
 function zoomLabel(span: Zoom): string {
   if (span === null) return t.zoomAll
@@ -210,21 +204,10 @@ export function App() {
 
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [dragDepth, setDragDepth] = useState(0)
-  const [exportOpen, setExportOpen] = useState(false)
-  const exportArea = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!exportOpen) return
-    const onPointerDown = (e: PointerEvent) => {
-      if (!(e.target instanceof Node && exportArea.current?.contains(e.target))) setExportOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [exportOpen])
   useEffect(() => window.api.onMenuShortcuts(() => setShortcutsOpen(true)), [])
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (shortcutsOpen) return
-    if (exportOpen && e.key === 'Escape') return setExportOpen(false)
     if (exportState.status === 'running' && e.metaKey && e.key === '.') {
       e.preventDefault()
       return window.api.cancelExport()
@@ -311,7 +294,6 @@ export function App() {
     setExportedWith(exportInputs)
     setExportState({ status: 'running', progress: exported.map(() => 0) })
     setExportIds(exported.map((clip) => clip.id))
-    setExportOpen(false)
     const result = await window.api
       .exportClips({
         input: videoPath,
@@ -322,7 +304,6 @@ export function App() {
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
-    setExportOpen(true)
   }
 
   const runExportFrame = async () => {
@@ -334,7 +315,6 @@ export function App() {
     if (result.ok) return window.api.reveal(result.files[0])
     setExportedWith(exportInputs)
     setExportState({ status: 'error', error: result.error })
-    setExportOpen(true)
   }
   const onMenuExportFrame = useEffectEvent(() => void runExportFrame())
   useEffect(() => window.api.onMenuExportFrame(() => onMenuExportFrame()), [])
@@ -440,7 +420,7 @@ export function App() {
             </span>
           )}
           {videoPath && (
-            <div ref={exportArea} className="relative ml-auto flex items-center gap-1.5 [-webkit-app-region:no-drag]">
+            <div className="relative ml-auto flex items-center gap-1.5 [-webkit-app-region:no-drag]">
               <button
                 data-testid="suggest"
                 className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-ink-2 transition-colors hover:bg-sunken hover:text-ink disabled:hover:bg-transparent"
@@ -453,72 +433,6 @@ export function App() {
                 {suggesting ? <SpinnerIcon className="size-3.5" /> : <SparkleIcon className="size-3.5" />}
                 {t.suggestShort}
               </button>
-              <button
-                data-testid="open-export"
-                aria-expanded={exportOpen}
-                aria-controls="export-sheet"
-                aria-label={exportState.status === 'running' ? `${t.stopExport} (${runningLabel(exportState)})` : undefined}
-                className="group relative h-8 overflow-hidden rounded-lg bg-accent px-3.5 text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3"
-                disabled={clips.length === 0}
-                onClick={() => (exporting ? window.api.cancelExport() : setExportOpen(!exportOpen))}
-              >
-                {exporting && (
-                  <span
-                    data-testid="export-progress"
-                    className="absolute inset-0 origin-left bg-on-accent/20 transition-transform group-hover:opacity-0 group-focus-visible:opacity-0"
-                    style={{ transform: `scaleX(${exportProgress(exportState).overall})` }}
-                  />
-                )}
-                {exportState.status === 'running' ? (
-                  <span className="relative grid">
-                    <span className="col-start-1 row-start-1 group-hover:invisible group-focus-visible:invisible">
-                      {runningLabel(exportState)}
-                    </span>
-                    <span
-                      data-testid="export-stop-label"
-                      className="invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 group-hover:visible group-focus-visible:visible"
-                    >
-                      <StopIcon data-testid="export-stop-icon" />
-                      {t.stopExport}
-                    </span>
-                  </span>
-                ) : (
-                  <span className="relative">
-                    {exportLabel(
-                      exported.map((clip) => clips.indexOf(clip)),
-                      selectedClips.length > 0
-                    )}
-                  </span>
-                )}
-              </button>
-              <div
-                id="export-sheet"
-                data-testid="export-sheet"
-                hidden={!exportOpen}
-                className="absolute top-full right-0 z-30 mt-2 w-[22rem] rounded-xl bg-surface shadow-xl ring-1 ring-line"
-              >
-                <ExportPanel
-                  positions={exported.map((clip) => clips.indexOf(clip))}
-                  partial={selectedClips.length > 0}
-                  overLimit={exported.filter(isOverLimit).length}
-                  canExport={canExport}
-                  baseName={baseName}
-                  folder={folder}
-                  destination={destination}
-                  state={exportState}
-                  onBaseName={setBaseName}
-                  onChooseFolder={async () => {
-                    const chosen = await window.api.chooseFolder(folder)
-                    if (!chosen) return
-                    setFolder(chosen)
-                    savePreferences({ folder: chosen })
-                  }}
-                  onExport={runExport}
-                  onReveal={window.api.reveal}
-                  onShare={window.api.share}
-                  canShare={window.api.platform === 'darwin'}
-                />
-              </div>
             </div>
           )}
         </header>
@@ -689,7 +603,7 @@ export function App() {
             </div>
           </section>
 
-          <aside className="flex shrink-0 flex-col overflow-hidden border-line bg-surface max-lg:border-t lg:w-[23rem] lg:border-l">
+          <aside data-testid="carousel-pane" className="flex shrink-0 flex-col overflow-hidden border-line bg-surface max-lg:border-t lg:w-[23rem] lg:border-l">
             <div className="flex h-12 items-center justify-between px-4 pt-3">
               <h2 className="flex items-baseline gap-1.5 text-sm font-semibold">
                 {t.carousel}{' '}
@@ -745,6 +659,28 @@ export function App() {
               }
               settings={shownSettings}
               onChange={changeSettings}
+            />
+            <ExportPanel
+              positions={exported.map((clip) => clips.indexOf(clip))}
+              partial={selectedClips.length > 0}
+              overLimit={exported.filter(isOverLimit).length}
+              canExport={canExport}
+              baseName={baseName}
+              folder={folder}
+              destination={destination}
+              state={exportState}
+              onBaseName={setBaseName}
+              onChooseFolder={async () => {
+                const chosen = await window.api.chooseFolder(folder)
+                if (!chosen) return
+                setFolder(chosen)
+                savePreferences({ folder: chosen })
+              }}
+              onExport={runExport}
+              onCancel={window.api.cancelExport}
+              onReveal={window.api.reveal}
+              onShare={window.api.share}
+              canShare={window.api.platform === 'darwin'}
             />
           </aside>
         </main>

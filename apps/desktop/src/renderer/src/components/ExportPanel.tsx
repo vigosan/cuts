@@ -1,7 +1,7 @@
 import { MAX_CLIP_SECONDS, outputFileName, safeBaseName } from '@cuts/core/clips'
 import { t } from '../i18n'
 import { field } from './field'
-import { FolderIcon } from './icons'
+import { FolderIcon, StopIcon } from './icons'
 
 export type ExportState =
   | { status: 'idle' }
@@ -21,12 +21,13 @@ type Props = {
   onBaseName: (value: string) => void
   onChooseFolder: () => void
   onExport: () => void
+  onCancel: () => void
   onReveal: (path: string) => void
   onShare: (files: string[]) => void
   canShare: boolean
 }
 
-export function exportProgress(state: ExportState): { overall: number; finished: number } {
+function exportProgress(state: ExportState): { overall: number; finished: number } {
   if (state.status !== 'running') return { overall: 0, finished: 0 }
   return {
     overall: state.progress.reduce((a, b) => a + b, 0) / Math.max(1, state.progress.length),
@@ -34,18 +35,22 @@ export function exportProgress(state: ExportState): { overall: number; finished:
   }
 }
 
-export function exportLabel(positions: number[], partial: boolean): string {
+function exportLabel(positions: number[], partial: boolean): string {
   if (!partial) return t.exportClips(positions.length)
   return positions.length === 1 ? t.exportClip(positions[0] + 1) : t.exportSelected(positions.length)
 }
 
+function runningLabel(progress: number[]): string {
+  const finished = progress.filter((ratio) => ratio >= 1).length
+  return t.exportingClip(Math.min(finished + 1, progress.length), progress.length)
+}
+
 export function ExportPanel(p: Props) {
-  const running = p.state.status === 'running'
   const folderName = p.folder?.split(/[\\/]/).filter(Boolean).slice(-2).join('/')
   const fileName = (index: number) => outputFileName(safeBaseName(p.baseName), index)
 
   return (
-    <section data-testid="export-panel" className="flex flex-col gap-3 p-4">
+    <section data-testid="export-panel" className="flex flex-col gap-3 border-t border-line p-4">
       <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-sm">
         <label htmlFor="base-name" className="text-ink-2">
           {t.name}
@@ -89,13 +94,44 @@ export function ExportPanel(p: Props) {
         )}
         <button
           data-testid="export"
-          className={`relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] ${running ? 'cursor-default' : 'hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3'}`}
-          disabled={!p.canExport || running}
-          onClick={() => (p.state.status === 'done' ? (p.canShare ? p.onShare(p.state.files) : p.onReveal(p.state.files[0])) : p.onExport())}
+          aria-label={p.state.status === 'running' ? `${t.stopExport} (${runningLabel(p.state.progress)})` : undefined}
+          className="group relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3"
+          disabled={!p.canExport && p.state.status !== 'running'}
+          onClick={() =>
+            p.state.status === 'running'
+              ? p.onCancel()
+              : p.state.status === 'done'
+                ? p.canShare
+                  ? p.onShare(p.state.files)
+                  : p.onReveal(p.state.files[0])
+                : p.onExport()
+          }
         >
-          <span className="relative">
-            {p.state.status === 'done' ? (p.canShare ? t.share : t.showInFolder) : exportLabel(p.positions, p.partial)}
-          </span>
+          {p.state.status === 'running' ? (
+            <>
+              <span
+                data-testid="export-progress"
+                className="absolute inset-0 origin-left bg-on-accent/20 transition-transform group-hover:opacity-0 group-focus-visible:opacity-0"
+                style={{ transform: `scaleX(${exportProgress(p.state).overall})` }}
+              />
+              <span className="relative grid">
+                <span className="col-start-1 row-start-1 group-hover:invisible group-focus-visible:invisible">
+                  {runningLabel(p.state.progress)}
+                </span>
+                <span
+                  data-testid="export-stop-label"
+                  className="invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 group-hover:visible group-focus-visible:visible"
+                >
+                  <StopIcon data-testid="export-stop-icon" />
+                  {t.stopExport}
+                </span>
+              </span>
+            </>
+          ) : (
+            <span className="relative">
+              {p.state.status === 'done' ? (p.canShare ? t.share : t.showInFolder) : exportLabel(p.positions, p.partial)}
+            </span>
+          )}
         </button>
       </div>
 
