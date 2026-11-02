@@ -72,7 +72,7 @@ export function App() {
       const settings = { ...defaultSettings, ...change }
       setDefaultSettings(settings)
       savePreferences({ settings })
-      setClipSettings({})
+      setClipSettings(Object.fromEntries(Object.entries(clipSettings).map(([id, own]) => [id, { ...own, ...change }])))
     }
   }
   const [format, setFormat] = useState<OutputFormat>(() => loadPreferences().format)

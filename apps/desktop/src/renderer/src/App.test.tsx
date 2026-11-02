@@ -1004,6 +1004,22 @@ describe('App', () => {
     expect(clips.map((c) => c.videoFade)).toEqual(['none', 'none'])
   })
 
+  it('changes for every clip only the setting touched in All clips, so the fades and framing set on one clip are not lost', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(screen.getByTestId('framing-fit'))
+    await act(async () => userEvent.click(await inPanel('export')))
+    const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+    expect(clips.map((c) => c.framing)).toEqual(['fit', 'fit'])
+    expect(clips.map((c) => c.videoFade)).toEqual(['black', 'white'])
+  })
+
   it('selects a clip when clicking its times instead of moving them, so choosing a clip never edits it by accident', async () => {
     render(<App />)
     const video = await loadVideo()
