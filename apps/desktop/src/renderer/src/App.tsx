@@ -295,10 +295,22 @@ export function App() {
 
   const exported = selectedClips.length > 0 ? selectedClips : clips
 
+  const [exportIds, setExportIds] = useState<string[]>([])
+  const exportStatus: Record<string, number> = {}
+  if (exportState.status === 'done') exportIds.forEach((id) => (exportStatus[id] = 1))
+  if (exportState.status === 'running') {
+    const active = exportState.progress.findIndex((ratio) => ratio < 1)
+    exportIds.forEach((id, index) => {
+      if (exportState.progress[index] >= 1) exportStatus[id] = 1
+      else if (index === active) exportStatus[id] = exportState.progress[index]
+    })
+  }
+
   const runExport = async () => {
     if (!videoPath || !destination) return
     setExportedWith(exportInputs)
     setExportState({ status: 'running', progress: exported.map(() => 0) })
+    setExportIds(exported.map((clip) => clip.id))
     setExportOpen(false)
     const result = await window.api
       .exportClips({
@@ -713,6 +725,7 @@ export function App() {
                 onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}
                 onDelete={(clip) => dispatch({ type: 'remove', id: clip.id })}
                 onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
+                exportStatus={exportStatus}
               />
             </div>
             <ClipControls

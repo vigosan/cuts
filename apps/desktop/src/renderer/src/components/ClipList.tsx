@@ -10,7 +10,7 @@ import {
   type Clip
 } from '@cuts/core/clips'
 import { t } from '../i18n'
-import { CloseIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
+import { CheckIcon, CloseIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
 
 export type SelectMode = 'only' | 'toggle' | 'range'
 
@@ -29,6 +29,7 @@ type Props = {
   onReorder: (from: number, to: number) => void
   suggesting: boolean
   onSuggest: () => void
+  exportStatus: Record<string, number>
 }
 
 const iconButton =
@@ -50,7 +51,8 @@ export function ClipList({
   onDelete,
   onReorder,
   suggesting,
-  onSuggest
+  onSuggest,
+  exportStatus
 }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
@@ -174,7 +176,15 @@ export function ClipList({
                 )}
               </button>
             </span>
-            <span className="flex w-[4.5rem] shrink-0 justify-end">
+            <span className="flex w-[4.5rem] shrink-0 items-center justify-end gap-1.5">
+              {exportStatus[clip.id] === 1 && (
+                <span data-testid={`clip-exported-${n}`} role="img" aria-label={t.clipExported} className="text-ok">
+                  <CheckIcon />
+                </span>
+              )}
+              {exportStatus[clip.id] !== undefined && exportStatus[clip.id] < 1 && (
+                <ExportRing testId={`clip-exporting-${n}`} ratio={exportStatus[clip.id]} />
+              )}
               <span
                 data-testid={`clip-duration-${n}`}
                 title={over ? t.overLimit(MAX_CLIP_SECONDS) : undefined}
@@ -202,5 +212,38 @@ export function ClipList({
         )
       })}
     </ol>
+  )
+}
+
+const RING_RADIUS = 5.5
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS
+
+function ExportRing({ testId, ratio }: { testId: string; ratio: number }) {
+  const percent = Math.round(ratio * 100)
+  return (
+    <svg
+      data-testid={testId}
+      role="progressbar"
+      aria-label={t.clipExporting}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      viewBox="0 0 14 14"
+      className="size-3.5 shrink-0 -rotate-90 text-accent"
+    >
+      <circle cx="7" cy="7" r={RING_RADIUS} fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <circle
+        cx="7"
+        cy="7"
+        r={RING_RADIUS}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray={RING_LENGTH}
+        strokeDashoffset={RING_LENGTH * (1 - ratio)}
+        className="transition-[stroke-dashoffset] duration-300 ease-out"
+      />
+    </svg>
   )
 }

@@ -1788,6 +1788,49 @@ describe('App', () => {
     expect(screen.getByTestId('export-progress')).toHaveStyle({ transform: 'scaleX(0.5)' })
   })
 
+  it('marks each carousel row as exported, exporting or waiting, so the list shows which clip the export is on', async () => {
+    let report: (progress: { index: number; ratio: number }) => void = () => {}
+    vi.mocked(api.onExportProgress).mockImplementation((callback) => {
+      report = callback
+      return () => {}
+    })
+    let finish: (result: ExportResult) => void = () => {}
+    vi.mocked(api.exportClips).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await userEvent.click(await inSheet('export'))
+    act(() => report({ index: 0, ratio: 1 }))
+    act(() => report({ index: 1, ratio: 0.4 }))
+    expect(screen.getByTestId('clip-exported-1')).toHaveAccessibleName(t.clipExported)
+    expect(screen.getByTestId('clip-exporting-2')).toHaveAttribute('aria-valuenow', '40')
+    expect(screen.queryByTestId('clip-exported-3')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('clip-exporting-3')).not.toBeInTheDocument()
+    await act(async () => finish({ ok: true, files: ['a-1.mp4', 'a-2.mp4', 'a-3.mp4'] }))
+    expect(screen.getAllByTestId(/^clip-exported-/)).toHaveLength(3)
+  })
+
+  it('marks the progress on the rows being exported when only a selection is exported, not on the first rows', async () => {
+    let report: (progress: { index: number; ratio: number }) => void = () => {}
+    vi.mocked(api.onExportProgress).mockImplementation((callback) => {
+      report = callback
+      return () => {}
+    })
+    vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    await userEvent.click(screen.getByTestId('clip-row-3'))
+    await userEvent.click(await inSheet('export'))
+    act(() => report({ index: 0, ratio: 0.5 }))
+    expect(screen.getByTestId('clip-exporting-3')).toHaveAttribute('aria-valuenow', '50')
+    expect(screen.queryByTestId('clip-exporting-1')).not.toBeInTheDocument()
+  })
+
   it('opens the sheet again with the result when the export ends, so sharing or the reason it stopped is right there', async () => {
     let finish: (result: ExportResult) => void = () => {}
     vi.mocked(api.exportClips).mockReturnValue(new Promise((resolve) => (finish = resolve)))
