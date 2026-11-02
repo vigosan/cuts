@@ -96,6 +96,7 @@ export const content = {
         {
           title: "Export",
           items: [
+            "Export in one click and watch each clip tick off in the list. Hover the button to stop.",
             "Reorder clips by dragging. The order in the list is the order you post.",
             "Export just the clips you pick with [⌘]-click (Ctrl on Windows and Linux), each with its carousel number.",
             "The first clip starts on a real frame, so the cover is never black.",
@@ -263,6 +264,7 @@ export const content = {
         {
           title: "Exportar",
           items: [
+            "Exporta en un clic y mira cómo se marca cada clip en la lista. Pasa el cursor por el botón para detenerla.",
             "Ordena los clips arrastrándolos. El orden de la lista es el orden en que publicas.",
             "Exporta solo los clips que elijas con [⌘]-clic (Ctrl en Windows y Linux), cada uno con su número del carrusel.",
             "El primer clip empieza con imagen, así la portada nunca sale negra.",
