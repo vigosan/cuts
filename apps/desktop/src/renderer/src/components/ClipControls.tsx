@@ -10,10 +10,11 @@ type Props = {
   hasClips: boolean
   scope: string
   settings: ClipSettings
+  mixed: Record<keyof ClipSettings, boolean>
   onChange: (change: Partial<ClipSettings>) => void
 }
 
-export function ClipControls({ format, hasClips, scope, settings, onChange }: Props) {
+export function ClipControls({ format, hasClips, scope, settings, mixed, onChange }: Props) {
   if (!hasClips) return null
   return (
     <section data-testid="fade-controls" className="flex flex-col gap-2 border-t border-line p-4">
@@ -26,9 +27,9 @@ export function ClipControls({ format, hasClips, scope, settings, onChange }: Pr
             <button
               key={framing}
               data-testid={`framing-${framing}`}
-              aria-pressed={settings.framing === framing}
+              aria-pressed={!mixed.framing && settings.framing === framing}
               title={framing === 'crop' ? t.framingCropHint : t.framingFitHint}
-              className={`flex-1 rounded-md px-2 py-1 transition-colors ${settings.framing === framing ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
+              className={`flex-1 rounded-md px-2 py-1 transition-colors ${!mixed.framing && settings.framing === framing ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
               onClick={() => onChange({ framing })}
             >
               {framing === 'crop' ? t.framingCrop : t.framingFit}
@@ -53,9 +54,10 @@ export function ClipControls({ format, hasClips, scope, settings, onChange }: Pr
             data-testid="fade-video"
             title={t.imageFade}
             className={`${popup} pl-7`}
-            value={settings.videoFade}
+            value={mixed.videoFade ? '' : settings.videoFade}
             onChange={(e) => onChange({ videoFade: e.target.value as VideoFade })}
           >
+            {mixed.videoFade && <option value="" disabled>{t.mixed}</option>}
             {VIDEO_FADES.map((id) => (
               <option key={id} value={id}>
                 {t.videoFades[id]}
@@ -70,9 +72,10 @@ export function ClipControls({ format, hasClips, scope, settings, onChange }: Pr
             data-testid="fade-audio"
             title={t.audioFade}
             className={`${popup} pl-7`}
-            value={settings.audioFade}
+            value={mixed.audioFade ? '' : settings.audioFade}
             onChange={(e) => onChange({ audioFade: e.target.value as AudioFade })}
           >
+            {mixed.audioFade && <option value="" disabled>{t.mixed}</option>}
             {AUDIO_FADES.map((id) => (
               <option key={id} value={id}>
                 {t.audioFades[id]}
@@ -85,10 +88,11 @@ export function ClipControls({ format, hasClips, scope, settings, onChange }: Pr
           data-testid="fade-seconds"
           title={t.fadeLength}
           className={`${popup} disabled:opacity-40`}
-          value={settings.fadeSeconds}
+          value={mixed.fadeSeconds ? '' : settings.fadeSeconds}
           disabled={settings.videoFade === 'none' && settings.audioFade === 'none'}
           onChange={(e) => onChange({ fadeSeconds: Number(e.target.value) })}
         >
+          {mixed.fadeSeconds && <option value="" disabled>{t.mixed}</option>}
           {FADE_OPTIONS.map((seconds) => (
             <option key={seconds} value={seconds}>
               {t.fadeSeconds(seconds)}

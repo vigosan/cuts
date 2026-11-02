@@ -1020,6 +1020,41 @@ describe('App', () => {
     expect(clips.map((c) => c.videoFade)).toEqual(['black', 'white'])
   })
 
+  it('shows a setting as mixed when the clips it covers differ, instead of a value only some of them have', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    await userEvent.click(screen.getByTestId('framing-fit'))
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByTestId('framing-crop')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('framing-fit')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('fade-video')).toHaveDisplayValue(t.mixed)
+    expect(screen.getByTestId('fade-audio')).toHaveValue('natural')
+    fireEvent.click(screen.getByTestId('clip-row-1'), { metaKey: true })
+    fireEvent.click(screen.getByTestId('clip-row-2'), { metaKey: true })
+    expect(screen.getByTestId('fade-video')).toHaveDisplayValue(t.mixed)
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
+    expect(screen.getByTestId('fade-video')).toHaveValue('none')
+  })
+
+  it('shows the value every clip shares in All clips, even when each clip was set one by one', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+    for (const row of ['clip-row-1', 'clip-row-2']) {
+      await userEvent.click(screen.getByTestId(row))
+      await userEvent.click(screen.getByTestId('framing-fit'))
+    }
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByTestId('framing-fit')).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('selects a clip when clicking its times instead of moving them, so choosing a clip never edits it by accident', async () => {
     render(<App />)
     const video = await loadVideo()

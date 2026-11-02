@@ -80,7 +80,14 @@ export function App() {
   const openedPath = useRef<string | null>(null)
   const [fps, setFps] = useState(DEFAULT_FPS)
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null)
-  const shownSettings = selectedClips.length > 0 ? settingsOf(selectedClips[0]) : defaultSettings
+  const scopeClips = selectedClips.length > 0 ? selectedClips : clips
+  const shownSettings = scopeClips.length > 0 ? settingsOf(scopeClips[0]) : defaultSettings
+  const mixed = Object.fromEntries(
+    (Object.keys(shownSettings) as (keyof ClipSettings)[]).map((key) => [
+      key,
+      scopeClips.some((clip) => settingsOf(clip)[key] !== shownSettings[key])
+    ])
+  ) as Record<keyof ClipSettings, boolean>
   const target = formatSize(format)
   const [lastExport, setExportState] = useState<ExportState>({ status: 'idle' })
   const [zoom, setZoom] = useState<Zoom>(null)
@@ -654,6 +661,7 @@ export function App() {
                     : t.settingsScopeSelected(selectedClips.length)
               }
               settings={shownSettings}
+              mixed={mixed}
               onChange={changeSettings}
             />
             <ExportPanel
