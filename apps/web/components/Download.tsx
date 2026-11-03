@@ -82,7 +82,7 @@ export function Download({ home, lang, downloads, brew = false }: { home: Conten
           </code>
         </p>
       )}
-      {brew && os === "mac" && (
+      {os === "mac" && (
         <p className="text-sm">
           {home.appStore.text}{" "}
           <a data-testid="app-store" href={APP_STORE} className={link}>
