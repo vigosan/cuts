@@ -35,7 +35,8 @@ it('choosing a video opens the cut screen for that asset', async () => {
   await waitFor(() => expect(onOpen).toHaveBeenCalledWith(asset))
 })
 
-it('a set in iCloud shows download progress and can be cancelled', async () => {
+it('a set in iCloud shows download progress once opening takes a moment, and can be cancelled', async () => {
+  jest.useFakeTimers()
   let finish: (value: typeof asset) => void = () => {}
   let report: (event: { id: string; ratio: number }) => void = () => {}
   native.pickVideo.mockResolvedValue('A1')
@@ -49,12 +50,36 @@ it('a set in iCloud shows download progress and can be cancelled', async () => {
   await fireEvent.press(screen.getByTestId('choose-video'))
   await waitFor(() => expect(native.openAsset).toHaveBeenCalled())
   await act(async () => report({ id: 'A1', ratio: 0.4 }))
+  await act(async () => jest.advanceTimersByTime(500))
   expect(screen.getByText(t.mobile.downloading(40))).toBeTruthy()
   await fireEvent.press(screen.getByTestId('cancel-opening'))
   await act(async () => finish(asset))
   expect(onOpen).not.toHaveBeenCalled()
   expect(native.cancelOpen).toHaveBeenCalledWith('A1')
   expect(screen.queryByTestId('opening-progress')).toBeNull()
+  jest.useRealTimers()
+})
+
+it('a set already on the iPhone opens without flashing a download bar, since nothing is downloading', async () => {
+  jest.useFakeTimers()
+  let finish: (value: typeof asset) => void = () => {}
+  let report: (event: { id: string; ratio: number }) => void = () => {}
+  native.pickVideo.mockResolvedValue('A1')
+  native.addListener.mockImplementation((_name, listener) => {
+    report = listener as typeof report
+    return { remove: jest.fn() } as never
+  })
+  native.openAsset.mockImplementation(() => new Promise((resolve) => (finish = resolve)))
+  await render(<GestureHandlerRootView><Home store={memoryStore()} onOpen={jest.fn()} /></GestureHandlerRootView>)
+  await fireEvent.press(screen.getByTestId('choose-video'))
+  await waitFor(() => expect(native.openAsset).toHaveBeenCalled())
+  await act(async () => report({ id: 'A1', ratio: 0 }))
+  await act(async () => report({ id: 'A1', ratio: 1 }))
+  expect(screen.queryByTestId('opening-progress')).toBeNull()
+  await act(async () => finish(asset))
+  await act(async () => jest.advanceTimersByTime(1000))
+  expect(screen.queryByTestId('opening-progress')).toBeNull()
+  jest.useRealTimers()
 })
 
 it('denied Photos access explains and links to Settings', async () => {

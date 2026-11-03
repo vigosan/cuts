@@ -25,13 +25,18 @@ export function Home({ store, onOpen, visits = 0 }: Props) {
     const attempt = ++opening.current
     setProblem(null)
     setOpeningId(id)
-    setDownload(0)
+    let ratio = 0
+    const slow = setTimeout(() => attempt === opening.current && setDownload(ratio), SLOW_OPEN_MS)
     try {
-      const asset = await openAsset(id, (ratio) => attempt === opening.current && setDownload(ratio))
+      const asset = await openAsset(id, (next) => {
+        ratio = next
+        if (attempt === opening.current) setDownload((shown) => (shown === null ? null : next))
+      })
       if (attempt === opening.current) onOpen(asset)
     } catch {
       if (attempt === opening.current) setProblem(t.mobile.openFailed)
     } finally {
+      clearTimeout(slow)
       if (attempt === opening.current) setDownload(null)
     }
   }
@@ -138,6 +143,7 @@ function Steps() {
 }
 
 const REMOVE_WIDTH = 88
+const SLOW_OPEN_MS = 500
 const POSTER_HEIGHT = 80
 
 function Recents({ store, onPress }: { store: KeyValue; onPress: (id: string) => Promise<void> }) {
