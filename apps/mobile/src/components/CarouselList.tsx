@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Text, View } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { SymbolView } from 'expo-symbols'
@@ -18,12 +18,12 @@ type Props = {
   onReorder: (from: number, to: number) => void
 }
 
-const ROW_HEIGHT = 36
+const ROW_HEIGHT = 44
 
 export function CarouselList({ clips, selectedId, picked, progress = {}, theme, onPress, onReorder }: Props) {
   const [dragging, setDragging] = useState<{ index: number; offset: number } | null>(null)
   return (
-    <View>
+    <View style={{ gap: 4 }}>
       {clips.map((clip, index) => (
         <Row
           key={clip.id}
@@ -61,6 +61,8 @@ type RowProps = {
 function Row({ clip, index, count, selected, picked, progress, offset, theme, onPress, onMove, onDrag }: RowProps) {
   const past = isPastCarousel(index)
   const clamp = (to: number) => Math.min(count - 1, Math.max(0, to))
+  const height = useRef(ROW_HEIGHT)
+  const done = progress !== undefined && progress >= 1
   const reorder = usePanGesture({
     runOnJS: true,
     activateAfterLongPress: 250,
@@ -69,7 +71,7 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
     onDeactivate: (event) => {
       haptics.drop()
       onDrag(null)
-      const to = clamp(index + Math.round(event.translationY / ROW_HEIGHT))
+      const to = clamp(index + Math.round(event.translationY / (height.current + 4)))
       if (to !== index) onMove(to)
     },
     onFinalize: () => onDrag(null)
@@ -84,8 +86,12 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
         { name: 'moveDown', label: t.mobile.moveDown }
       ]}
       onAccessibilityAction={(event) => onMove(clamp(index + (event.nativeEvent.actionName === 'moveUp' ? -1 : 1)))}
+      onLayout={(event) => {
+        height.current = event.nativeEvent.layout.height
+      }}
       style={{
-        height: ROW_HEIGHT,
+        minHeight: ROW_HEIGHT,
+        overflow: 'hidden',
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
@@ -97,8 +103,8 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
         zIndex: offset ? 1 : 0
       }}
     >
-      {progress !== undefined && (
-        <View testID={`clip-progress-${clip.id}`} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${progress * 100}%`, borderRadius: 8, backgroundColor: theme.fill }} />
+      {progress !== undefined && !done && (
+        <View testID={`clip-progress-${clip.id}`} style={{ position: 'absolute', left: 0, bottom: 0, height: 3, width: `${progress * 100}%`, backgroundColor: theme.ink }} />
       )}
       {picked !== null && <SymbolView name={picked ? 'checkmark.circle.fill' : 'circle'} size={20} tintColor={theme.ink} />}
       <View
@@ -107,7 +113,7 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
       >
         <Text style={{ fontSize: 11, fontWeight: '700', color: index === 0 || selected ? theme.inverse : theme.ink }}>{index + 1}</Text>
       </View>
-      <Text style={{ color: theme.ink, fontSize: 14, fontVariant: ['tabular-nums'] }}>
+      <Text style={{ flexShrink: 1, color: theme.ink, fontSize: 15, fontVariant: ['tabular-nums'] }}>
         {`${formatTime(clip.start)} → ${formatTime(clip.end)}`}
       </Text>
       <Text
@@ -125,8 +131,13 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
       >
         {formatDuration(clipDuration(clip))}
       </Text>
+      {done && (
+        <View testID={`clip-done-${clip.id}`} accessibilityLabel={t.clipExported}>
+          <SymbolView name="checkmark.circle.fill" size={20} tintColor={theme.ink} />
+        </View>
+      )}
       <GestureDetector gesture={reorder}>
-        <View accessibilityLabel={t.mobile.reorder} style={{ paddingHorizontal: 6, paddingVertical: 8 }}>
+        <View accessibilityLabel={t.mobile.reorder} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
           <SymbolView name="line.3.horizontal" size={16} tintColor={theme.muted} />
         </View>
       </GestureDetector>
