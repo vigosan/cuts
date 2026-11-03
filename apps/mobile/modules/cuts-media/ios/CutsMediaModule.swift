@@ -78,7 +78,9 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
       }
       self.remember(id, resolved)
       let details = try info(id: id)
-      return ["id": id, "name": details.name, "duration": details.duration, "width": details.width, "height": details.height, "uri": resolved.url.absoluteString]
+      let frameRate = try await resolved.loadTracks(withMediaType: .video).first?.load(.nominalFrameRate) ?? 30
+      return ["id": id, "name": details.name, "duration": details.duration, "width": details.width, "height": details.height,
+              "frameRate": Double(frameRate > 0 ? frameRate : 30), "uri": resolved.url.absoluteString]
     }
 
     AsyncFunction("readPeaks") { (id: String) -> [Float]? in

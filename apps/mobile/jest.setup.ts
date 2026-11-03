@@ -13,3 +13,22 @@ jest.mock('./modules/cuts-media', () => ({
     addListener: jest.fn(() => ({ remove: jest.fn() }))
   }
 }))
+
+jest.mock('expo-video', () => {
+  const { View } = jest.requireActual('react-native')
+  const player = {
+    currentTime: 0,
+    duration: 0,
+    playing: false,
+    seekTolerance: { toleranceBefore: 0, toleranceAfter: 0 },
+    timeUpdateEventInterval: 0,
+    play: jest.fn(function (this: { playing: boolean }) {
+      this.playing = true
+    }),
+    pause: jest.fn(function (this: { playing: boolean }) {
+      this.playing = false
+    }),
+    addListener: jest.fn(() => ({ remove: jest.fn() }))
+  }
+  return { __player: player, useVideoPlayer: () => player, VideoView: View }
+})

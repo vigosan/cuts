@@ -193,7 +193,17 @@ function english(locale: Locale) {
       chooseFromPhotos: 'Choose video from Photos',
       downloading: (percent: number) => `Downloading from iCloud… ${percent}%`,
       photosDenied: 'Cuts needs access to Photos to open your sessions.',
-      openSettings: 'Open Settings'
+      openSettings: 'Open Settings',
+      back: 'Videos',
+      startHere: 'Start here',
+      endHere: 'End here',
+      previousFrame: 'Previous frame',
+      nextFrame: 'Next frame',
+      magnetOn: 'Cuts snap to the beat',
+      magnetOff: 'Cuts land exactly on the playhead',
+      more: 'More',
+      saveFrame: 'Save frame to Photos',
+      frameSaved: 'Frame saved to Photos'
     }
   }
 }
@@ -367,7 +377,17 @@ function spanish(locale: Locale): Messages {
       chooseFromPhotos: 'Elegir vídeo de Fotos',
       downloading: (percent) => `Descargando de iCloud… ${percent} %`,
       photosDenied: 'Cuts necesita acceso a Fotos para abrir tus sesiones.',
-      openSettings: 'Abrir Ajustes'
+      openSettings: 'Abrir Ajustes',
+      back: 'Vídeos',
+      startHere: 'Inicio aquí',
+      endHere: 'Fin aquí',
+      previousFrame: 'Fotograma anterior',
+      nextFrame: 'Fotograma siguiente',
+      magnetOn: 'Los cortes caen en el golpe',
+      magnetOff: 'Los cortes caen justo en el cursor',
+      more: 'Más',
+      saveFrame: 'Guardar fotograma en Fotos',
+      frameSaved: 'Fotograma guardado en Fotos'
     }
   }
 }

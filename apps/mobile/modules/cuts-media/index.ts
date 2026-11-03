@@ -5,7 +5,7 @@ type Events = {
   onExportProgress(event: { ratio: number }): void
 }
 
-export type NativeAsset = { id: string; name: string; duration: number; width: number; height: number; uri: string }
+export type NativeAsset = { id: string; name: string; duration: number; width: number; height: number; frameRate: number; uri: string }
 
 export type NativeJob = {
   start: number

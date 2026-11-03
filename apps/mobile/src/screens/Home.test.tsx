@@ -7,7 +7,7 @@ import { t } from '../i18n'
 import { Home } from './Home'
 
 const native = jest.mocked(CutsMedia)
-const asset = { id: 'A1', name: 'set.mov', duration: 3600, width: 1920, height: 1080, uri: 'file:///set.mov' }
+const asset = { id: 'A1', name: 'set.mov', duration: 3600, width: 1920, height: 1080, frameRate: 30, uri: 'file:///set.mov' }
 
 beforeEach(() => jest.clearAllMocks())
 
