@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
-import { Linking } from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { Animated, Linking } from 'react-native'
+import { GestureHandlerRootView, State } from 'react-native-gesture-handler'
+import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
 import { touchRecent } from '../editor/sessions'
@@ -155,4 +156,19 @@ it('a recent row at rest has no Remove button behind it, so pressing the row nev
   touchRecent(store, { assetId: 'A1', name: 'Set', duration: 60, clips: 1, openedAt: 1 })
   await render(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} /></GestureHandlerRootView>)
   expect(screen.queryByTestId('remove-A1')).toBeNull()
+})
+
+it('a flicked recent row keeps the speed of the finger as it settles, so there is no jolt on release', async () => {
+  const spring = jest.spyOn(Animated, 'spring')
+  const store = memoryStore()
+  touchRecent(store, { assetId: 'A1', name: 'Set', duration: 60, clips: 1, openedAt: 1 })
+  await render(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} /></GestureHandlerRootView>)
+  await act(async () =>
+    fireGestureHandler(getByGestureTestId('recent-swipe-A1'), [
+      { state: State.BEGAN, translationX: 0, velocityX: 0 },
+      { state: State.ACTIVE, translationX: -30, velocityX: -900 },
+      { state: State.END, translationX: -30, velocityX: -900 }
+    ])
+  )
+  expect(spring).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toValue: -88, velocity: -900 }))
 })

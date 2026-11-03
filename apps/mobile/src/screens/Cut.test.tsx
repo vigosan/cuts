@@ -136,3 +136,10 @@ it('holding the next-frame button keeps stepping until you let go', async () => 
   expect(player.currentTime).toBe(held)
   jest.useRealTimers()
 })
+
+it('the beat magnet shows it is on with the accent yellow, not the black of Play and Export', async () => {
+  await renderCut()
+  expect(screen.getByTestId('magnet')).toHaveStyle({ backgroundColor: '#fde047' })
+  await fireEvent.press(screen.getByTestId('magnet'))
+  expect(screen.getByTestId('magnet')).toHaveStyle({ backgroundColor: '#e8e7e3' })
+})

@@ -1,4 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native'
+import { Animated } from 'react-native'
+import { State } from 'react-native-gesture-handler'
+import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
@@ -147,4 +150,17 @@ it('with no clips yet, Suggest is a secondary button and Export reads as unavail
 it('with clips, the Suggest button in the carousel header is secondary too, so Export stays the only primary action', async () => {
   await renderCut(storeWith([{ id: 'a', start: 0, end: 5 }]))
   expect(screen.getByTestId('suggest')).toHaveStyle({ backgroundColor: '#e8e7e3' })
+})
+
+it('the carousel panel keeps the speed of the finger when it is let go, so growing it feels like one motion', async () => {
+  const spring = jest.spyOn(Animated, 'spring')
+  await renderCut(storeWith([{ id: 'a', start: 0, end: 5 }]))
+  await act(async () =>
+    fireGestureHandler(getByGestureTestId('carousel-grow'), [
+      { state: State.BEGAN, translationY: 0, velocityY: 0 },
+      { state: State.ACTIVE, translationY: -40, velocityY: -1200 },
+      { state: State.END, translationY: -40, velocityY: -1200 }
+    ])
+  )
+  expect(spring).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toValue: 0, velocity: -1200 }))
 })

@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { CarouselList } from './CarouselList'
+import { palettes } from '../theme'
 
-const theme = { background: '#f4f3f1', card: '#ffffff', ink: '#1c1c1e', muted: '#6e6e73', fill: '#e8e7e3', inverse: '#ffffff', danger: '#d70015', accent: '#fde047' }
+const theme = palettes.light
 const clips = [
   { id: 'a', start: 0, end: 59 },
   { id: 'b', start: 100, end: 159 }

@@ -8,7 +8,9 @@ const light = {
   fill: '#e8e7e3',
   inverse: '#ffffff',
   danger: '#d70015',
-  accent: '#fde047'
+  accent: '#fde047',
+  onAccent: '#1c1c1e',
+  tile: '#1c1c1e'
 }
 
 const dark: typeof light = {
@@ -19,10 +21,14 @@ const dark: typeof light = {
   fill: '#2c2c2e',
   inverse: '#1c1c1e',
   danger: '#ff6961',
-  accent: '#fde047'
+  accent: '#fde047',
+  onAccent: '#1c1c1e',
+  tile: '#d1d1d6'
 }
 
 export type Theme = typeof light
+
+export const palettes = { light, dark }
 
 export function useTheme(): Theme {
   return useColorScheme() === 'dark' ? dark : light

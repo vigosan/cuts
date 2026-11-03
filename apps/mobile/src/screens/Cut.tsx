@@ -44,21 +44,22 @@ export function Cut({ onBack, onOpenSheet }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [travel, setTravel] = useState(200)
   const [lift] = useState(() => new Animated.Value(0))
-  const settle = (from: number) => {
+  const settle = (from: number, velocity: number) => {
     lift.setValue(from)
-    Animated.spring(lift, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 18 }).start()
+    Animated.spring(lift, { toValue: 0, velocity, useNativeDriver: true, bounciness: 0, speed: 18 }).start()
   }
-  const resize = (next: boolean, at: number) => {
-    if (next === expanded) return settle(at)
+  const resize = (next: boolean, at: number, velocity = 0) => {
+    if (next === expanded) return settle(at, velocity)
     setExpanded(next)
-    settle(next ? at + travel : at - travel)
+    settle(next ? at + travel : at - travel, velocity)
   }
   const grow = usePanGesture({
     runOnJS: true,
+    testID: 'carousel-grow',
     activeOffsetY: [-6, 6],
     onUpdate: (event) => lift.setValue(panelOffset(expanded, event.translationY, travel)),
     onDeactivate: (event) =>
-      resize(panelExpanded(expanded, event.translationY, event.velocityY, travel), panelOffset(expanded, event.translationY, travel))
+      resize(panelExpanded(expanded, event.translationY, event.velocityY, travel), panelOffset(expanded, event.translationY, travel), event.velocityY)
   })
 
   const at = (time: number) => (state.magnet && peaks && time * PEAKS_PER_SECOND < peaks.length ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
@@ -133,7 +134,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                   onPress={() => (isPlaying ? player.pause() : player.play())}
                   style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.ink, alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <Icon name={isPlaying ? 'pause.fill' : 'play.fill'} theme={theme} inverse />
+                  <Icon name={isPlaying ? 'pause.fill' : 'play.fill'} tint={theme.inverse} />
                 </Tap>
                 <Text style={{ color: theme.ink, fontSize: 15, fontVariant: ['tabular-nums'] }}>
                   {formatTime(currentTime)} <Text style={{ color: theme.muted }}>/ {formatTime(asset.duration)}</Text>
@@ -146,10 +147,10 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                     haptics.tick()
                     dispatch({ type: 'magnet' })
                   }}
-                  style={{ marginLeft: 'auto', height: 44, paddingHorizontal: 12, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: state.magnet ? theme.ink : theme.fill }}
+                  style={{ marginLeft: 'auto', height: 44, paddingHorizontal: 12, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: state.magnet ? theme.accent : theme.fill }}
                 >
-                  <Icon name="metronome" theme={theme} inverse={state.magnet} />
-                  <Text style={{ color: state.magnet ? theme.inverse : theme.ink, fontSize: 15, fontWeight: '600' }}>{t.mobile.beat}</Text>
+                  <Icon name="metronome" tint={state.magnet ? theme.onAccent : theme.ink} />
+                  <Text style={{ color: state.magnet ? theme.onAccent : theme.ink, fontSize: 15, fontWeight: '600' }}>{t.mobile.beat}</Text>
                 </Tap>
               </View>
               <Timeline
@@ -255,6 +256,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
         </Animated.View>
         <Tap
           testID="export"
+          shrink
           disabled={clips.length === 0}
           accessibilityState={{ disabled: clips.length === 0 }}
           onPress={() => onOpenSheet('export')}
@@ -284,8 +286,8 @@ export function Cut({ onBack, onOpenSheet }: Props) {
   )
 }
 
-function Icon({ name, theme, inverse }: { name: SFSymbol; theme: Theme; inverse?: boolean }) {
-  return <SymbolView name={name} size={20} tintColor={inverse ? theme.inverse : theme.ink} />
+function Icon({ name, tint }: { name: SFSymbol; tint: string }) {
+  return <SymbolView name={name} size={20} tintColor={tint} />
 }
 
 type PillProps = { testID: string; label: string; icon?: SFSymbol; theme: Theme; grow?: boolean; onPress: () => void; onLongPress?: () => void; onPressOut?: () => void }
@@ -301,7 +303,7 @@ function Pill({ testID, label, icon, theme, grow, onPress, onLongPress, onPressO
       delayLongPress={300}
       style={{ flexGrow: grow ? 1 : 0, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.fill, borderRadius: 10, paddingHorizontal: 12 }}
     >
-      {icon ? <Icon name={icon} theme={theme} /> : <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>{label}</Text>}
+      {icon ? <Icon name={icon} tint={theme.ink} /> : <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>{label}</Text>}
     </Tap>
   )
 }

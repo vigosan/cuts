@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react-native'
 import { Segments } from './ClipSheet'
+import { palettes } from '../theme'
 
-const theme = { background: '#f4f3f1', card: '#ffffff', ink: '#1c1c1e', muted: '#6e6e73', fill: '#e8e7e3', inverse: '#ffffff', danger: '#d70015', accent: '#fde047' }
+const theme = palettes.light
 
 it('both segments keep an opaque background, because iOS does not repaint a switch to transparent', async () => {
   await render(<Segments theme={theme} prefix="framing" value="crop" options={[['crop', 'Crop'], ['fit', 'Fit']]} onChange={jest.fn()} />)

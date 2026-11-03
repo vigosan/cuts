@@ -111,8 +111,9 @@ function SourceTile({ testID, icon, label, accessibilityLabel, primary = false, 
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      shrink
       onPress={onPress}
-      style={{ flex: 1, height: 104, padding: 16, justifyContent: 'space-between', borderRadius: 18, borderCurve: 'continuous', backgroundColor: primary ? theme.ink : theme.card }}
+      style={{ flex: 1, height: 104, padding: 16, justifyContent: 'space-between', borderRadius: 18, borderCurve: 'continuous', backgroundColor: primary ? theme.tile : theme.card }}
     >
       <SymbolView name={icon} size={28} tintColor={color} />
       <Text style={{ color, fontSize: 17, fontWeight: '600' }}>{label}</Text>
@@ -168,17 +169,18 @@ function RecentRow({ recent, onPress, onRemove }: { recent: Recent; onPress: () 
   useEffect(() => {
     void poster(recent.assetId, POSTER_HEIGHT).then(setImage, () => {})
   }, [recent.assetId])
-  const slide = (to: number) => {
+  const slide = (to: number, velocity = 0) => {
     setOpen(to !== 0)
-    Animated.spring(x, { toValue: to, useNativeDriver: true, bounciness: 0, speed: 18 }).start(({ finished }) => finished && to === 0 && setRevealed(false))
+    Animated.spring(x, { toValue: to, velocity, useNativeDriver: true, bounciness: 0, speed: 18 }).start(({ finished }) => finished && to === 0 && setRevealed(false))
   }
   const swipe = usePanGesture({
     runOnJS: true,
+    testID: `recent-swipe-${recent.assetId}`,
     activeOffsetX: [-12, 12],
     failOffsetY: [-10, 10],
     onActivate: () => setRevealed(true),
     onUpdate: (event) => x.setValue(Math.min(0, (open ? -REMOVE_WIDTH : 0) + event.translationX)),
-    onDeactivate: (event) => slide((open ? -REMOVE_WIDTH : 0) + event.translationX < -REMOVE_WIDTH / 2 || event.velocityX < -300 ? -REMOVE_WIDTH : 0)
+    onDeactivate: (event) => slide((open ? -REMOVE_WIDTH : 0) + event.translationX < -REMOVE_WIDTH / 2 || event.velocityX < -300 ? -REMOVE_WIDTH : 0, event.velocityX)
   })
   return (
     <View style={{ borderRadius: 12, borderCurve: 'continuous', overflow: 'hidden' }}>
