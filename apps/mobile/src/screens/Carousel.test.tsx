@@ -96,3 +96,12 @@ it('the carousel can grow over the timeline to focus on the clips, and shrink ba
   await fireEvent.press(screen.getByTestId('carousel-header'))
   expect(screen.getByTestId('timeline')).toBeTruthy()
 })
+
+it('tapping the selected clip again deselects it, so settings go back to all clips', async () => {
+  await renderCut(storeWith([{ id: 'a', start: 0, end: 5 }, { id: 'b', start: 10, end: 15 }]))
+  await fireEvent.press(screen.getByTestId('clip-row-a'))
+  expect(screen.getByTestId('delete-clip')).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('clip-row-a'))
+  expect(screen.queryByTestId('delete-clip')).toBeNull()
+  expect(screen.getByText(`${t.mobile.fadesAndFraming} · ${t.settingsScopeAll}`)).toBeTruthy()
+})

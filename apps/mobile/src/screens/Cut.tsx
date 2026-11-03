@@ -71,6 +71,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
 
   const pressRow = (clip: Clip) => {
     if (state.picked) return dispatch({ type: 'pick', id: clip.id })
+    if (clip.id === selected) return dispatch({ type: 'select', id: null })
     dispatch({ type: 'select', id: clip.id })
     seekTo(clip.start)
   }
