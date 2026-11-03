@@ -97,6 +97,8 @@ export function Cut({ onBack, onOpenSheet }: Props) {
           format={format}
           settings={shownSettings}
           currentTime={currentTime}
+          isPlaying={isPlaying}
+          onTogglePlay={() => (isPlaying ? player.pause() : player.play())}
           onCrop={(zone) => dispatch({ type: 'settings', change: zone })}
         />
         <View style={{ backgroundColor: theme.card, borderRadius: 14, padding: 8, gap: 8 }}>

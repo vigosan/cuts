@@ -175,3 +175,19 @@ it('the clip sheet lists formats by their full names', async () => {
   expect(screen.getByText(t.formats['9:16'])).toBeTruthy()
   expect(screen.getByText(t.formats['4:5'])).toBeTruthy()
 })
+
+it('tapping the video shows the exported framing full screen, and the close button goes back', async () => {
+  await renderCut(storeWith(twoClips, '4:5'))
+  await fireEvent.press(screen.getByTestId('stage-tap'))
+  await fireEvent(screen.getByTestId('fullscreen-stage'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } } })
+  expect(screen.getByTestId('fullscreen-crop')).toHaveStyle({ width: 400, height: 500 })
+  await fireEvent.press(screen.getByTestId('close-preview'))
+  expect(screen.queryByTestId('fullscreen-crop')).toBeNull()
+})
+
+it('full screen Fit shows the whole video over the blurred copy', async () => {
+  await renderCut(storeWith(twoClips, '4:5', 'fit'))
+  await fireEvent.press(screen.getByTestId('stage-tap'))
+  await fireEvent(screen.getByTestId('fullscreen-stage'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 800 } } })
+  expect(screen.getAllByTestId('fit-preview').length).toBeGreaterThan(0)
+})
