@@ -46,13 +46,6 @@ describe('editor', () => {
     expect(state.history.past).toEqual([])
   })
 
-  it('picking clips toggles them for a partial export', () => {
-    const state = [{ type: 'pickMode', on: true } as const, { type: 'pick', id: 'b' } as const, { type: 'pick', id: 'a' } as const, { type: 'pick', id: 'b' } as const].reduce(
-      editorReducer,
-      twoClips()
-    )
-    expect(state.picked).toEqual(['a'])
-  })
   it('a half-marked clip can be cancelled without touching the others', () => {
     const state = [{ type: 'markStart', time: 40 } as const, { type: 'cancelMark' } as const].reduce(editorReducer, twoClips())
     expect(state.history.present.pendingStart).toBeNull()

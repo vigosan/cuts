@@ -11,7 +11,7 @@ const clips = [
 const renderList = (progress: Record<string, number>) =>
   render(
     <GestureHandlerRootView>
-      <CarouselList clips={clips} selectedId={null} picked={null} progress={progress} theme={theme} onPress={jest.fn()} onReorder={jest.fn()} />
+      <CarouselList clips={clips} selectedId={null} progress={progress} theme={theme} onPress={jest.fn()} onReorder={jest.fn()} />
     </GestureHandlerRootView>
   )
 

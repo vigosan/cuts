@@ -8,7 +8,6 @@ export type EditorState = {
   clipSettings: Record<string, ClipSettings>
   defaultSettings: ClipSettings
   selectedId: string | null
-  picked: string[] | null
   magnet: boolean
 }
 
@@ -19,8 +18,6 @@ export type EditorAction =
   | { type: 'settings'; change: Partial<ClipSettings> }
   | { type: 'magnet' }
   | { type: 'cancelMark' }
-  | { type: 'pickMode'; on: boolean }
-  | { type: 'pick'; id: string }
   | { type: 'load'; session: Session | null; defaults: ClipSettings }
 
 const clipsHistory = withHistory(clipsReducer)
@@ -30,7 +27,6 @@ export const initialEditor = (defaults: ClipSettings): EditorState => ({
   clipSettings: {},
   defaultSettings: defaults,
   selectedId: null,
-  picked: null,
   magnet: true
 })
 
@@ -50,8 +46,7 @@ function keepValid(state: EditorState): EditorState {
   const ids = state.history.present.clips.map((clip) => clip.id)
   return {
     ...state,
-    selectedId: state.selectedId && ids.includes(state.selectedId) ? state.selectedId : null,
-    picked: state.picked && state.picked.filter((id) => ids.includes(id))
+    selectedId: state.selectedId && ids.includes(state.selectedId) ? state.selectedId : null
   }
 }
 
@@ -65,12 +60,6 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, magnet: !state.magnet }
     case 'cancelMark':
       return { ...state, history: { ...state.history, present: { ...state.history.present, pendingStart: null } } }
-    case 'pickMode':
-      return { ...state, picked: action.on ? [] : null }
-    case 'pick': {
-      const picked = state.picked ?? []
-      return { ...state, picked: picked.includes(action.id) ? picked.filter((id) => id !== action.id) : [...picked, action.id] }
-    }
     case 'load': {
       if (!action.session) return initialEditor(action.defaults)
       const { session } = action

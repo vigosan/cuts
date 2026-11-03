@@ -41,7 +41,6 @@ export function Cut({ onBack, onOpenSheet }: Props) {
   const currentTime = sought && sought.after === playedTime ? sought.time : playedTime
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing, oldIsPlaying: false })
   const selected = state.selectedId
-  const picking = state.picked !== null
   const [expanded, setExpanded] = useState(false)
   const [travel, setTravel] = useState(200)
   const [lift] = useState(() => new Animated.Value(0))
@@ -89,7 +88,6 @@ export function Cut({ onBack, onOpenSheet }: Props) {
   }
 
   const pressRow = (clip: Clip) => {
-    if (state.picked) return dispatch({ type: 'pick', id: clip.id })
     if (clip.id === selected) return dispatch({ type: 'select', id: null })
     dispatch({ type: 'select', id: clip.id })
     seekTo(clip.start)
@@ -202,7 +200,6 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                 />
               </View>
             </View>
-            {!picking && (
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {selected && <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />}
               <Pill testID="clip-settings" label={selected ? t.mobile.fadesAndFraming : `${t.mobile.fadesAndFraming} · ${t.settingsScopeAll}`} theme={theme} grow onPress={() => onOpenSheet('clip')} />
@@ -211,7 +208,6 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                   setNotice(t.mobile.clipDeleted, true)
                 }} />}
             </View>
-            )}
           </View>
         )}
         <Animated.View style={{ flex: 1, zIndex: 1, backgroundColor: theme.card, borderRadius: 14, padding: 8, paddingTop: 0, gap: 6, transform: [{ translateY: lift }] }}>
@@ -234,9 +230,6 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                     <Tap testID="suggest" onPress={() => void suggest()} style={{ marginLeft: 'auto', minHeight: 36, justifyContent: 'center', backgroundColor: theme.ink, borderRadius: 10, paddingHorizontal: 12 }}>
                       <Text style={{ color: theme.inverse, fontSize: 15, fontWeight: '600' }}>✦ {t.suggestShort}</Text>
                     </Tap>
-                    <Tap testID="select" onPress={() => dispatch({ type: 'pickMode', on: !picking })} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
-                      <Text style={{ color: theme.ink, fontSize: 15 }}>{picking ? t.mobile.done : t.mobile.select}</Text>
-                    </Tap>
                   </>
                 )}
               </View>
@@ -253,7 +246,6 @@ export function Cut({ onBack, onOpenSheet }: Props) {
             <CarouselList
               clips={clips}
               selectedId={selected}
-              picked={state.picked}
               theme={theme}
               onPress={pressRow}
               progress={progress}

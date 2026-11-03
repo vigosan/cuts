@@ -120,7 +120,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   }
 
   const startExport = async () => {
-    const jobs = exportJobs(clips, state.picked, (id) => settingsOf(state, id), format, baseName)
+    const jobs = exportJobs(clips, (id) => settingsOf(state, id), format, baseName)
     const ids = jobs.map((job) => clips[job.position].id)
     stopped.current = false
     setProgress({})
@@ -156,7 +156,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
     },
     peaks,
     suggest,
-    exportLabel: state.picked?.length ? t.exportSelected(state.picked.length) : t.exportClips(clips.length),
+    exportLabel: t.exportClips(clips.length),
     exporting,
     progress,
     startExport,

@@ -79,12 +79,10 @@ it('clips past 20 are marked as outside the carousel', async () => {
   expect(screen.getByTestId('clip-row-c19').props.accessibilityHint).toBeUndefined()
 })
 
-it('Select picks clips for a partial export', async () => {
-  await renderCut(storeWith([{ id: 'a', start: 0, end: 5 }, { id: 'b', start: 10, end: 15 }, { id: 'c', start: 20, end: 25 }]))
-  await fireEvent.press(screen.getByTestId('select'))
-  await fireEvent.press(screen.getByTestId('clip-row-a'))
-  await fireEvent.press(screen.getByTestId('clip-row-c'))
-  expect(screen.getByText(t.exportSelected(2))).toBeTruthy()
+it('the carousel header has no Choose button, so Export always takes the whole carousel', async () => {
+  await renderCut(storeWith([{ id: 'a', start: 0, end: 5 }, { id: 'b', start: 10, end: 15 }]))
+  expect(screen.queryByTestId('select')).toBeNull()
+  expect(screen.getByText(t.exportClips(2))).toBeTruthy()
 })
 
 it('the carousel can grow over the timeline to focus on the clips, and shrink back', async () => {

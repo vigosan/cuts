@@ -12,7 +12,6 @@ import { Tap } from './Tap'
 type Props = {
   clips: Clip[]
   selectedId: string | null
-  picked: string[] | null
   progress?: Record<string, number>
   theme: Theme
   onPress: (clip: Clip) => void
@@ -26,7 +25,7 @@ const settle = (value: Animated.Value, toValue: number) =>
 
 type Drag = { index: number; translation: number; finger: number; height: number; startScroll: number }
 
-export function CarouselList({ clips, selectedId, picked, progress = {}, theme, onPress, onReorder }: Props) {
+export function CarouselList({ clips, selectedId, progress = {}, theme, onPress, onReorder }: Props) {
   const [dragging, setDragging] = useState<{ index: number; offset: number; height: number } | null>(null)
   const [settled, setSettled] = useState<{ id: string; from: number; at: number } | null>(null)
   const scroll = useRef<ScrollViewInstance>(null)
@@ -85,7 +84,6 @@ export function CarouselList({ clips, selectedId, picked, progress = {}, theme, 
             index={index}
             count={clips.length}
             selected={clip.id === selectedId}
-            picked={picked ? picked.includes(clip.id) : null}
             progress={progress[clip.id]}
             lifted={dragging?.index === index}
             offset={dragging?.index === index ? dragging.offset : dragging && target !== null ? rowShift(index, dragging.index, target, dragging.height + GAP) : 0}
@@ -123,7 +121,6 @@ type RowProps = {
   index: number
   count: number
   selected: boolean
-  picked: boolean | null
   progress?: number
   lifted: boolean
   offset: number
@@ -135,7 +132,7 @@ type RowProps = {
   onDrop: () => void
 }
 
-function Row({ clip, index, count, selected, picked, progress, lifted, offset, settleFrom, theme, onPress, onMove, onDrag, onDrop }: RowProps) {
+function Row({ clip, index, count, selected, progress, lifted, offset, settleFrom, theme, onPress, onMove, onDrag, onDrop }: RowProps) {
   const past = isPastCarousel(index)
   const clamp = (to: number) => Math.min(count - 1, Math.max(0, to))
   const height = useRef(ROW_HEIGHT)
@@ -201,13 +198,12 @@ function Row({ clip, index, count, selected, picked, progress, lifted, offset, s
         paddingHorizontal: 6,
         borderRadius: 8,
         opacity: past ? 0.45 : 1,
-        backgroundColor: selected || picked ? theme.fill : theme.card
+        backgroundColor: selected ? theme.fill : theme.card
       }}
     >
       {progress !== undefined && !done && (
         <View testID={`clip-progress-${clip.id}`} style={{ position: 'absolute', left: 0, bottom: 0, height: 3, width: `${progress * 100}%`, backgroundColor: theme.ink }} />
       )}
-      {picked !== null && <SymbolView name={picked ? 'checkmark.circle.fill' : 'circle'} size={20} tintColor={theme.ink} />}
       <View
         accessibilityLabel={index === 0 ? t.cover : undefined}
         style={{ width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: index === 0 || selected ? theme.ink : theme.fill }}
