@@ -227,8 +227,8 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                 <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '700' }}>{t.carousel}</Text>
                 {clips.length > 0 && (
                   <>
-                    <Tap testID="suggest" onPress={() => void suggest()} style={{ marginLeft: 'auto', minHeight: 36, justifyContent: 'center', backgroundColor: theme.ink, borderRadius: 10, paddingHorizontal: 12 }}>
-                      <Text style={{ color: theme.inverse, fontSize: 15, fontWeight: '600' }}>✦ {t.suggestShort}</Text>
+                    <Tap testID="suggest" onPress={() => void suggest()} style={{ marginLeft: 'auto', minHeight: 36, justifyContent: 'center', backgroundColor: theme.fill, borderRadius: 10, paddingHorizontal: 12 }}>
+                      <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>✦ {t.suggestShort}</Text>
                     </Tap>
                   </>
                 )}
@@ -237,8 +237,8 @@ export function Cut({ onBack, onOpenSheet }: Props) {
           </GestureDetector>
           {clips.length === 0 ? (
             <View testID="suggest-empty" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 12 }}>
-              <Tap testID="suggest-moments" onPress={() => void suggest()} style={{ alignSelf: 'stretch', backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
-                <Text style={{ color: theme.inverse, fontSize: 16, fontWeight: '600' }}>✦ {t.suggestMoments}</Text>
+              <Tap testID="suggest-moments" onPress={() => void suggest()} style={{ alignSelf: 'stretch', backgroundColor: theme.fill, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
+                <Text style={{ color: theme.ink, fontSize: 16, fontWeight: '600' }}>✦ {t.suggestMoments}</Text>
               </Tap>
               <Text style={{ color: theme.muted, fontSize: 13, textAlign: 'center' }}>{t.mobile.suggestExplain}</Text>
             </View>
@@ -253,8 +253,14 @@ export function Cut({ onBack, onOpenSheet }: Props) {
             />
           )}
         </Animated.View>
-        <Tap testID="export" onPress={() => clips.length > 0 && onOpenSheet('export')} style={{ alignSelf: 'stretch', backgroundColor: theme.ink, borderRadius: 12, minHeight: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-          <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
+        <Tap
+          testID="export"
+          disabled={clips.length === 0}
+          accessibilityState={{ disabled: clips.length === 0 }}
+          onPress={() => onOpenSheet('export')}
+          style={{ alignSelf: 'stretch', backgroundColor: clips.length > 0 ? theme.ink : theme.fill, borderRadius: 12, minHeight: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
+        >
+          <Text style={{ color: clips.length > 0 ? theme.inverse : theme.muted, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
         </Tap>
         {notice && (
           <View testID="notice" style={{ position: 'absolute', bottom: 72, alignSelf: 'center', zIndex: 2, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.ink, paddingLeft: 14, paddingRight: notice.undo ? 4 : 14, minHeight: 44, borderRadius: 12 }}>

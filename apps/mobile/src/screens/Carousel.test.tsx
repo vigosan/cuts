@@ -137,3 +137,14 @@ it('Suggest says how many moments it added and can undo them', async () => {
   await fireEvent.press(screen.getByTestId('notice-undo'))
   expect(screen.queryAllByTestId(/^clip-row-/)).toHaveLength(0)
 })
+
+it('with no clips yet, Suggest is a secondary button and Export reads as unavailable, so only one thing looks primary', async () => {
+  await renderCut()
+  expect(screen.getByTestId('suggest-moments')).toHaveStyle({ backgroundColor: '#e8e7e3' })
+  expect(screen.getByTestId('export').props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }))
+})
+
+it('with clips, the Suggest button in the carousel header is secondary too, so Export stays the only primary action', async () => {
+  await renderCut(storeWith([{ id: 'a', start: 0, end: 5 }]))
+  expect(screen.getByTestId('suggest')).toHaveStyle({ backgroundColor: '#e8e7e3' })
+})
