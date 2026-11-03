@@ -111,3 +111,12 @@ it('a recent set can be removed from the list', async () => {
   expect(screen.queryByTestId('recent-old')).toBeNull()
   expect(screen.getByTestId('recent-new')).toBeTruthy()
 })
+
+it('links to the privacy policy and support from inside the app, as App Review requires', async () => {
+  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined)
+  await render(<GestureHandlerRootView><Home store={memoryStore()} onOpen={jest.fn()} /></GestureHandlerRootView>)
+  await fireEvent.press(screen.getByTestId('privacy-link'))
+  expect(open).toHaveBeenCalledWith(t.privacyUrl)
+  await fireEvent.press(screen.getByTestId('support-link'))
+  expect(open).toHaveBeenCalledWith(t.supportUrl)
+})

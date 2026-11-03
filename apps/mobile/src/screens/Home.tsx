@@ -85,6 +85,14 @@ export function Home({ store, onOpen }: Props) {
         )}
         {download !== null && <OpeningProgress ratio={download} theme={theme} onCancel={cancel} />}
         <Recents store={store} onPress={open} />
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 24 }}>
+          <Tap testID="privacy-link" onPress={() => void Linking.openURL(t.privacyUrl)} style={{ minHeight: 44, justifyContent: 'center' }}>
+            <Text style={{ color: theme.muted, fontSize: 13 }}>{t.menuPrivacy}</Text>
+          </Tap>
+          <Tap testID="support-link" onPress={() => void Linking.openURL(t.supportUrl)} style={{ minHeight: 44, justifyContent: 'center' }}>
+            <Text style={{ color: theme.muted, fontSize: 13 }}>{t.menuSupport}</Text>
+          </Tap>
+        </View>
       </ScrollView>
     </SafeAreaView>
   )
