@@ -76,7 +76,7 @@ export function Segments<T extends string>({ theme, prefix, value, options, onCh
           accessibilityRole="tab"
           accessibilityState={{ selected: option === value }}
           onPress={() => onChange(option)}
-          style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 7, backgroundColor: option === value ? theme.card : 'transparent' }}
+          style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 7, backgroundColor: option === value ? theme.card : theme.fill }}
         >
           <Text style={{ fontSize: 13, color: option === value ? theme.ink : theme.muted, fontWeight: option === value ? '600' : '400' }}>{label}</Text>
         </Pressable>

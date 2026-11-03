@@ -88,7 +88,7 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
         paddingHorizontal: 6,
         borderRadius: 8,
         opacity: past ? 0.45 : 1,
-        backgroundColor: selected || picked ? theme.fill : 'transparent',
+        backgroundColor: selected || picked ? theme.fill : theme.card,
         transform: [{ translateY: offset }],
         zIndex: offset ? 1 : 0
       }}
