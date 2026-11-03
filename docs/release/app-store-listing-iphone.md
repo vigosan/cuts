@@ -95,4 +95,4 @@ Una primera versión de iOS no lleva "Novedades". Se rellenan a partir de la seg
 
 ## Capturas de pantalla
 
-Hechas y subidas: `docs/release/screenshots/iphone/`, 4 escenas por idioma a 1320 × 2868 (6,9"), del simulador del iPhone 18 Pro Max con la sesión del 2026-10-22 del propietario y la barra de estado limpia (9:41). Las escenas son: pantalla de corte con los 10 momentos de Sugerir, hoja de encuadre en 9:16, carrusel ampliado e inicio con Recientes.
+Hechas y subidas: `docs/release/screenshots/iphone/`, 4 escenas por idioma a 1320 × 2868 (6,9"), del simulador del iPhone 18 Pro Max con la sesión del 2026-10-22 del propietario y la barra de estado limpia (9:41). Las escenas son: pantalla de corte con los 10 momentos de Sugerir, hoja de encuadre en 9:16, carrusel ampliado e inicio con Recientes (rediseñado el 2026-11-03: logo, tarjetas de Fotos y Archivos).
