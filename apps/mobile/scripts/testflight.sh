@@ -13,8 +13,9 @@ AUTH="-allowProvisioningUpdates -authenticationKeyPath $KEY -authenticationKeyID
 cd "$ROOT"
 rm -rf "$BUILD"
 npx expo prebuild -p ios --clean
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(date +%Y%m%d%H%M)" ios/Cuts/Info.plist
 xcodebuild archive -workspace ios/Cuts.xcworkspace -scheme Cuts -configuration Release -destination generic/platform=iOS \
-  -archivePath "$BUILD/Cuts.xcarchive" CURRENT_PROJECT_VERSION="$(date +%Y%m%d%H%M)" \
+  -archivePath "$BUILD/Cuts.xcarchive" \
   DEVELOPMENT_TEAM=TKAZA7ZPZ2 CODE_SIGN_STYLE=Automatic $AUTH
 xcodebuild -exportArchive -archivePath "$BUILD/Cuts.xcarchive" -exportPath "$BUILD/export" \
   -exportOptionsPlist "$ROOT/scripts/ExportOptions.plist"
