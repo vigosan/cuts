@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Linking, Text, TextInput } from 'react-native'
-import { FORMATS, type OutputFormat } from '@cuts/core/formats'
+import type { OutputFormat } from '@cuts/core/formats'
 import type { ExportOutcome } from '../editor/export-run'
 import { t } from '../i18n'
 import type { Theme } from '../theme'
-import { Segments, Sheet } from './ClipSheet'
+import { Sheet } from './ClipSheet'
+import { FormatList } from './FormatList'
 import { Tap } from './Tap'
 
 export type ExportState = { status: 'idle' } | { status: 'running'; index: number; total: number } | { status: 'done'; outcome: ExportOutcome }
@@ -39,7 +40,7 @@ export function ExportSheet({ theme, label, format, baseName, state, onFormat, o
       {state.status === 'idle' && (
         <>
           <Text style={{ color: theme.muted, fontSize: 13 }}>{t.format}</Text>
-          <Segments theme={theme} prefix="format" value={format} options={FORMATS.map((option) => [option.id, option.id === 'original' ? t.formats.original : option.id])} onChange={onFormat} />
+          <FormatList theme={theme} value={format} onChange={onFormat} />
           <Text style={{ color: theme.muted, fontSize: 13 }}>{t.name}</Text>
           <TextInput
             testID="base-name"

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
-import { AppState, Linking } from 'react-native'
+import { ActionSheetIOS, AppState, Linking } from 'react-native'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import * as Haptics from 'expo-haptics'
 import CutsMedia from '../../modules/cuts-media'
@@ -146,4 +146,32 @@ it('the clip sheet has the format, so framing shows its preview right away like 
   expect(screen.getByTestId('crop-frame')).toBeTruthy()
   await fireEvent.press(screen.getByTestId('framing-fit'))
   expect(screen.getByTestId('fit-preview')).toBeTruthy()
+})
+
+it('the format shows its full name next to Export and changes from an iOS action sheet', async () => {
+  const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation((_options, choose) => choose(3))
+  await renderCut(storeWith(twoClips))
+  expect(screen.getByText(t.formats.original)).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('format-button'))
+  expect(sheet.mock.calls[0][0].options).toEqual([t.formats.original, t.formats['4:5'], t.formats['1:1'], t.formats['9:16'], t.cancel])
+  expect(screen.getByText(t.formats['9:16'])).toBeTruthy()
+})
+
+it('with no clip selected, the clip sheet changes all clips, like the Mac', async () => {
+  jest.useFakeTimers()
+  const store = storeWith(twoClips)
+  await renderCut(store)
+  await fireEvent.press(screen.getByTestId('clip-settings'))
+  expect(screen.getByText(t.settingsScopeAll)).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('video-fade-white'))
+  await act(async () => jest.advanceTimersByTime(300))
+  expect(loadSession(store, 'A1')!.defaultSettings.videoFade).toBe('white')
+  jest.useRealTimers()
+})
+
+it('the clip sheet lists formats by their full names', async () => {
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('clip-settings'))
+  expect(screen.getByText(t.formats['9:16'])).toBeTruthy()
+  expect(screen.getByText(t.formats['4:5'])).toBeTruthy()
 })

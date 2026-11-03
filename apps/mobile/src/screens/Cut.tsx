@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Text, View } from 'react-native'
+import { ActionSheetIOS, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEvent } from 'expo'
 import { randomUUID } from 'expo-crypto'
@@ -8,6 +8,7 @@ import { SymbolView, type SFSymbol } from 'expo-symbols'
 import { useVideoPlayer } from 'expo-video'
 import { snapToBeat } from '@cuts/core/beats'
 import { formatTime, type Clip } from '@cuts/core/clips'
+import { FORMATS } from '@cuts/core/formats'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { CarouselList } from '../components/CarouselList'
 import { Stage } from '../components/Stage'
@@ -28,7 +29,7 @@ type Props = { onBack: () => void; onOpenSheet: (sheet: SheetKind) => void }
 
 export function Cut({ onBack, onOpenSheet }: Props) {
   const theme = useTheme()
-  const { asset, state, dispatch, clips, shownSettings, baseName, format, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
+  const { asset, state, dispatch, clips, shownSettings, baseName, format, setFormat, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
   const player = useVideoPlayer(asset.uri, (created) => {
     created.timeUpdateEventInterval = 0.1
   })
@@ -61,6 +62,12 @@ export function Cut({ onBack, onOpenSheet }: Props) {
     dispatch({ type: 'select', id: clip.id })
     seekTo(clip.start)
   }
+
+  const chooseFormat = () =>
+    ActionSheetIOS.showActionSheetWithOptions(
+      { title: t.format, options: [...FORMATS.map((option) => t.formats[option.id]), t.cancel], cancelButtonIndex: FORMATS.length },
+      (index) => index < FORMATS.length && setFormat(FORMATS[index].id)
+    )
 
   const saveCurrentFrame = async () => {
     await saveFrame(asset.id, player.currentTime, { format, framing: shownSettings.framing, cropX: shownSettings.cropX, cropY: shownSettings.cropY })
@@ -155,11 +162,11 @@ export function Cut({ onBack, onOpenSheet }: Props) {
             />
           </View>
         </View>
-        {selected && !picking && (
+        {!picking && (
           <View style={{ flexDirection: 'row', gap: 6 }}>
-            <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />
-            <Pill testID="clip-settings" label={t.mobile.fadesAndFraming} theme={theme} grow onPress={() => onOpenSheet('clip')} />
-            <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => dispatch({ type: 'remove', id: selected })} />
+            {selected && <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />}
+            <Pill testID="clip-settings" label={selected ? t.mobile.fadesAndFraming : `${t.mobile.fadesAndFraming} · ${t.settingsScopeAll}`} theme={theme} grow onPress={() => onOpenSheet('clip')} />
+            {selected && <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => dispatch({ type: 'remove', id: selected })} />}
           </View>
         )}
         <View style={{ flex: 1, backgroundColor: theme.card, borderRadius: 14, padding: 8, gap: 6 }}>
@@ -195,9 +202,17 @@ export function Cut({ onBack, onOpenSheet }: Props) {
             />
           )}
         </View>
-        <Tap testID="export" onPress={() => clips.length > 0 && onOpenSheet('export')} style={{ backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 }}>
-          <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
-        </Tap>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+          <Tap testID="format-button" accessibilityLabel={`${t.format}: ${t.formats[format]}`} onPress={chooseFormat} style={{ flex: 1, backgroundColor: theme.fill, borderRadius: 12, paddingHorizontal: 12, justifyContent: 'center', minHeight: 50 }}>
+            <Text style={{ color: theme.muted, fontSize: 11 }}>{t.format}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: theme.ink, fontSize: 14, fontWeight: '600' }}>
+              {t.formats[format]}
+            </Text>
+          </Tap>
+          <Tap testID="export" onPress={() => clips.length > 0 && onOpenSheet('export')} style={{ flex: 1, backgroundColor: theme.ink, borderRadius: 12, minHeight: 50, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
+          </Tap>
+        </View>
         {notice && (
           <Text testID="notice" style={{ position: 'absolute', bottom: 72, alignSelf: 'center', color: theme.inverse, backgroundColor: theme.ink, padding: 10, borderRadius: 10, overflow: 'hidden' }}>
             {notice}

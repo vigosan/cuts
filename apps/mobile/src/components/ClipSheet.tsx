@@ -3,11 +3,12 @@ import { Text, View, type LayoutChangeEvent } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { Canvas, Circle, Line, vec } from '@shopify/react-native-skia'
 import { AUDIO_FADES, VIDEO_FADES, type ClipSettings } from '@cuts/core/fades'
-import { FORMATS, type OutputFormat } from '@cuts/core/formats'
+import type { OutputFormat } from '@cuts/core/formats'
 import { fadeHandleX, fadeSecondsAt, stepFade } from '../editor/fade-line'
 import { haptics } from '../haptics'
 import { t } from '../i18n'
 import type { Theme } from '../theme'
+import { FormatList } from './FormatList'
 import { Tap } from './Tap'
 
 type Props = {
@@ -25,7 +26,7 @@ export function ClipSheet({ title, settings, format, onFormat, clipLength, theme
   return (
     <Sheet theme={theme} title={title} onClose={onClose}>
       <Label theme={theme}>{t.format}</Label>
-      <Segments theme={theme} prefix="format" value={format} options={FORMATS.map((option) => [option.id, option.id === 'original' ? t.formats.original : option.id])} onChange={onFormat} />
+      <FormatList theme={theme} value={format} onChange={onFormat} />
       <Label theme={theme}>{t.framing}</Label>
       {format === 'original' && <Text style={{ color: theme.muted, fontSize: 13 }}>{t.mobile.framingNeedsFormat}</Text>}
       <Segments
