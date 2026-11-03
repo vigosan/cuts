@@ -61,7 +61,7 @@ La App Store salta de la 1.0 a la 1.7, así que estas notas juntan lo principal 
 Cuts recuerda tu trabajo: al volver a abrir un vídeo, sus clips y ajustes siguen donde los dejaste, y tus vídeos recientes te esperan en la pantalla de inicio.
 
 - Interfaz nueva al estilo Mac: el vídeo, la línea de tiempo y el carrusel ocupan toda la ventana.
-- ✦ Sugerir momentos: Cuts escucha la sesión, encuentra los drops y propone clips repartidos por toda la grabación.
+- Sugerir momentos: Cuts escucha la sesión, encuentra los drops y propone clips repartidos por toda la grabación.
 - Exporta en un clic, con nombre, carpeta y formato siempre a mano bajo el carrusel. Después, comparte con Fotos o AirDrop, o muéstralos en el Finder.
 - Encuadre por clip en 4:5, 1:1 y 9:16, o encaja el vídeo entero sobre un fondo desenfocado.
 - Las marcas caen en el beat (con ⌥, justo donde estás) y S parte un clip en dos.
@@ -79,7 +79,7 @@ Cuts recuerda tu trabajo: al volver a abrir un vídeo, sus clips y ajustes sigue
 Cuts remembers your work: open a video again and its clips and settings are right where you left them, and your recent videos wait on the start screen.
 
 - A new Mac-style interface: the video, timeline and carousel fill the window.
-- ✦ Suggest moments: Cuts listens to your session, finds the drops and suggests clips spread across the whole recording.
+- Suggest moments: Cuts listens to your session, finds the drops and suggests clips spread across the whole recording.
 - Export in one click, with name, folder and format always at hand under the carousel. Then share to Photos or AirDrop, or show them in the Finder.
 - Framing per clip in 4:5, 1:1 and 9:16, or fit the whole video over a blurred background.
 - Marks land on the beat (hold ⌥ to mark exactly where you are) and S splits a clip in two.
