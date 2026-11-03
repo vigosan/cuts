@@ -52,6 +52,46 @@ El número de compilación (`CFBundleVersion`) sale de esa misma versión. Si ha
 - Web: la portada ya describe el encuadre por clip, que llega con la 1.1. Añade lo nuevo si quieres (`apps/web/content.ts`) y sube los cambios; Vercel despliega solo. Comprueba con `vercel ls cuts --scope vigosans-projects`, sin recargar el dominio en bucle.
 - Etiqueta en git: `git tag v1.1.0 && git push origin v1.1.0`. El tag lanza el workflow de release: publica las descargas de Mac, Windows y Linux en `cuts-releases` (la web enlaza siempre a la última) y deja el paquete de la Microsoft Store como artefacto `store-appx` (ver `microsoft-store.md`).
 
+## Novedades en la App Store: de la 1.0 a la 1.7
+
+La App Store salta de la 1.0 a la 1.7, así que estas notas juntan lo principal de la 1.1 a la 1.7. Las de cada versión, más abajo, son las de la web.
+
+### Español
+
+Cuts recuerda tu trabajo: al volver a abrir un vídeo, sus clips y ajustes siguen donde los dejaste, y tus vídeos recientes te esperan en la pantalla de inicio.
+
+- Interfaz nueva al estilo Mac: el vídeo, la línea de tiempo y el carrusel ocupan toda la ventana.
+- ✦ Sugerir momentos: Cuts escucha la sesión, encuentra los drops y propone clips repartidos por toda la grabación.
+- Exporta en un clic, con nombre, carpeta y formato siempre a mano bajo el carrusel. Después, comparte con Fotos o AirDrop, o muéstralos en el Finder.
+- Encuadre por clip en 4:5, 1:1 y 9:16, o encaja el vídeo entero sobre un fondo desenfocado.
+- Las marcas caen en el beat (con ⌥, justo donde estás) y S parte un clip en dos.
+- Ves el fundido de audio en la línea de tiempo y lo ajustas arrastrando sus tiradores, ahora hasta 5 segundos.
+- Selecciona varios clips con ⇧-clic o ⌘-clic para exportar solo esos o cambiarlos a la vez.
+- Pulsa ▶ en un clip y escucha el carrusel entero, en bucle.
+- Deshacer y rehacer, avance fotograma a fotograma, J, K y L. Pulsa ? para ver todos los atajos.
+- ⇧⌘E guarda el fotograma actual como imagen, para abrir el carrusel con una foto.
+- Cuts recuerda tus fundidos, formato y carpeta para el siguiente vídeo.
+- Abre vídeos desde el Finder con "Abrir con", arrastrándolos al icono del Dock o desde Archivo › Abrir recientes.
+- Avisos más claros cuando un vídeo no se puede ver, no tiene sonido para sugerir o falla la exportación.
+
+### English
+
+Cuts remembers your work: open a video again and its clips and settings are right where you left them, and your recent videos wait on the start screen.
+
+- A new Mac-style interface: the video, timeline and carousel fill the window.
+- ✦ Suggest moments: Cuts listens to your session, finds the drops and suggests clips spread across the whole recording.
+- Export in one click, with name, folder and format always at hand under the carousel. Then share to Photos or AirDrop, or show them in the Finder.
+- Framing per clip in 4:5, 1:1 and 9:16, or fit the whole video over a blurred background.
+- Marks land on the beat (hold ⌥ to mark exactly where you are) and S splits a clip in two.
+- See the audio fade on the timeline and adjust it by dragging its handles, now up to 5 seconds.
+- Select several clips with ⇧-click or ⌘-click to export just those or change them all at once.
+- Press ▶ on a clip to hear the whole carousel, on a loop.
+- Undo and redo, frame-by-frame stepping, J, K and L. Press ? to see every shortcut.
+- ⇧⌘E saves the current frame as an image, so the carousel can open with a photo.
+- Cuts remembers your fades, format and folder for the next video.
+- Open videos from the Finder with Open With, by dragging them onto the Dock icon or from File › Open Recent.
+- Clearer notices when a video can't be shown, has no sound to suggest from, or an export fails.
+
 ## Novedades de la 1.7
 
 ### Español
