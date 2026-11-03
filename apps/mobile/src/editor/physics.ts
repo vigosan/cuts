@@ -29,3 +29,13 @@ export function autoScrollSpeed(position: number, height: number): number {
   if (clamped > height - SCROLL_EDGE) return SCROLL_MAX * (1 - (height - clamped) / SCROLL_EDGE)
   return 0
 }
+
+const FLICK = 500
+const DRAG = 40
+
+export function panelExpanded(expanded: boolean, translationY: number, velocityY: number): boolean {
+  if (Math.abs(velocityY) > FLICK) return velocityY < 0
+  if (translationY < -DRAG) return true
+  if (translationY > DRAG) return false
+  return expanded
+}

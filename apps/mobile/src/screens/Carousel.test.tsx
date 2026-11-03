@@ -86,3 +86,13 @@ it('Select picks clips for a partial export', async () => {
   await fireEvent.press(screen.getByTestId('clip-row-c'))
   expect(screen.getByText(t.exportSelected(2))).toBeTruthy()
 })
+
+it('the carousel can grow over the timeline to focus on the clips, and shrink back', async () => {
+  await renderCut(storeWith([{ id: 'a', start: 0, end: 5 }]))
+  expect(screen.getByTestId('timeline')).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('carousel-header'))
+  expect(screen.queryByTestId('timeline')).toBeNull()
+  expect(screen.getByTestId('clip-row-a')).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('carousel-header'))
+  expect(screen.getByTestId('timeline')).toBeTruthy()
+})
