@@ -4,8 +4,7 @@ Cuts para iPhone usa la misma ficha de la App Store que la versión de Mac (`com
 
 ## Antes de la primera subida
 
-1. En App Store Connect, abre Cuts y pulsa **Añadir plataforma → iOS**. Hoy la ficha solo tiene versiones de macOS. Mientras la 1.7 de Mac esté en revisión, esto no la afecta.
-2. Comprueba que existe la clave de la API en `~/.appstoreconnect/private_keys/AuthKey_PN375CPCF7.p8`. Si no está, recupérala de 1Password:
+1. Comprueba que existe la clave de la API en `~/.appstoreconnect/private_keys/AuthKey_PN375CPCF7.p8`. Si no está, recupérala de 1Password:
 
    ```sh
    op read --out-file ~/.appstoreconnect/private_keys/AuthKey_PN375CPCF7.p8 "op://Software/App Store Connect API (Cuts CLI)/p8"
@@ -24,7 +23,9 @@ El script hace estos pasos:
 3. Exporta el `.ipa` para App Store Connect.
 4. Lo sube con `altool`.
 
-La primera vez, Xcode crea el perfil de distribución de iOS con la misma clave.
+La exportación firma a mano con el certificado "Apple Distribution" (debe estar en el llavero) y el perfil "Cuts iOS App Store". Ese perfil se creó con la API el 2026-11-03. La clave tiene rol App Manager y no puede usar la firma en la nube de Apple, por eso la firma es manual. Si el perfil caduca o se borra, créalo otra vez en developer.apple.com (tipo App Store, App ID `com.vigosan.cuts`, certificado Apple Distribution) con ese mismo nombre.
+
+`altool` necesita `--apple-id 6826686848`. La ficha todavía no tiene la plataforma iOS añadida y aun así acepta builds de iPhone para TestFlight.
 
 Cuando Apple termine de procesar el build (unos 10–30 minutos), aparece en **TestFlight → Pruebas internas**. Añádete como probador interno e instálalo desde la app TestFlight del iPhone.
 

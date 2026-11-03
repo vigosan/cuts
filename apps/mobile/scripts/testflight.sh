@@ -17,5 +17,5 @@ xcodebuild archive -workspace ios/Cuts.xcworkspace -scheme Cuts -configuration R
   -archivePath "$BUILD/Cuts.xcarchive" CURRENT_PROJECT_VERSION="$(date +%Y%m%d%H%M)" \
   DEVELOPMENT_TEAM=TKAZA7ZPZ2 CODE_SIGN_STYLE=Automatic $AUTH
 xcodebuild -exportArchive -archivePath "$BUILD/Cuts.xcarchive" -exportPath "$BUILD/export" \
-  -exportOptionsPlist "$ROOT/scripts/ExportOptions.plist" $AUTH
-xcrun altool --upload-app -f "$BUILD/export/Cuts.ipa" -t ios --apiKey "$KEY_ID" --apiIssuer "$ISSUER"
+  -exportOptionsPlist "$ROOT/scripts/ExportOptions.plist"
+xcrun altool --upload-app -f "$BUILD/export/Cuts.ipa" -t ios --apple-id 6826686848 --apiKey "$KEY_ID" --apiIssuer "$ISSUER"
