@@ -15,7 +15,7 @@
         "LSApplicationQueriesSchemes": [
           "instagram"
         ],
-        "NSPhotoLibraryUsageDescription": "Cuts opens your recorded sets from Photos so you can cut them into clips.",
+        "NSPhotoLibraryUsageDescription": "Cuts opens your recorded sessions from Photos so you can cut them into clips.",
         "NSPhotoLibraryAddUsageDescription": "Cuts saves your clips to the Cuts album in Photos.",
         "CFBundleAllowMixedLocalizations": true
       }

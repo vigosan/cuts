@@ -61,3 +61,6 @@ mobile-test: mobile-fixtures
 
 mobile-ios:
 	cd $(MOBILE) && npx expo prebuild -p ios --clean && npx expo run:ios
+
+mobile-testflight:
+	$(MOBILE)/scripts/testflight.sh
