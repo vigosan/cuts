@@ -78,6 +78,8 @@ mas:
   entitlements: build/entitlements.mas.plist
   entitlementsInherit: build/entitlements.mas.inherit.plist
   provisioningProfile: build/embedded.provisionprofile
+  extendInfo:
+    ITSAppUsesNonExemptEncryption: false
 publish:
   provider: github
   owner: vigosan
