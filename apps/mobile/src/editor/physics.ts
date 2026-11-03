@@ -30,12 +30,19 @@ export function autoScrollSpeed(position: number, height: number): number {
   return 0
 }
 
-const FLICK = 500
-const DRAG = 40
+const FLICK = 300
 
-export function panelExpanded(expanded: boolean, translationY: number, velocityY: number): boolean {
+export function panelExpanded(expanded: boolean, translationY: number, velocityY: number, travel: number): boolean {
   if (Math.abs(velocityY) > FLICK) return velocityY < 0
-  if (translationY < -DRAG) return true
-  if (translationY > DRAG) return false
+  if (translationY < -travel / 3) return true
+  if (translationY > travel / 3) return false
   return expanded
+}
+
+export function panelOffset(expanded: boolean, translationY: number, travel: number): number {
+  const min = expanded ? 0 : -travel
+  const max = expanded ? travel : 0
+  if (translationY < min) return min - rubberband(min - translationY, travel)
+  if (translationY > max) return max + rubberband(translationY - max, travel)
+  return translationY
 }

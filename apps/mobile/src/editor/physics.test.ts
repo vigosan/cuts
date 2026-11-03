@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { autoScrollSpeed, panelExpanded, elasticSpan, project, reorderTarget, rowShift, rubberband } from './physics'
+import { autoScrollSpeed, panelExpanded, panelOffset, elasticSpan, project, reorderTarget, rowShift, rubberband } from './physics'
 
 describe('physics', () => {
   it('a flick keeps travelling like iOS scrolling (Apple projection, 0.998)', () => {
@@ -45,12 +45,20 @@ describe('physics', () => {
     expect(autoScrollSpeed(320, 300)).toBe(autoScrollSpeed(300, 300))
   })
 
-  it('a flick decides the carousel size by its direction, a slow drag by how far it went', () => {
-    expect(panelExpanded(false, -60, 0)).toBe(true)
-    expect(panelExpanded(false, -10, -800)).toBe(true)
-    expect(panelExpanded(false, -10, 0)).toBe(false)
-    expect(panelExpanded(true, 60, 0)).toBe(false)
-    expect(panelExpanded(true, 10, 900)).toBe(false)
-    expect(panelExpanded(true, -80, 0)).toBe(true)
+  it('a flick decides the carousel size by its direction, a slow drag by passing a third of the way', () => {
+    expect(panelExpanded(false, -70, 0, 200)).toBe(true)
+    expect(panelExpanded(false, -50, 0, 200)).toBe(false)
+    expect(panelExpanded(false, -10, -400, 200)).toBe(true)
+    expect(panelExpanded(true, 70, 0, 200)).toBe(false)
+    expect(panelExpanded(true, 10, 400, 200)).toBe(false)
+    expect(panelExpanded(true, -80, 0, 200)).toBe(true)
+  })
+
+  it('while dragging, the carousel follows the finger but never past its two sizes', () => {
+    expect(panelOffset(false, -80, 200)).toBe(-80)
+    expect(panelOffset(false, -300, 200)).toBeLessThan(-200)
+    expect(panelOffset(false, -300, 200)).toBeGreaterThan(-250)
+    expect(panelOffset(false, 30, 200)).toBeLessThan(30)
+    expect(panelOffset(true, 50, 200)).toBe(50)
   })
 })

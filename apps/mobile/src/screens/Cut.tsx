@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutAnimation, Text, View } from 'react-native'
+import { Animated, Text, View } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEvent } from 'expo'
@@ -14,7 +14,7 @@ import { CarouselList } from '../components/CarouselList'
 import { Stage } from '../components/Stage'
 import { Timeline } from '../components/Timeline'
 import { endHere, startHere } from '../editor/marks'
-import { panelExpanded } from '../editor/physics'
+import { panelExpanded, panelOffset } from '../editor/physics'
 import { useEditor } from '../editor/session'
 import { t } from '../i18n'
 import { saveFrame } from '../media'
@@ -41,15 +41,23 @@ export function Cut({ onBack, onOpenSheet }: Props) {
   const selected = state.selectedId
   const picking = state.picked !== null
   const [expanded, setExpanded] = useState(false)
-  const resize = (next: boolean) => {
-    if (next === expanded) return
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.spring)
+  const [travel, setTravel] = useState(200)
+  const [lift] = useState(() => new Animated.Value(0))
+  const settle = (from: number) => {
+    lift.setValue(from)
+    Animated.spring(lift, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 18 }).start()
+  }
+  const resize = (next: boolean, at: number) => {
+    if (next === expanded) return settle(at)
     setExpanded(next)
+    settle(next ? at + travel : at - travel)
   }
   const grow = usePanGesture({
     runOnJS: true,
-    activeOffsetY: [-10, 10],
-    onDeactivate: (event) => resize(panelExpanded(expanded, event.translationY, event.velocityY))
+    activeOffsetY: [-6, 6],
+    onUpdate: (event) => lift.setValue(panelOffset(expanded, event.translationY, travel)),
+    onDeactivate: (event) =>
+      resize(panelExpanded(expanded, event.translationY, event.velocityY, travel), panelOffset(expanded, event.translationY, travel))
   })
 
   const at = (time: number) => (state.magnet && peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
@@ -107,103 +115,108 @@ export function Cut({ onBack, onOpenSheet }: Props) {
           onCrop={(zone) => dispatch({ type: 'settings', change: zone })}
         />
         {!expanded && (
-          <View style={{ backgroundColor: theme.card, borderRadius: 14, padding: 8, gap: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Tap
-                testID="play"
-                accessibilityLabel={isPlaying ? t.mobile.pause : t.mobile.play}
-                onPress={() => (isPlaying ? player.pause() : player.play())}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.ink, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Icon name={isPlaying ? 'pause.fill' : 'play.fill'} theme={theme} inverse />
-              </Tap>
-              <Text style={{ color: theme.ink, fontSize: 15, fontVariant: ['tabular-nums'] }}>
-                {formatTime(currentTime)} <Text style={{ color: theme.muted }}>/ {formatTime(asset.duration)}</Text>
-              </Text>
-              <Tap
-                testID="magnet"
-                accessibilityLabel={state.magnet ? t.mobile.magnetOn : t.mobile.magnetOff}
-                accessibilityState={{ selected: state.magnet }}
-                onPress={() => {
-                  haptics.tick()
-                  dispatch({ type: 'magnet' })
-                }}
-                style={{ marginLeft: 'auto', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: state.magnet ? theme.ink : theme.fill }}
-              >
-                <Icon name="metronome" theme={theme} inverse={state.magnet} />
-              </Tap>
-            </View>
-            <Timeline
-              assetId={asset.id}
-              duration={asset.duration}
-              currentTime={currentTime}
-              clips={clips}
-              selectedId={selected}
-              pendingStart={state.history.present.pendingStart}
-              peaks={peaks}
-              snap={at}
-              onSeek={seekTo}
-              onSelect={(id) => dispatch({ type: 'select', id })}
-              onPressClip={pressRow}
-              onDragStart={() => dispatch({ type: 'checkpoint' })}
-              onDrag={(clip) => {
-                const before = clips.find((candidate) => candidate.id === clip.id)
-                if (state.magnet && peaks && before && (before.start !== clip.start || before.end !== clip.end)) haptics.tick()
-                dispatch({ type: 'replace', clip, transient: true })
-              }}
-            />
-            <View style={{ flexDirection: 'row', gap: 6 }}>
-              <Pill testID="start-here" label={t.mobile.startHere} theme={theme} grow onPress={() => {
-                  haptics.mark()
-                  dispatch(startHere(state.history.present, at(player.currentTime), selected))
-                }} />
-              <Pill testID="previous-frame" icon="chevron.left" label={t.mobile.previousFrame} theme={theme} onPress={() => step(-1)} />
-              <Pill testID="next-frame" icon="chevron.right" label={t.mobile.nextFrame} theme={theme} onPress={() => step(1)} />
-              <Pill
-                testID="end-here"
-                label={t.mobile.endHere}
-                theme={theme}
-                grow
-                onPress={() => {
-                  haptics.mark()
-                  dispatch(endHere(state.history.present, at(player.currentTime), selected, randomUUID()))
+          <View onLayout={(event) => setTravel(event.nativeEvent.layout.height + 8)} style={{ gap: 8 }}>
+            <View style={{ backgroundColor: theme.card, borderRadius: 14, padding: 8, gap: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Tap
+                  testID="play"
+                  accessibilityLabel={isPlaying ? t.mobile.pause : t.mobile.play}
+                  onPress={() => (isPlaying ? player.pause() : player.play())}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.ink, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Icon name={isPlaying ? 'pause.fill' : 'play.fill'} theme={theme} inverse />
+                </Tap>
+                <Text style={{ color: theme.ink, fontSize: 15, fontVariant: ['tabular-nums'] }}>
+                  {formatTime(currentTime)} <Text style={{ color: theme.muted }}>/ {formatTime(asset.duration)}</Text>
+                </Text>
+                <Tap
+                  testID="magnet"
+                  accessibilityLabel={state.magnet ? t.mobile.magnetOn : t.mobile.magnetOff}
+                  accessibilityState={{ selected: state.magnet }}
+                  onPress={() => {
+                    haptics.tick()
+                    dispatch({ type: 'magnet' })
+                  }}
+                  style={{ marginLeft: 'auto', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: state.magnet ? theme.ink : theme.fill }}
+                >
+                  <Icon name="metronome" theme={theme} inverse={state.magnet} />
+                </Tap>
+              </View>
+              <Timeline
+                assetId={asset.id}
+                duration={asset.duration}
+                currentTime={currentTime}
+                clips={clips}
+                selectedId={selected}
+                pendingStart={state.history.present.pendingStart}
+                peaks={peaks}
+                snap={at}
+                onSeek={seekTo}
+                onSelect={(id) => dispatch({ type: 'select', id })}
+                onPressClip={pressRow}
+                onDragStart={() => dispatch({ type: 'checkpoint' })}
+                onDrag={(clip) => {
+                  const before = clips.find((candidate) => candidate.id === clip.id)
+                  if (state.magnet && peaks && before && (before.start !== clip.start || before.end !== clip.end)) haptics.tick()
+                  dispatch({ type: 'replace', clip, transient: true })
                 }}
               />
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <Pill testID="start-here" label={t.mobile.startHere} theme={theme} grow onPress={() => {
+                    haptics.mark()
+                    dispatch(startHere(state.history.present, at(player.currentTime), selected))
+                  }} />
+                <Pill testID="previous-frame" icon="chevron.left" label={t.mobile.previousFrame} theme={theme} onPress={() => step(-1)} />
+                <Pill testID="next-frame" icon="chevron.right" label={t.mobile.nextFrame} theme={theme} onPress={() => step(1)} />
+                <Pill
+                  testID="end-here"
+                  label={t.mobile.endHere}
+                  theme={theme}
+                  grow
+                  onPress={() => {
+                    haptics.mark()
+                    dispatch(endHere(state.history.present, at(player.currentTime), selected, randomUUID()))
+                  }}
+                />
+              </View>
             </View>
-          </View>
-        )}
-        {!picking && !expanded && (
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            {selected && <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />}
-            <Pill testID="clip-settings" label={selected ? t.mobile.fadesAndFraming : `${t.mobile.fadesAndFraming} · ${t.settingsScopeAll}`} theme={theme} grow onPress={() => onOpenSheet('clip')} />
-            {selected && <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => dispatch({ type: 'remove', id: selected })} />}
-          </View>
-        )}
-        <View style={{ flex: 1, backgroundColor: theme.card, borderRadius: 14, padding: 8, paddingTop: 0, gap: 6 }}>
-          <GestureDetector gesture={grow}>
-            <Tap
-              testID="carousel-header"
-              accessibilityRole="button"
-              accessibilityLabel={expanded ? t.mobile.carouselShrink : t.mobile.carouselGrow}
-              onPress={() => resize(!expanded)}
-              style={{ alignItems: 'center', paddingVertical: 6 }}
-            >
-              <View style={{ width: 36, height: 5, borderRadius: 3, backgroundColor: theme.fill }} />
-            </Tap>
-          </GestureDetector>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 }}>
-            <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '700' }}>{t.carousel}</Text>
-            {clips.length > 0 && (
-              <>
-                <Tap testID="suggest" onPress={() => void suggest()} style={{ marginLeft: 'auto', minHeight: 36, justifyContent: 'center', backgroundColor: theme.ink, borderRadius: 10, paddingHorizontal: 12 }}>
-                  <Text style={{ color: theme.inverse, fontSize: 15, fontWeight: '600' }}>✦ {t.suggestShort}</Text>
-                </Tap>
-                <Tap testID="select" onPress={() => dispatch({ type: 'pickMode', on: !picking })} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
-                  <Text style={{ color: theme.ink, fontSize: 15 }}>{picking ? t.mobile.done : t.mobile.select}</Text>
-                </Tap>
-              </>
+            {!picking && (
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {selected && <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />}
+              <Pill testID="clip-settings" label={selected ? t.mobile.fadesAndFraming : `${t.mobile.fadesAndFraming} · ${t.settingsScopeAll}`} theme={theme} grow onPress={() => onOpenSheet('clip')} />
+              {selected && <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => dispatch({ type: 'remove', id: selected })} />}
+            </View>
             )}
           </View>
+        )}
+        <Animated.View style={{ flex: 1, zIndex: 1, backgroundColor: theme.card, borderRadius: 14, padding: 8, paddingTop: 0, gap: 6, transform: [{ translateY: lift }] }}>
+          <GestureDetector gesture={grow}>
+            <View>
+              <Tap
+                testID="carousel-header"
+                accessibilityRole="button"
+                accessibilityLabel={expanded ? t.mobile.carouselShrink : t.mobile.carouselGrow}
+                onPress={() => resize(!expanded, 0)}
+                hitSlop={{ top: 8, bottom: 8 }}
+                style={{ alignItems: 'center', paddingVertical: 8 }}
+              >
+                <View style={{ width: 36, height: 5, borderRadius: 3, backgroundColor: theme.fill }} />
+              </Tap>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 }}>
+                <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '700' }}>{t.carousel}</Text>
+                {clips.length > 0 && (
+                  <>
+                    <Tap testID="suggest" onPress={() => void suggest()} style={{ marginLeft: 'auto', minHeight: 36, justifyContent: 'center', backgroundColor: theme.ink, borderRadius: 10, paddingHorizontal: 12 }}>
+                      <Text style={{ color: theme.inverse, fontSize: 15, fontWeight: '600' }}>✦ {t.suggestShort}</Text>
+                    </Tap>
+                    <Tap testID="select" onPress={() => dispatch({ type: 'pickMode', on: !picking })} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
+                      <Text style={{ color: theme.ink, fontSize: 15 }}>{picking ? t.mobile.done : t.mobile.select}</Text>
+                    </Tap>
+                  </>
+                )}
+              </View>
+            </View>
+          </GestureDetector>
           {clips.length === 0 ? (
             <View testID="suggest-empty" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 12 }}>
               <Tap testID="suggest-moments" onPress={() => void suggest()} style={{ alignSelf: 'stretch', backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
@@ -222,7 +235,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
               onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
             />
           )}
-        </View>
+        </Animated.View>
         <Tap testID="export" onPress={() => clips.length > 0 && onOpenSheet('export')} style={{ alignSelf: 'stretch', backgroundColor: theme.ink, borderRadius: 12, minHeight: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
           <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
         </Tap>
