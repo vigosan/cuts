@@ -24,6 +24,7 @@ type Props = {
   onSelect: (id: string | null) => void
   onDragStart: () => void
   onDrag: (clip: Clip) => void
+  onPressClip: (clip: Clip) => void
 }
 
 const HEIGHT = 64
@@ -44,7 +45,7 @@ function settleView(from: TimelineView, to: TimelineView, apply: (view: Timeline
   requestAnimationFrame(frame)
 }
 
-export function Timeline({ assetId, duration, currentTime, clips, selectedId, pendingStart = null, peaks, snap, onSeek, onSelect, onDragStart, onDrag }: Props) {
+export function Timeline({ assetId, duration, currentTime, clips, selectedId, pendingStart = null, peaks, snap, onSeek, onSelect, onDragStart, onDrag, onPressClip }: Props) {
   const theme = useTheme()
   const [width, setWidth] = useState(0)
   const [span, setSpan] = useState(duration)
@@ -61,9 +62,11 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
 
   const tap = useTapGesture({
     runOnJS: true,
+    testID: 'timeline-tap',
     onActivate: (event) => {
       const hit = hitClip(clips, view, event.x, EDGE_SLOP)
-      if (hit) return onSelect(hit.id)
+      const clip = hit && clips.find((candidate) => candidate.id === hit.id)
+      if (clip) return onPressClip(clip)
       onSelect(null)
       onSeek(timeAt(view, event.x))
     }

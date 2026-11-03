@@ -136,6 +136,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
             snap={at}
             onSeek={seekTo}
             onSelect={(id) => dispatch({ type: 'select', id })}
+            onPressClip={pressRow}
             onDragStart={() => dispatch({ type: 'checkpoint' })}
             onDrag={(clip) => {
               const before = clips.find((candidate) => candidate.id === clip.id)
