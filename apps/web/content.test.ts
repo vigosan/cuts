@@ -112,4 +112,15 @@ describe("site content", () => {
       expect(text).not.toMatch(/does not connect to the internet|no se conecta a internet/);
     }
   });
-});
+
+  it("covers the iPhone app in the privacy policy, since App Review reads it for the Photos access", () => {
+    const iphone = { en: "The iPhone app", es: "La app de iPhone" }
+    for (const lang of LANGS) {
+      const section = content[lang].privacy.sections.find((candidate) => candidate.heading === iphone[lang])
+      expect(section, lang).toBeDefined()
+      const text = section!.body.join(" ")
+      expect(text).toMatch(/Photos|Fotos/)
+      expect(text).toContain("Cuts")
+    }
+  })
+})

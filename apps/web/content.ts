@@ -4,7 +4,7 @@ export type Lang = (typeof LANGS)[number];
 export const SITE_URL = "https://cuts.vicent.io";
 export const CONTACT = "hello@vicent.io";
 export const REPO = "https://github.com/vigosan/cuts";
-export const UPDATED = "2026-10-31";
+export const UPDATED = "2026-11-03";
 export const VERSION = "1.7";
 export const SCREENSHOTS = ["timeline", "framing", "dark"] as const;
 export const DARK_SCREENSHOTS = { timeline: "timeline-dark", framing: "framing-dark", dark: "light" } as const;
@@ -138,6 +138,16 @@ export const content = {
           ],
         },
         {
+          heading: "The iPhone app",
+          body: [
+            "Cuts for iPhone does not collect, store or share any personal data either, and it never connects to the internet itself.",
+            "To open a video, Cuts asks for access to your Photos. It reads the original video you choose, without copying it, and saves the clips you export to an album called Cuts. If the video is only in iCloud, Photos downloads it from iCloud for you, under Apple's privacy policy.",
+            "Videos you choose from the Files app, including iCloud Drive, are opened where they are. Cuts keeps a reference to them so they appear again under Recent.",
+            "Everything else happens on your iPhone: listening to the audio, the thumbnails and the export. The clips you mark in each video, the list of recent videos and your settings stay on your iPhone and are deleted when you delete the app.",
+            "Open Instagram only opens the Instagram app. Cuts never posts anything for you.",
+          ],
+        },
+        {
           heading: "This website",
           body: [
             "This website is hosted on Vercel, which processes technical request data, such as your IP address, to deliver the pages.",
@@ -155,8 +165,9 @@ export const content = {
     support: {
       title: "Support",
       body: [
-        `For help, bug reports or feature ideas, write to ${CONTACT}. Please include your system and its version (macOS, Windows or Linux) and, if you can, the file type of the video you were using.`,
+        `For help, bug reports or feature ideas, write to ${CONTACT}. Please include your system and its version (macOS, Windows, Linux or iOS) and, if you can, the file type of the video you were using.`,
         "Clips are saved by default to Cuts › the name of your video, inside your Movies folder on Mac or your Videos folder on Windows and Linux. You can choose another folder from the Folder field before exporting.",
+        "On iPhone, clips are saved to an album called Cuts in Photos, in carousel order.",
       ],
     },
     ffmpeg: {
@@ -307,6 +318,16 @@ export const content = {
           ],
         },
         {
+          heading: "La app de iPhone",
+          body: [
+            "Cuts para iPhone tampoco recopila, guarda ni comparte ningún dato personal, y nunca se conecta a internet por su cuenta.",
+            "Para abrir un vídeo, Cuts pide acceso a tus Fotos. Lee el vídeo original que eliges, sin copiarlo, y guarda los clips que exportas en un álbum llamado Cuts. Si el vídeo solo está en iCloud, Fotos lo descarga de iCloud por ti, según la política de privacidad de Apple.",
+            "Los vídeos que eliges desde la app Archivos, incluido iCloud Drive, se abren donde están. Cuts guarda una referencia a ellos para que vuelvan a aparecer en Recientes.",
+            "Todo lo demás ocurre en tu iPhone: escuchar el audio, las miniaturas y la exportación. Los clips que marcas en cada vídeo, la lista de vídeos recientes y tus ajustes se quedan en tu iPhone y se borran al eliminar la app.",
+            "Abrir Instagram solo abre la app de Instagram. Cuts nunca publica nada por ti.",
+          ],
+        },
+        {
           heading: "Esta web",
           body: [
             "Esta web está alojada en Vercel, que procesa datos técnicos de las peticiones, como tu dirección IP, para servir las páginas.",
@@ -324,8 +345,9 @@ export const content = {
     support: {
       title: "Soporte",
       body: [
-        `Para ayuda, errores o ideas, escribe a ${CONTACT}. Indica tu sistema y su versión (macOS, Windows o Linux) y, si puedes, el tipo de archivo del vídeo que usabas.`,
+        `Para ayuda, errores o ideas, escribe a ${CONTACT}. Indica tu sistema y su versión (macOS, Windows, Linux o iOS) y, si puedes, el tipo de archivo del vídeo que usabas.`,
         "Los clips se guardan por defecto en Cuts › el nombre de tu vídeo, dentro de tu carpeta Películas en Mac o Vídeos en Windows y Linux. Puedes elegir otra carpeta en el campo Carpeta antes de exportar.",
+        "En el iPhone, los clips se guardan en un álbum llamado Cuts en Fotos, en el orden del carrusel.",
       ],
     },
     ffmpeg: {
