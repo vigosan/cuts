@@ -35,6 +35,10 @@ export async function openAsset(id: string, onDownload: (ratio: number) => void)
   }
 }
 
+export const cancelOpen = (id: string) => CutsMedia.cancelOpen(id)
+
+export const poster = (id: string, height: number) => CutsMedia.poster(id, height)
+
 export async function readPeaks(id: string): Promise<Float32Array | null> {
   const peaks = await CutsMedia.readPeaks(id)
   return peaks ? Float32Array.from(peaks) : null

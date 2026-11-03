@@ -24,4 +24,7 @@ describe('exportJobs', () => {
       ...DEFAULT_SETTINGS, start: 100, end: 159, format: '9:16', videoFadeIn: false, fileName: 'set-1.mp4', position: 0
     })
   })
+  it('Select mode with nothing ticked still exports every clip, as the button says', () => {
+    expect(exportJobs(clips, [], settings, '4:5', 'set')).toHaveLength(4)
+  })
 })

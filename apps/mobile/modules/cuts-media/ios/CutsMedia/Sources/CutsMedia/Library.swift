@@ -1,5 +1,10 @@
 import AVFoundation
 import Photos
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
 
 public struct AssetInfo: Sendable {
   public let id: String
@@ -24,7 +29,7 @@ public func info(id: String) throws -> AssetInfo {
   return AssetInfo(id: id, name: name, duration: asset.duration, width: asset.pixelWidth, height: asset.pixelHeight)
 }
 
-public func resolveAsset(id: String, progress: @escaping @Sendable (Double) -> Void) async throws -> AVURLAsset {
+public func resolveAsset(id: String, onRequest: (PHImageRequestID) -> Void = { _ in }, progress: @escaping @Sendable (Double) -> Void) async throws -> AVURLAsset {
   guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject else { throw LibraryError.missing }
   let options = PHVideoRequestOptions()
   options.isNetworkAccessAllowed = true
@@ -32,12 +37,32 @@ public func resolveAsset(id: String, progress: @escaping @Sendable (Double) -> V
   options.version = .current
   options.progressHandler = { value, _, _, _ in progress(value) }
   let box: UnsafeSendable<AVAsset?> = await withCheckedContinuation { continuation in
-    PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+    let request = PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
       continuation.resume(returning: UnsafeSendable(value: avAsset))
     }
+    onRequest(request)
   }
   guard let urlAsset = box.value as? AVURLAsset else { throw LibraryError.notAVideo }
   return urlAsset
+}
+
+public func poster(id: String, size: CGSize) async throws -> CGImage {
+  guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject else { throw LibraryError.missing }
+  let options = PHImageRequestOptions()
+  options.isNetworkAccessAllowed = false
+  options.deliveryMode = .highQualityFormat
+  options.resizeMode = .fast
+  let box: UnsafeSendable<CGImage?> = await withCheckedContinuation { continuation in
+    PHImageManager.default().requestImage(for: asset, targetSize: size, contentMode: .aspectFill, options: options) { image, _ in
+      #if os(iOS)
+      continuation.resume(returning: UnsafeSendable(value: image?.cgImage))
+      #else
+      continuation.resume(returning: UnsafeSendable(value: image?.cgImage(forProposedRect: nil, context: nil, hints: nil)))
+      #endif
+    }
+  }
+  guard let image = box.value else { throw LibraryError.missing }
+  return image
 }
 
 public func saveToAlbum(files: [URL], album: String) async throws {

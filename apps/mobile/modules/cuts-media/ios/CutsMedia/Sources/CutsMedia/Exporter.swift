@@ -8,8 +8,14 @@ public final class Exporter: @unchecked Sendable {
 
   public init() {}
 
+  private var pumps: [Pump] = []
+
   public func cancel() {
-    lock.withLock { cancelled = true }
+    let running = lock.withLock {
+      cancelled = true
+      return pumps
+    }
+    running.forEach { $0.stop() }
   }
 
   private var isCancelled: Bool { lock.withLock { cancelled } }
@@ -24,9 +30,12 @@ public final class Exporter: @unchecked Sendable {
     }
   }
 
-  private func run(asset: AVAsset, job: ExportJob, progress: @escaping @Sendable (Double) -> Void) async throws {
+  private func run(asset: AVAsset, job requested: ExportJob, progress: @escaping @Sendable (Double) -> Void) async throws {
     let videoTrack = try await asset.loadTracks(withMediaType: .video)[0]
-    let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+    let audioTracks = Array(try await asset.loadTracks(withMediaType: .audio).prefix(1))
+    var clamped = requested
+    clamped.end = min(clamped.end, try await asset.load(.duration).seconds)
+    let job = clamped
     let (naturalSize, transform, frameDuration) = try await videoTrack.load(.naturalSize, .preferredTransform, .minFrameDuration)
     let upright = CGRect(origin: .zero, size: naturalSize).applying(transform)
     let framer = Framer(job: job, sourceSize: CGSize(width: abs(upright.width), height: abs(upright.height)))
@@ -100,21 +109,27 @@ public final class Exporter: @unchecked Sendable {
     writer.startSession(atSourceTime: range.start)
 
     let pumps = [Pump(output: videoOutput, input: videoInput)] + (audio.map { [Pump(output: $0.0, input: $0.1)] } ?? [])
-    let stopped = await withTaskGroup(of: Bool.self) { group in
+    lock.withLock { self.pumps = pumps }
+    defer { lock.withLock { self.pumps = [] } }
+    if isCancelled { pumps.forEach { $0.stop() } }
+    let finished = await withTaskGroup(of: Bool.self) { group in
       for (index, pump) in pumps.enumerated() {
         group.addTask {
-          await pump.run(isCancelled: { self.isCancelled }) { time in
+          let complete = await pump.run { time in
             if index == 0 { progress(max(0, min(1, (time.seconds - job.start) / job.length))) }
           }
+          if !complete { pumps.forEach { $0.stop() } }
+          return complete
         }
       }
-      return await group.reduce(false) { $0 || $1 }
+      return await group.reduce(true) { $0 && $1 }
     }
 
-    if stopped || isCancelled {
+    if !finished {
       reader.cancelReading()
       writer.cancelWriting()
-      throw CancellationError()
+      if isCancelled { throw CancellationError() }
+      throw writer.error ?? reader.error ?? CocoaError(.fileWriteUnknown)
     }
     if reader.status == .failed { throw reader.error ?? CocoaError(.fileReadUnknown) }
     writer.endSession(atSourceTime: range.end)
@@ -150,37 +165,38 @@ private final class Pump: @unchecked Sendable {
   let output: AVAssetReaderOutput
   let input: AVAssetWriterInput
   private let queue = DispatchQueue(label: "cuts.export.pump")
-  private var done = false
+  private var continuation: CheckedContinuation<Bool, Never>?
 
   init(output: AVAssetReaderOutput, input: AVAssetWriterInput) {
     self.output = output
     self.input = input
   }
 
-  func run(isCancelled: @escaping @Sendable () -> Bool, onTime: @escaping @Sendable (CMTime) -> Void) async -> Bool {
+  func run(onTime: @escaping @Sendable (CMTime) -> Void) async -> Bool {
     await withCheckedContinuation { continuation in
-      input.requestMediaDataWhenReady(on: queue) {
-        while self.input.isReadyForMoreMediaData && !self.done {
-          if isCancelled() {
-            self.done = true
-            self.input.markAsFinished()
-            continuation.resume(returning: true)
-            return
-          }
-          guard let buffer = self.output.copyNextSampleBuffer() else {
-            self.done = true
-            self.input.markAsFinished()
-            continuation.resume(returning: false)
-            return
-          }
-          onTime(CMSampleBufferGetPresentationTimeStamp(buffer))
-          if !self.input.append(buffer) {
-            self.done = true
-            continuation.resume(returning: true)
-            return
+      queue.async {
+        self.continuation = continuation
+        self.input.requestMediaDataWhenReady(on: self.queue) {
+          while self.continuation != nil && self.input.isReadyForMoreMediaData {
+            guard let buffer = self.output.copyNextSampleBuffer() else {
+              self.input.markAsFinished()
+              self.finish(true)
+              return
+            }
+            onTime(CMSampleBufferGetPresentationTimeStamp(buffer))
+            if !self.input.append(buffer) { self.finish(false) }
           }
         }
       }
     }
+  }
+
+  func stop() {
+    queue.async { self.finish(false) }
+  }
+
+  private func finish(_ complete: Bool) {
+    continuation?.resume(returning: complete)
+    continuation = nil
   }
 }

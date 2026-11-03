@@ -29,6 +29,9 @@ SET="if(between(t,120,150)+between(t,360,390),$PAD,$KICK)"
   -vf "format=yuv420p10le" -c:v libx265 -tag:v hvc1 -x265-params log-level=error \
   -color_primaries bt2020 -color_trc arib-std-b67 -colorspace bt2020nc "$OUT/hdr.mov"
 
+[ -f "$OUT/two-tracks.mp4" ] || "$FFMPEG" -hide_banner -loglevel error -y -i "$OUT/rotated.mp4" \
+  -map 0:v -map 0:a -map 0:a -c copy "$OUT/two-tracks.mp4"
+
 node --no-warnings "$ROOT/scripts/reference-peaks.ts" "$OUT/set.mp4" > "$OUT/set-reference-peaks.json"
 swift build -c release --package-path "$ROOT/modules/cuts-media/ios/CutsMedia" --product cuts-media-cli >/dev/null
 "$ROOT/modules/cuts-media/ios/CutsMedia/.build/release/cuts-media-cli" peaks "$OUT/set.mp4" > "$OUT/set-swift-peaks.json"

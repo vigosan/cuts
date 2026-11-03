@@ -27,6 +27,8 @@ declare class CutsMediaModule extends NativeModule<Events> {
   requestLibraryAccess(): Promise<'granted' | 'limited' | 'denied'>
   pickVideo(): Promise<string | null>
   openAsset(id: string): Promise<NativeAsset>
+  cancelOpen(id: string): void
+  poster(id: string, height: number): Promise<string>
   readPeaks(id: string): Promise<number[] | null>
   thumbnail(id: string, time: number, height: number): Promise<string>
   exportClip(id: string, job: NativeJob): Promise<string>

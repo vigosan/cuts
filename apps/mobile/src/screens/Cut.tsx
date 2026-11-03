@@ -144,7 +144,7 @@ export function Cut({ asset, store, onBack }: Props) {
         setProgress((current) => ({ ...current, [ids[index]]: ratio }))
       },
       t
-    })
+    }).catch((error: Error) => ({ ok: false as const, saved: 0, error: error.message }))
     setExporting({ status: 'done', outcome })
   }
 

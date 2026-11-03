@@ -217,7 +217,9 @@ function english(locale: Locale) {
       fadeHandle: 'Audio fade length',
       openInstagram: 'Open Instagram',
       savedToAlbum: (n: number) => (isOne(locale, n) ? `${n} clip saved to the Cuts album` : `${n} clips saved to the Cuts album`),
-      stop: 'Stop'
+      stop: 'Stop',
+      openFailed: 'Cuts couldn’t open this video.',
+      photosLimited: 'Cuts needs access to all of Photos to open your sessions. Allow full access in Settings.'
     }
   }
 }
@@ -415,7 +417,9 @@ function spanish(locale: Locale): Messages {
       fadeHandle: 'Duración del fundido de audio',
       openInstagram: 'Abrir Instagram',
       savedToAlbum: (n) => (isOne(locale, n) ? `${n} clip guardado en el álbum Cuts` : `${n} clips guardados en el álbum Cuts`),
-      stop: 'Detener'
+      stop: 'Detener',
+      openFailed: 'Cuts no ha podido abrir este vídeo.',
+      photosLimited: 'Cuts necesita acceso a todas tus Fotos para abrir tus sesiones. Permite el acceso completo en Ajustes.'
     }
   }
 }

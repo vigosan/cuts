@@ -6,7 +6,7 @@ public let peaksPerSecond = 50
 private let readSampleRate = 8000.0
 
 public func readPeaks(asset: AVAsset) async throws -> [Float]? {
-  let tracks = try await asset.loadTracks(withMediaType: .audio)
+  let tracks = Array(try await asset.loadTracks(withMediaType: .audio).prefix(1))
   guard !tracks.isEmpty else { return nil }
   let channels = try await channelCount(tracks[0])
   let reader = try AVAssetReader(asset: asset)
@@ -40,7 +40,7 @@ public func readPeaks(asset: AVAsset) async throws -> [Float]? {
 private func channelCount(_ track: AVAssetTrack) async throws -> Int {
   let formats = try await track.load(.formatDescriptions)
   let description = formats.first.flatMap { CMAudioFormatDescriptionGetStreamBasicDescription($0)?.pointee }
-  return max(1, Int(description?.mChannelsPerFrame ?? 1))
+  return min(2, max(1, Int(description?.mChannelsPerFrame ?? 1)))
 }
 
 private func mono(_ interleaved: [Float], channels: Int) -> [Float] {

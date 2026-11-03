@@ -11,7 +11,7 @@ export function exportJobs(
   baseName: string
 ): ExportJob[] {
   return clips.flatMap((clip, position) =>
-    picked && !picked.includes(clip.id)
+    picked?.length && !picked.includes(clip.id)
       ? []
       : [{ ...settingsOf(clip.id), start: clip.start, end: clip.end, format, videoFadeIn: position > 0, fileName: outputFileName(safeBaseName(baseName), position), position }]
   )

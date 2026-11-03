@@ -113,3 +113,13 @@ it('when done, Open Instagram opens the Instagram app', async () => {
   await fireEvent.press(await screen.findByTestId('open-instagram'))
   expect(open).toHaveBeenCalledWith('instagram://app')
 })
+
+it('if saving to Photos fails the sheet says so and can be closed', async () => {
+  native.saveToCutsAlbum.mockRejectedValueOnce(new Error('album unavailable'))
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('start-export'))
+  expect(await screen.findByText('album unavailable')).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('close-sheet'))
+  expect(screen.queryByTestId('start-export')).toBeNull()
+})

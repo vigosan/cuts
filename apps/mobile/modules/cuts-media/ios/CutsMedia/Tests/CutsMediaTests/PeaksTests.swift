@@ -19,4 +19,10 @@ import Testing
   @Test func noAudioGivesNilSoSuggestCanExplain() async throws {
     #expect(try await readPeaks(asset: Fixtures.asset("silent.mp4")) == nil)
   }
+
+  @Test func extraAudioTracksDoNotChangeThePeaks() async throws {
+    let single = try #require(try await readPeaks(asset: Fixtures.asset("rotated.mp4")))
+    let double = try #require(try await readPeaks(asset: Fixtures.asset("two-tracks.mp4")))
+    #expect(abs(double.max()! - single.max()!) < 0.02)
+  }
 }

@@ -29,6 +29,8 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
   private var assets: [String: AVURLAsset] = [:]
   private var exporter: Exporter?
   private var picker: PickerDelegate?
+  private var openRequests: [String: PHImageRequestID] = [:]
+  private static let posterDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("posters")
 
   private func remember(_ id: String, _ asset: AVURLAsset) {
     lock.withLock { assets[id] = asset }
@@ -73,14 +75,34 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
     }.runOnQueue(.main)
 
     AsyncFunction("openAsset") { (id: String) -> [String: Any] in
-      let resolved = try await resolveAsset(id: id) { ratio in
+      let resolved = try await resolveAsset(id: id, onRequest: { request in
+        self.lock.withLock { self.openRequests[id] = request }
+      }) { ratio in
         self.sendEvent("onDownload", ["id": id, "ratio": ratio])
       }
+      self.lock.withLock { self.openRequests[id] = nil }
       self.remember(id, resolved)
       let details = try info(id: id)
       let frameRate = try await resolved.loadTracks(withMediaType: .video).first?.load(.nominalFrameRate) ?? 30
       return ["id": id, "name": details.name, "duration": details.duration, "width": details.width, "height": details.height,
               "frameRate": Double(frameRate > 0 ? frameRate : 30), "uri": resolved.url.absoluteString]
+    }
+
+    Function("cancelOpen") { (id: String) in
+      if let request = self.lock.withLock({ self.openRequests.removeValue(forKey: id) }) {
+        PHImageManager.default().cancelImageRequest(request)
+      }
+    }
+
+    AsyncFunction("poster") { (id: String, height: Int) -> String in
+      let file = Self.posterDir.appendingPathComponent(id.replacingOccurrences(of: "/", with: "_") + "-\(height).jpg")
+      if FileManager.default.fileExists(atPath: file.path) { return file.absoluteString }
+      try FileManager.default.createDirectory(at: Self.posterDir, withIntermediateDirectories: true)
+      let scale = 3.0
+      let image = try await poster(id: id, size: CGSize(width: Double(height) * 16 / 9 * scale, height: Double(height) * scale))
+      guard let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.8) else { throw CocoaError(.fileWriteUnknown) }
+      try data.write(to: file, options: .atomic)
+      return file.absoluteString
     }
 
     AsyncFunction("readPeaks") { (id: String) -> [Float]? in

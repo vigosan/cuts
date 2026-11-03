@@ -9,7 +9,10 @@ import { Home } from './Home'
 const native = jest.mocked(CutsMedia)
 const asset = { id: 'A1', name: 'set.mov', duration: 3600, width: 1920, height: 1080, frameRate: 30, uri: 'file:///set.mov' }
 
-beforeEach(() => jest.clearAllMocks())
+beforeEach(() => {
+  jest.clearAllMocks()
+  native.requestLibraryAccess.mockResolvedValue('granted')
+})
 
 it('shows recent sets newest first with their clip count', async () => {
   const store = memoryStore()
@@ -48,6 +51,7 @@ it('a set in iCloud shows download progress and can be cancelled', async () => {
   await fireEvent.press(screen.getByTestId('cancel-opening'))
   await act(async () => finish(asset))
   expect(onOpen).not.toHaveBeenCalled()
+  expect(native.cancelOpen).toHaveBeenCalledWith('A1')
   expect(screen.queryByTestId('opening-progress')).toBeNull()
 })
 
@@ -59,5 +63,29 @@ it('denied Photos access explains and links to Settings', async () => {
   expect(await screen.findByText(t.mobile.photosDenied)).toBeTruthy()
   await fireEvent.press(screen.getByTestId('open-settings'))
   expect(openSettings).toHaveBeenCalled()
+  expect(native.pickVideo).not.toHaveBeenCalled()
+})
+
+it('recent rows use the Photos thumbnail, never download the whole set', async () => {
+  const store = memoryStore()
+  touchRecent(store, { assetId: 'cloud', name: 'Set', duration: 60, clips: 1, openedAt: 1 })
+  await render(<Home store={store} onOpen={jest.fn()} />)
+  expect(native.poster).toHaveBeenCalledWith('cloud', 80)
+  expect(native.thumbnail).not.toHaveBeenCalled()
+})
+
+it('a set that cannot be opened says so', async () => {
+  native.pickVideo.mockResolvedValue('A1')
+  native.openAsset.mockRejectedValue(new Error('missing'))
+  await render(<Home store={memoryStore()} onOpen={jest.fn()} />)
+  await fireEvent.press(screen.getByTestId('choose-video'))
+  expect(await screen.findByText(t.mobile.openFailed)).toBeTruthy()
+})
+
+it('limited Photos access explains that Cuts needs all of Photos', async () => {
+  native.requestLibraryAccess.mockResolvedValue('limited')
+  await render(<Home store={memoryStore()} onOpen={jest.fn()} />)
+  await fireEvent.press(screen.getByTestId('choose-video'))
+  expect(await screen.findByText(t.mobile.photosLimited)).toBeTruthy()
   expect(native.pickVideo).not.toHaveBeenCalled()
 })

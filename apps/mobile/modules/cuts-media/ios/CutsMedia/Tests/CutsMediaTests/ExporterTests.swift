@@ -73,6 +73,19 @@ private func export(_ source: String, _ job: ExportJob) async throws -> AVURLAss
     #expect(format.extensions[.transferFunction] == .transferFunction(.itu_R_709_2))
   }
 
+  @Test func clipEndingPastTheVideoStopsAtItsEnd() async throws {
+    let clip = try await export("rotated.mp4", job("past-end.mp4", start: 15, end: 20.1, format: "original"))
+    #expect(abs(try await clip.load(.duration).seconds - 5) <= 1.0 / 30)
+  }
+
+  @Test func onlyTheFirstAudioTrackIsUsedLikeTheMac() async throws {
+    let single = try await export("rotated.mp4", job("one-track.mp4", start: 2, end: 8, format: "original", audioFade: "none"))
+    let double = try await export("two-tracks.mp4", job("two-tracks.mp4", start: 2, end: 8, format: "original", audioFade: "none"))
+    let a = try await Inspect.rms(single, from: 1, length: 2)
+    let b = try await Inspect.rms(double, from: 1, length: 2)
+    #expect(abs(b / a - 1) < 0.1)
+  }
+
   @Test func cancelLeavesNoHalfWrittenFile() async throws {
     let exporter = Exporter()
     let target = job("cancel.mp4")
