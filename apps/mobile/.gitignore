@@ -45,4 +45,4 @@ example
 /ios
 /android
 /fixtures
-/native/CutsMedia/.build
+/modules/cuts-media/ios/CutsMedia/.build

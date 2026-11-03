@@ -57,7 +57,7 @@ mobile-fixtures:
 
 mobile-test: mobile-fixtures
 	cd $(MOBILE) && npx vitest run
-	swift test --package-path $(MOBILE)/native/CutsMedia
+	swift test --package-path $(MOBILE)/modules/cuts-media/ios/CutsMedia
 
 mobile-ios:
 	cd $(MOBILE) && npx expo prebuild -p ios --clean && npx expo run:ios

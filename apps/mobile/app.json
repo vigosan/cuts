@@ -12,7 +12,9 @@
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "LSApplicationQueriesSchemes": ["instagram"],
+        "LSApplicationQueriesSchemes": [
+          "instagram"
+        ],
         "NSPhotoLibraryUsageDescription": "Cuts opens your recorded sets from Photos so you can cut them into clips.",
         "NSPhotoLibraryAddUsageDescription": "Cuts saves your clips to the Cuts album in Photos.",
         "CFBundleAllowMixedLocalizations": true
@@ -33,6 +35,14 @@
           "backgroundColor": "#161617",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 120
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "18.0"
+          }
         }
       ]
     ],

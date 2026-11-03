@@ -30,5 +30,5 @@ SET="if(between(t,120,150)+between(t,360,390),$PAD,$KICK)"
   -color_primaries bt2020 -color_trc arib-std-b67 -colorspace bt2020nc "$OUT/hdr.mov"
 
 node --no-warnings "$ROOT/scripts/reference-peaks.ts" "$OUT/set.mp4" > "$OUT/set-reference-peaks.json"
-swift build -c release --package-path "$ROOT/native/CutsMedia" --product cuts-media-cli >/dev/null
-"$ROOT/native/CutsMedia/.build/release/cuts-media-cli" peaks "$OUT/set.mp4" > "$OUT/set-swift-peaks.json"
+swift build -c release --package-path "$ROOT/modules/cuts-media/ios/CutsMedia" --product cuts-media-cli >/dev/null
+"$ROOT/modules/cuts-media/ios/CutsMedia/.build/release/cuts-media-cli" peaks "$OUT/set.mp4" > "$OUT/set-swift-peaks.json"
