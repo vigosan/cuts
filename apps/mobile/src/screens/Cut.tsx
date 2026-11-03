@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Animated, Text, View } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -25,6 +25,8 @@ import { backItem, cutHeaderItems } from './cut-header'
 import { Tap } from '../components/Tap'
 
 export type SheetKind = 'clip' | 'export'
+
+const STEP_REPEAT_MS = 80
 
 type Props = { onBack: () => void; onOpenSheet: (sheet: SheetKind) => void }
 
@@ -68,6 +70,15 @@ export function Cut({ onBack, onOpenSheet }: Props) {
   const step = (frames: number) => {
     player.pause()
     seekTo(player.currentTime + frames / asset.frameRate)
+  }
+  const repeating = useRef<ReturnType<typeof setInterval> | null>(null)
+  const stopStepping = () => {
+    if (repeating.current) clearInterval(repeating.current)
+    repeating.current = null
+  }
+  const keepStepping = (frames: number) => {
+    stopStepping()
+    repeating.current = setInterval(() => step(frames), STEP_REPEAT_MS)
   }
 
   const split = () => {
@@ -177,8 +188,8 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                     haptics.mark()
                     dispatch(startHere(state.history.present, at(player.currentTime), selected))
                   }} />
-                <Pill testID="previous-frame" icon="chevron.left" label={t.mobile.previousFrame} theme={theme} onPress={() => step(-1)} />
-                <Pill testID="next-frame" icon="chevron.right" label={t.mobile.nextFrame} theme={theme} onPress={() => step(1)} />
+                <Pill testID="previous-frame" icon="chevron.left" label={t.mobile.previousFrame} theme={theme} onPress={() => step(-1)} onLongPress={() => keepStepping(-1)} onPressOut={stopStepping} />
+                <Pill testID="next-frame" icon="chevron.right" label={t.mobile.nextFrame} theme={theme} onPress={() => step(1)} onLongPress={() => keepStepping(1)} onPressOut={stopStepping} />
                 <Pill
                   testID="end-here"
                   label={selected ? t.mobile.moveEndHere : t.mobile.endHere}
@@ -279,14 +290,17 @@ function Icon({ name, theme, inverse }: { name: SFSymbol; theme: Theme; inverse?
   return <SymbolView name={name} size={20} tintColor={inverse ? theme.inverse : theme.ink} />
 }
 
-type PillProps = { testID: string; label: string; icon?: SFSymbol; theme: Theme; grow?: boolean; onPress: () => void }
+type PillProps = { testID: string; label: string; icon?: SFSymbol; theme: Theme; grow?: boolean; onPress: () => void; onLongPress?: () => void; onPressOut?: () => void }
 
-function Pill({ testID, label, icon, theme, grow, onPress }: PillProps) {
+function Pill({ testID, label, icon, theme, grow, onPress, onLongPress, onPressOut }: PillProps) {
   return (
     <Tap
       testID={testID}
       accessibilityLabel={label}
       onPress={onPress}
+      onLongPress={onLongPress}
+      onPressOut={onPressOut}
+      delayLongPress={300}
       style={{ flexGrow: grow ? 1 : 0, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.fill, borderRadius: 10, paddingHorizontal: 12 }}
     >
       {icon ? <Icon name={icon} theme={theme} /> : <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>{label}</Text>}

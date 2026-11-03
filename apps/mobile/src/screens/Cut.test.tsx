@@ -122,3 +122,17 @@ it('the beat magnet says what it is, not just a metronome icon', async () => {
   await renderCut()
   expect(screen.getByText(t.mobile.beat)).toBeTruthy()
 })
+
+it('holding the next-frame button keeps stepping until you let go', async () => {
+  jest.useFakeTimers()
+  await renderCut()
+  player.currentTime = 2
+  await fireEvent(screen.getByTestId('next-frame'), 'longPress')
+  await act(async () => jest.advanceTimersByTime(500))
+  await fireEvent(screen.getByTestId('next-frame'), 'pressOut')
+  const held = player.currentTime
+  expect(held).toBeGreaterThan(2.04 * 2 - 2 + 0.04)
+  await act(async () => jest.advanceTimersByTime(500))
+  expect(player.currentTime).toBe(held)
+  jest.useRealTimers()
+})

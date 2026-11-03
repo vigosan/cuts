@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Image, Linking, ScrollView, Text, View } from 'react-native'
+import { Animated, Image, Linking, ScrollView, Text, View } from 'react-native'
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { formatTime } from '@cuts/core/clips'
-import { recents, type KeyValue, type Recent } from '../editor/sessions'
+import { recents, removeRecent, type KeyValue, type Recent } from '../editor/sessions'
 import { t } from '../i18n'
 import { OpeningProgress } from '../components/OpeningProgress'
 import { cancelOpen, openAsset, pickFile, pickVideo, poster, requestLibraryAccess, type AssetInfo } from '../media'
@@ -89,43 +90,77 @@ export function Home({ store, onOpen }: Props) {
   )
 }
 
+const REMOVE_WIDTH = 88
+
 function Recents({ store, onPress }: { store: KeyValue; onPress: (id: string) => Promise<void> }) {
   const theme = useTheme()
-  const list = recents(store)
+  const [list, setList] = useState(() => recents(store))
   if (list.length === 0) return null
+  const remove = (assetId: string) => {
+    removeRecent(store, assetId)
+    setList(recents(store))
+  }
   return (
     <View style={{ gap: 8 }}>
       <Text style={{ color: theme.muted, fontSize: 15, fontWeight: '600', marginTop: 8 }}>{t.recentVideos}</Text>
       {list.map((recent) => (
-        <RecentRow key={recent.assetId} recent={recent} onPress={() => void onPress(recent.assetId)} />
+        <RecentRow key={recent.assetId} recent={recent} onPress={() => void onPress(recent.assetId)} onRemove={() => remove(recent.assetId)} />
       ))}
     </View>
   )
 }
 
-function RecentRow({ recent, onPress }: { recent: Recent; onPress: () => void }) {
+function RecentRow({ recent, onPress, onRemove }: { recent: Recent; onPress: () => void; onRemove: () => void }) {
   const theme = useTheme()
   const [image, setImage] = useState<string | null>(null)
+  const [x] = useState(() => new Animated.Value(0))
+  const [open, setOpen] = useState(false)
   useEffect(() => {
     void poster(recent.assetId, 80).then(setImage, () => {})
   }, [recent.assetId])
+  const slide = (to: number) => {
+    setOpen(to !== 0)
+    Animated.spring(x, { toValue: to, useNativeDriver: true, bounciness: 0, speed: 18 }).start()
+  }
+  const swipe = usePanGesture({
+    runOnJS: true,
+    activeOffsetX: [-12, 12],
+    failOffsetY: [-10, 10],
+    onUpdate: (event) => x.setValue(Math.min(0, (open ? -REMOVE_WIDTH : 0) + event.translationX)),
+    onDeactivate: (event) => slide((open ? -REMOVE_WIDTH : 0) + event.translationX < -REMOVE_WIDTH / 2 || event.velocityX < -300 ? -REMOVE_WIDTH : 0)
+  })
   return (
-    <Tap
-      testID={`recent-${recent.assetId}`}
-      onPress={onPress}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, borderRadius: 12, padding: 10 }}
-    >
-      <View style={{ width: 64, height: 40, borderRadius: 6, overflow: 'hidden', backgroundColor: theme.fill }}>
-        {image && <Image source={{ uri: image }} style={{ width: 64, height: 40 }} />}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text numberOfLines={1} style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>
-          {recent.name}
-        </Text>
-        <Text style={{ color: theme.muted, fontSize: 13 }}>
-          {formatTime(recent.duration)} · {t.recentClips(recent.clips)}
-        </Text>
-      </View>
-    </Tap>
+    <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: theme.danger }}>
+      <Tap
+        testID={`remove-${recent.assetId}`}
+        onPress={onRemove}
+        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: REMOVE_WIDTH, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>{t.mobile.removeRecent}</Text>
+      </Tap>
+      <GestureDetector gesture={swipe}>
+        <Animated.View style={{ transform: [{ translateX: x }] }}>
+          <Tap
+            testID={`recent-${recent.assetId}`}
+            onPress={() => (open ? slide(0) : onPress())}
+            accessibilityActions={[{ name: 'delete', label: t.mobile.removeRecent }]}
+            onAccessibilityAction={(event) => event.nativeEvent.actionName === 'delete' && onRemove()}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, padding: 10 }}
+          >
+            <View style={{ width: 64, height: 40, borderRadius: 6, overflow: 'hidden', backgroundColor: theme.fill }}>
+              {image && <Image source={{ uri: image }} style={{ width: 64, height: 40 }} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text numberOfLines={1} style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>
+                {recent.name}
+              </Text>
+              <Text style={{ color: theme.muted, fontSize: 13 }}>
+                {formatTime(recent.duration)} · {t.recentClips(recent.clips)}
+              </Text>
+            </View>
+          </Tap>
+        </Animated.View>
+      </GestureDetector>
+    </View>
   )
 }

@@ -32,3 +32,7 @@ export function touchRecent(store: KeyValue, recent: Recent): void {
   const others = recents(store).filter((r) => r.assetId !== recent.assetId)
   store.set('recents', JSON.stringify([recent, ...others].slice(0, MAX_RECENTS)))
 }
+
+export function removeRecent(store: KeyValue, assetId: string): void {
+  store.set('recents', JSON.stringify(recents(store).filter((recent) => recent.assetId !== assetId)))
+}

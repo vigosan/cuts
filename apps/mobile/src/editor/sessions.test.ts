@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
-import { loadSession, recents, saveSession, touchRecent, type Session } from './sessions'
+import { loadSession, recents, removeRecent, saveSession, touchRecent, type Session } from './sessions'
 import { memoryStore } from './memory-store'
 
 const session: Session = { clips: [{ id: 'a', start: 0, end: 5 }], clipSettings: {}, defaultSettings: DEFAULT_SETTINGS, baseName: 'set' }
@@ -29,5 +29,14 @@ describe('sessions', () => {
     expect(list).toHaveLength(10)
     expect(list[0]).toEqual({ ...recent(5), openedAt: 99 })
     expect(list.filter((r) => r.assetId === 'id5')).toHaveLength(1)
+  })
+  it('removing a recent hides it from Home but keeps its clips for when it is opened again', () => {
+    const store = memoryStore()
+    saveSession(store, 'id1', session)
+    touchRecent(store, recent(1))
+    touchRecent(store, recent(2))
+    removeRecent(store, 'id1')
+    expect(recents(store).map((r) => r.assetId)).toEqual(['id2'])
+    expect(loadSession(store, 'id1')).toEqual(session)
   })
 })
