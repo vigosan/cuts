@@ -179,3 +179,11 @@ it('Export spans the whole width; the format lives in the clip sheet', async () 
   expect(screen.queryByTestId('format-button')).toBeNull()
   expect(screen.getByTestId('export')).toHaveStyle({ alignSelf: 'stretch' })
 })
+
+it('while exporting, the sheet asks to keep Cuts open', async () => {
+  native.exportClip.mockImplementation(() => new Promise(() => {}))
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('start-export'))
+  expect(screen.getByText(t.mobile.keepOpen)).toBeTruthy()
+})

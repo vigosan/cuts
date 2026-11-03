@@ -57,6 +57,7 @@ export function ExportSheet({ theme, label, format, baseName, state, onFormat, o
       {state.status === 'running' && (
         <>
           <Text style={{ color: theme.ink, fontSize: 15 }}>{t.exportingClip(state.index + 1, state.total)}</Text>
+          <Text style={{ color: theme.muted, fontSize: 13 }}>{t.mobile.keepOpen}</Text>
           {button('stop-export', t.mobile.stop, onStop, false)}
         </>
       )}

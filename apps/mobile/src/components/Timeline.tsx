@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Text, View, type LayoutChangeEvent } from 'react-native'
-import { GestureDetector, useCompetingGestures, usePanGesture, usePinchGesture, useTapGesture } from 'react-native-gesture-handler'
+import { GestureDetector, useCompetingGestures, useExclusiveGestures, usePanGesture, usePinchGesture, useTapGesture } from 'react-native-gesture-handler'
 import { Canvas, Image, Rect, RoundedRect, useImage } from '@shopify/react-native-skia'
-import { formatDuration, isOverLimit, type Clip } from '@cuts/core/clips'
+import { formatDuration, formatTime, isOverLimit, type Clip } from '@cuts/core/clips'
 import { filmstripTiles, PEAKS_PER_SECOND, waveformColumns } from '@cuts/core/filmstrip'
 import { nextViewStart } from '@cuts/core/timeline-view'
 import { elasticSpan, project } from '../editor/physics'
 import { beginDrag, dragTo, type Drag } from '../editor/timeline-drag'
-import { hitClip, pinch, thumbnailTime, timeAt, xAt, type View as TimelineView } from '../editor/timeline-geometry'
+import { hitClip, pinch, thumbnailTime, timeAt, xAt, zoomToggle, type View as TimelineView } from '../editor/timeline-geometry'
 import { haptics } from '../haptics'
 import { thumbnail } from '../media'
 import { useTheme } from '../theme'
@@ -52,15 +52,27 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
   const [span, setSpan] = useState(duration)
   const [start, setStart] = useState(0)
   const [touching, setTouching] = useState(false)
+  const [pinnedAt, setPinnedAt] = useState<number | null>(null)
   const drag = useRef<{ drag: Drag; view: TimelineView } | null>(null)
   const pinchFrom = useRef<TimelineView | null>(null)
   const pinchLast = useRef<{ scale: number; focalX: number }>({ scale: 1, focalX: 0 })
 
   const shownSpan = touching ? span || duration : Math.min(span || duration, duration)
-  const followed = touching ? start : nextViewStart(start, currentTime, duration, shownSpan >= duration ? null : shownSpan)
+  const followed = touching || pinnedAt === currentTime ? start : nextViewStart(start, currentTime, duration, shownSpan >= duration ? null : shownSpan)
   if (followed !== start) setStart(followed)
   const view: TimelineView = { start: followed, span: shownSpan || 1, width: width || 1 }
 
+  const doubleTap = useTapGesture({
+    runOnJS: true,
+    numberOfTaps: 2,
+    testID: 'timeline-double-tap',
+    onActivate: (event) => {
+      const next = zoomToggle(view, duration, event.x)
+      setPinnedAt(currentTime)
+      setSpan(next.span)
+      setStart(next.start)
+    }
+  })
   const tap = useTapGesture({
     runOnJS: true,
     testID: 'timeline-tap',
@@ -133,6 +145,7 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
       pinchFrom.current = null
       if (!from) return setTouching(false)
       const target = pinch(from, duration, pinchLast.current.scale, pinchLast.current.focalX)
+      setPinnedAt(currentTime)
       settleView(view, target, (next) => {
         setSpan(next.span)
         setStart(next.start)
@@ -140,7 +153,8 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
       })
     }
   })
-  const gesture = useCompetingGestures(zoom, hold, pan, tap)
+  const taps = useExclusiveGestures(doubleTap, tap)
+  const gesture = useCompetingGestures(zoom, hold, pan, taps)
 
   const tileWidth = Math.round((FILM * 16) / 9)
   const tiles = width ? filmstripTiles(view.start, view.span, width, tileWidth, duration) : []
@@ -148,46 +162,56 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
   const pending = pendingStart !== null ? { start: pendingStart, end: Math.max(pendingStart, currentTime) } : null
 
   return (
-    <GestureDetector gesture={gesture}>
-      <View testID="timeline" onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)} style={{ height: HEIGHT, borderRadius: 8, overflow: 'hidden', backgroundColor: '#8a8a8a' }}>
-        <Canvas style={{ position: 'absolute', left: 0, top: 0, width, height: HEIGHT }}>
-          {tiles.map((tile) => (
-            <Tile key={`${tile.left}`} assetId={assetId} time={thumbnailTime(tile.time, (view.span * tileWidth) / width)} x={(tile.left / 100) * width} width={tileWidth} />
-          ))}
-          <Rect x={0} y={FILM} width={width} height={WAVE} color="#3a3a3c" />
-          {columns &&
-            Array.from(columns, (peak, column) => (
-              <Rect key={column} x={column * 3} y={FILM + WAVE / 2 - (peak * WAVE) / 2} width={2} height={Math.max(1, peak * WAVE)} color="#c7c7cc" />
+    <View>
+      <GestureDetector gesture={gesture}>
+        <View testID="timeline" onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)} style={{ height: HEIGHT, borderRadius: 8, overflow: 'hidden', backgroundColor: '#8a8a8a' }}>
+          <Canvas style={{ position: 'absolute', left: 0, top: 0, width, height: HEIGHT }}>
+            {tiles.map((tile) => (
+              <Tile key={`${tile.left}`} assetId={assetId} time={thumbnailTime(tile.time, (view.span * tileWidth) / width)} x={(tile.left / 100) * width} width={tileWidth} />
             ))}
-          {clips.map((clip) => (
-            <RoundedRect
-              key={clip.id}
-              x={xAt(view, clip.start)}
-              y={1.5}
-              width={Math.max(2, xAt(view, clip.end) - xAt(view, clip.start))}
-              height={HEIGHT - 3}
-              r={5}
-              style="stroke"
-              strokeWidth={clip.id === selectedId ? 3 : 2}
-              color={clip.id === selectedId ? theme.accent : '#ffffff'}
-            />
+            <Rect x={0} y={FILM} width={width} height={WAVE} color="#3a3a3c" />
+            {columns &&
+              Array.from(columns, (peak, column) => (
+                <Rect key={column} x={column * 3} y={FILM + WAVE / 2 - (peak * WAVE) / 2} width={2} height={Math.max(1, peak * WAVE)} color="#c7c7cc" />
+              ))}
+            {clips.map((clip) => (
+              <RoundedRect
+                key={clip.id}
+                x={xAt(view, clip.start)}
+                y={1.5}
+                width={Math.max(2, xAt(view, clip.end) - xAt(view, clip.start))}
+                height={HEIGHT - 3}
+                r={5}
+                style="stroke"
+                strokeWidth={clip.id === selectedId ? 3 : 2}
+                color={clip.id === selectedId ? theme.accent : '#ffffff'}
+              />
+            ))}
+            {pending && <Rect x={xAt(view, pending.start)} y={0} width={Math.max(2, xAt(view, pending.end) - xAt(view, pending.start))} height={HEIGHT} color="rgba(253,224,71,0.35)" />}
+            <Rect x={xAt(view, currentTime) - 1} y={0} width={2} height={HEIGHT} color="#ef4444" />
+          </Canvas>
+          {clips.map((clip, index) => (
+            <ClipLabel key={clip.id} left={xAt(view, clip.start)} number={index + 1} />
           ))}
-          {pending && <Rect x={xAt(view, pending.start)} y={0} width={Math.max(2, xAt(view, pending.end) - xAt(view, pending.start))} height={HEIGHT} color="rgba(253,224,71,0.35)" />}
-          <Rect x={xAt(view, currentTime) - 1} y={0} width={2} height={HEIGHT} color="#ef4444" />
-        </Canvas>
-        {clips.map((clip, index) => (
-          <ClipLabel key={clip.id} left={xAt(view, clip.start)} number={index + 1} />
-        ))}
-        {clips
-          .filter((clip) => clip.id === selectedId)
-          .map((clip) => (
-            <Duration key={clip.id} testID={`clip-duration-${clip.id}`} right={width - xAt(view, clip.end)} seconds={clip.end - clip.start} over={isOverLimit(clip)} danger={theme.danger} />
-          ))}
-        {pending && (
-          <Duration testID="pending-duration" right={width - xAt(view, pending.end)} seconds={pending.end - pending.start} over={isOverLimit({ id: '', ...pending })} danger={theme.danger} />
-        )}
+          {clips
+            .filter((clip) => clip.id === selectedId)
+            .map((clip) => (
+              <Duration key={clip.id} testID={`clip-duration-${clip.id}`} right={width - xAt(view, clip.end)} seconds={clip.end - clip.start} over={isOverLimit(clip)} danger={theme.danger} />
+            ))}
+          {pending && (
+            <Duration testID="pending-duration" right={width - xAt(view, pending.end)} seconds={pending.end - pending.start} over={isOverLimit({ id: '', ...pending })} danger={theme.danger} />
+          )}
+        </View>
+      </GestureDetector>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2, paddingTop: 3 }}>
+        <Text testID="timeline-start" style={{ color: theme.muted, fontSize: 11, fontVariant: ['tabular-nums'] }}>
+          {formatTime(view.start)}
+        </Text>
+        <Text testID="timeline-end" style={{ color: theme.muted, fontSize: 11, fontVariant: ['tabular-nums'] }}>
+          {formatTime(view.start + view.span)}
+        </Text>
       </View>
-    </GestureDetector>
+    </View>
   )
 }
 

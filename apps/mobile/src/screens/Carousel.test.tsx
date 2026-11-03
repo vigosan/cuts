@@ -131,3 +131,11 @@ it('deleting a clip says so and offers to undo it', async () => {
   await fireEvent.press(screen.getByTestId('notice-undo'))
   expect(rowIds()).toEqual(['a', 'b'])
 })
+
+it('Suggest says how many moments it added and can undo them', async () => {
+  await renderCut()
+  await fireEvent.press(screen.getByTestId('suggest-moments'))
+  expect(await screen.findByText(t.mobile.momentsAdded(1))).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('notice-undo'))
+  expect(screen.queryAllByTestId(/^clip-row-/)).toHaveLength(0)
+})

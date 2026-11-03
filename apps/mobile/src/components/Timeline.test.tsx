@@ -61,3 +61,17 @@ it('tapping a clip on the timeline jumps to it, like tapping it in the list', as
   expect(props.onPressClip).toHaveBeenCalledWith(clip)
   expect(props.onSeek).not.toHaveBeenCalled()
 })
+
+it('shows where the visible stretch starts and ends, and a double tap zooms in', async () => {
+  await render(
+    <GestureHandlerRootView>
+      <Timeline {...props} selectedId={null} clips={[]} />
+    </GestureHandlerRootView>
+  )
+  await fireEvent(screen.getByTestId('timeline'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 64 } } })
+  expect(screen.getByTestId('timeline-start')).toHaveTextContent('00:00:00')
+  expect(screen.getByTestId('timeline-end')).toHaveTextContent('00:10:00')
+  await act(async () => fireGestureHandler(getByGestureTestId('timeline-double-tap'), [{ state: State.BEGAN, x: 150, y: 30 }, { state: State.ACTIVE, x: 150, y: 30 }, { state: State.END, x: 150, y: 30 }]))
+  expect(screen.getByTestId('timeline-start')).toHaveTextContent('00:04:10')
+  expect(screen.getByTestId('timeline-end')).toHaveTextContent('00:05:50')
+})

@@ -35,3 +35,10 @@ export function thumbnailTime(time: number, tileSpan: number): number {
   const step = THUMBNAIL_STEPS.find((candidate) => candidate >= tileSpan) ?? THUMBNAIL_STEPS[THUMBNAIL_STEPS.length - 1]
   return Math.floor(Math.max(0, time) / step) * step
 }
+
+const DOUBLE_TAP_ZOOM = 6
+
+export function zoomToggle(view: View, duration: number, x: number): View {
+  if (view.span >= duration * 0.99) return pinch(view, duration, DOUBLE_TAP_ZOOM, x)
+  return { start: 0, span: duration, width: view.width }
+}

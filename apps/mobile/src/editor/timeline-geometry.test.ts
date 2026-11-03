@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hitClip, pinch, thumbnailTime, timeAt, xAt } from './timeline-geometry'
+import { hitClip, pinch, thumbnailTime, timeAt, xAt, zoomToggle } from './timeline-geometry'
 
 const view = { start: 0, span: 600, width: 300 }
 
@@ -36,5 +36,13 @@ describe('timeline geometry', () => {
     expect(thumbnailTime(12.3, 9)).toBe(thumbnailTime(12.9, 10))
     expect(thumbnailTime(301, 140)).toBe(300)
     expect(thumbnailTime(0.4, 0.5)).toBe(0)
+  })
+
+  it('a double tap zooms in around the finger, and another shows the whole set again', () => {
+    const whole = { start: 0, span: 3600, width: 300 }
+    const zoomed = zoomToggle(whole, 3600, 150)
+    expect(zoomed.span).toBe(600)
+    expect(timeAt(zoomed, 150)).toBeCloseTo(1800)
+    expect(zoomToggle(zoomed, 3600, 40)).toEqual(whole)
   })
 })
