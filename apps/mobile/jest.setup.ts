@@ -37,5 +37,5 @@ jest.mock('expo-video', () => {
 jest.mock('@shopify/react-native-skia', () => {
   const { View } = jest.requireActual('react-native')
   const none = () => null
-  return { Canvas: View, Group: View, Rect: none, RoundedRect: none, Line: none, Image: none, Path: none, useImage: () => null, vec: (x: number, y: number) => ({ x, y }) }
+  return { Canvas: View, Group: View, Circle: none, Rect: none, RoundedRect: none, Line: none, Image: none, Path: none, useImage: () => null, vec: (x: number, y: number) => ({ x, y }) }
 })

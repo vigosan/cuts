@@ -13,6 +13,6 @@ export function exportJobs(
   return clips.flatMap((clip, position) =>
     picked && !picked.includes(clip.id)
       ? []
-      : [{ ...settingsOf(clip.id), start: clip.start, end: clip.end, format, videoFadeIn: position > 0, fileName: outputFileName(safeBaseName(baseName), position) }]
+      : [{ ...settingsOf(clip.id), start: clip.start, end: clip.end, format, videoFadeIn: position > 0, fileName: outputFileName(safeBaseName(baseName), position), position }]
   )
 }

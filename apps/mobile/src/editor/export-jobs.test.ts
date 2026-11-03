@@ -21,7 +21,7 @@ describe('exportJobs', () => {
 
   it('carries the clip times, format and settings to the exporter', () => {
     expect(exportJobs(clips.slice(0, 1), null, settings, '9:16', 'set')[0]).toEqual({
-      ...DEFAULT_SETTINGS, start: 100, end: 159, format: '9:16', videoFadeIn: false, fileName: 'set-1.mp4'
+      ...DEFAULT_SETTINGS, start: 100, end: 159, format: '9:16', videoFadeIn: false, fileName: 'set-1.mp4', position: 0
     })
   })
 })

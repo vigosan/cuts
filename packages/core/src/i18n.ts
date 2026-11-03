@@ -212,7 +212,12 @@ function english(locale: Locale) {
       fadesAndFraming: 'Fades · framing',
       moveUp: 'Move up',
       moveDown: 'Move down',
-      reorder: 'Hold and drag to reorder'
+      reorder: 'Hold and drag to reorder',
+      cropFrame: 'Crop frame',
+      fadeHandle: 'Audio fade length',
+      openInstagram: 'Open Instagram',
+      savedToAlbum: (n: number) => (isOne(locale, n) ? `${n} clip saved to the Cuts album` : `${n} clips saved to the Cuts album`),
+      stop: 'Stop'
     }
   }
 }
@@ -405,7 +410,12 @@ function spanish(locale: Locale): Messages {
       fadesAndFraming: 'Fundidos · encuadre',
       moveUp: 'Subir',
       moveDown: 'Bajar',
-      reorder: 'Mantén y arrastra para reordenar'
+      reorder: 'Mantén y arrastra para reordenar',
+      cropFrame: 'Recuadro de recorte',
+      fadeHandle: 'Duración del fundido de audio',
+      openInstagram: 'Abrir Instagram',
+      savedToAlbum: (n) => (isOne(locale, n) ? `${n} clip guardado en el álbum Cuts` : `${n} clips guardados en el álbum Cuts`),
+      stop: 'Detener'
     }
   }
 }

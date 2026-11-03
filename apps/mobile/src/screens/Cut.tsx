@@ -1,22 +1,27 @@
-import { useEffect, useReducer, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { useEffect, useReducer, useRef, useState } from 'react'
+import { AppState, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEvent } from 'expo'
 import { randomUUID } from 'expo-crypto'
 import { SymbolView, type SFSymbol } from 'expo-symbols'
-import { useVideoPlayer, VideoView } from 'expo-video'
+import { useVideoPlayer } from 'expo-video'
 import { snapToBeat } from '@cuts/core/beats'
 import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { suggestMoments } from '@cuts/core/suggest'
 import { CarouselList } from '../components/CarouselList'
+import { ClipSheet } from '../components/ClipSheet'
+import { ExportSheet, type ExportState } from '../components/ExportSheet'
+import { Stage } from '../components/Stage'
 import { Timeline } from '../components/Timeline'
-import { editorReducer, initialEditor } from '../editor/editor'
+import { editorReducer, initialEditor, settingsOf } from '../editor/editor'
+import { exportJobs } from '../editor/export-jobs'
+import { runExport } from '../editor/export-run'
 import { endHere, startHere } from '../editor/marks'
-import { loadPreferences } from '../editor/preferences'
+import { loadPreferences, savePreferences } from '../editor/preferences'
 import { loadSession, saveSession, touchRecent, type KeyValue } from '../editor/sessions'
 import { t } from '../i18n'
-import { readPeaks, saveFrame, type AssetInfo } from '../media'
+import { cancelExport, exportClip, readPeaks, saveFrame, saveToCutsAlbum, type AssetInfo } from '../media'
 import { seek } from '../seek'
 import { useTheme, type Theme } from '../theme'
 
@@ -32,7 +37,12 @@ export function Cut({ asset, store, onBack }: Props) {
   const [state, dispatch] = useReducer(editorReducer, null, () =>
     editorReducer(initialEditor(preferences.settings), { type: 'load', session: stored, defaults: preferences.settings })
   )
-  const [baseName] = useState(() => stored?.baseName ?? defaultBaseName(asset.name))
+  const [baseName, setBaseName] = useState(() => stored?.baseName ?? defaultBaseName(asset.name))
+  const [format, setFormat] = useState(preferences.format)
+  const [sheet, setSheet] = useState<'clip' | 'export' | null>(null)
+  const [exporting, setExporting] = useState<ExportState>({ status: 'idle' })
+  const [progress, setProgress] = useState<Record<string, number>>({})
+  const stopped = useRef(false)
   const [peaks, setPeaks] = useState<Float32Array | null>(null)
   const [peaksRequest] = useState(() => readPeaks(asset.id).catch(() => null))
   const [menu, setMenu] = useState(false)
@@ -58,6 +68,18 @@ export function Cut({ asset, store, onBack }: Props) {
     return () => clearTimeout(timer)
   }, [store, asset, clips, state.clipSettings, state.defaultSettings, baseName])
 
+  useEffect(() => savePreferences(store, { settings: state.defaultSettings }), [store, state.defaultSettings])
+
+  useEffect(() => {
+    if (exporting.status !== 'running') return
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next !== 'background') return
+      stopped.current = true
+      cancelExport()
+    })
+    return () => subscription.remove()
+  }, [exporting.status])
+
   useEffect(() => {
     if (!notice) return
     const timer = setTimeout(() => setNotice(null), NOTICE_MS)
@@ -74,7 +96,8 @@ export function Cut({ asset, store, onBack }: Props) {
     seekTo(player.currentTime + frames / asset.frameRate)
   }
   const selected = state.selectedId
-  const framing = selected ? (state.clipSettings[selected] ?? state.defaultSettings) : state.defaultSettings
+  const framing = selected ? settingsOf(state, selected) : state.defaultSettings
+  const selectedClip = clips.find((clip) => clip.id === selected) ?? null
 
   const suggest = async () => {
     const found = await peaksRequest
@@ -101,9 +124,40 @@ export function Cut({ asset, store, onBack }: Props) {
   const picking = state.picked !== null
   const exportLabel = state.picked?.length ? t.exportSelected(state.picked.length) : t.exportClips(clips.length)
 
+  const stop = () => {
+    stopped.current = true
+    cancelExport()
+  }
+
+  const startExport = async () => {
+    const jobs = exportJobs(clips, state.picked, (id) => settingsOf(state, id), format, baseName)
+    const ids = jobs.map((job) => clips[job.position].id)
+    stopped.current = false
+    setProgress({})
+    setExporting({ status: 'running', index: 0, total: jobs.length })
+    const outcome = await runExport(jobs, {
+      exportClip: (job, onProgress) => exportClip(asset.id, job, onProgress),
+      saveToCutsAlbum,
+      cancelled: () => stopped.current,
+      onProgress: (index, ratio) => {
+        setExporting({ status: 'running', index, total: jobs.length })
+        setProgress((current) => ({ ...current, [ids[index]]: ratio }))
+      },
+      t
+    })
+    setExporting({ status: 'done', outcome })
+  }
+
+  const closeExport = () => {
+    if (exporting.status === 'running') return
+    setSheet(null)
+    setExporting({ status: 'idle' })
+    setProgress({})
+  }
+
   const saveCurrentFrame = async () => {
     setMenu(false)
-    await saveFrame(asset.id, player.currentTime, { format: preferences.format, framing: framing.framing, cropX: framing.cropX, cropY: framing.cropY })
+    await saveFrame(asset.id, player.currentTime, { format, framing: framing.framing, cropX: framing.cropX, cropY: framing.cropY })
     setNotice(t.mobile.frameSaved)
   }
 
@@ -132,9 +186,14 @@ export function Cut({ asset, store, onBack }: Props) {
             </Pressable>
           </View>
         )}
-        <View style={{ aspectRatio: 16 / 9, borderRadius: 14, overflow: 'hidden', backgroundColor: '#000' }}>
-          <VideoView player={player} nativeControls={false} allowsVideoFrameAnalysis={false} contentFit="contain" style={{ flex: 1 }} />
-        </View>
+        <Stage
+          player={player}
+          asset={asset}
+          format={format}
+          settings={framing}
+          currentTime={currentTime}
+          onCrop={(zone) => dispatch({ type: 'settings', change: zone })}
+        />
         <View style={{ backgroundColor: theme.card, borderRadius: 14, padding: 8, gap: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Pressable
@@ -188,7 +247,7 @@ export function Cut({ asset, store, onBack }: Props) {
         {selected && !picking && (
           <View style={{ flexDirection: 'row', gap: 6 }}>
             <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />
-            <Pill testID="clip-settings" label={t.mobile.fadesAndFraming} theme={theme} grow onPress={() => {}} />
+            <Pill testID="clip-settings" label={t.mobile.fadesAndFraming} theme={theme} grow onPress={() => setSheet('clip')} />
             <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => dispatch({ type: 'remove', id: selected })} />
           </View>
         )}
@@ -221,14 +280,42 @@ export function Cut({ asset, store, onBack }: Props) {
                 picked={state.picked}
                 theme={theme}
                 onPress={pressRow}
+                progress={progress}
                 onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
               />
             </ScrollView>
           )}
         </View>
-        <Pressable testID="export" style={{ backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 }}>
+        <Pressable testID="export" onPress={() => clips.length > 0 && setSheet('export')} style={{ backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 }}>
           <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
         </Pressable>
+        {sheet === 'clip' && (
+          <ClipSheet
+            title={selectedClip ? t.settingsScopeClip(clips.indexOf(selectedClip) + 1) : t.settingsScopeAll}
+            settings={framing}
+            clipLength={selectedClip ? selectedClip.end - selectedClip.start : 59}
+            theme={theme}
+            onChange={(change) => dispatch({ type: 'settings', change })}
+            onClose={() => setSheet(null)}
+          />
+        )}
+        {sheet === 'export' && (
+          <ExportSheet
+            theme={theme}
+            label={exportLabel}
+            format={format}
+            baseName={baseName}
+            state={exporting}
+            onFormat={(next) => {
+              setFormat(next)
+              savePreferences(store, { format: next })
+            }}
+            onName={setBaseName}
+            onStart={() => void startExport()}
+            onStop={stop}
+            onClose={closeExport}
+          />
+        )}
         {notice && (
           <Text testID="notice" style={{ position: 'absolute', bottom: 72, alignSelf: 'center', color: theme.inverse, backgroundColor: theme.ink, padding: 10, borderRadius: 10, overflow: 'hidden' }}>
             {notice}

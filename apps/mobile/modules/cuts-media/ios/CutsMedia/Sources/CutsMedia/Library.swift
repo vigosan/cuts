@@ -46,7 +46,7 @@ public func saveToAlbum(files: [URL], album: String) async throws {
     let collection = albumChangeRequest(named: album)
     let placeholders = files.enumerated().compactMap { index, file in
       let request = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: file)
-      request?.creationDate = now.addingTimeInterval(Double(index - files.count))
+      request?.creationDate = now.addingTimeInterval(-Double(index))
       return request?.placeholderForCreatedAsset
     }
     collection.addAssets(placeholders as NSArray)

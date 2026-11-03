@@ -17,6 +17,7 @@ export type ExportJob = {
   fadeSeconds: number
   videoFadeIn: boolean
   fileName: string
+  position: number
 }
 
 export type FrameJob = { format: OutputFormat; framing: Framing; cropX: number; cropY: number }

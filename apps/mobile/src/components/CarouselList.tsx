@@ -10,6 +10,7 @@ type Props = {
   clips: Clip[]
   selectedId: string | null
   picked: string[] | null
+  progress?: Record<string, number>
   theme: Theme
   onPress: (clip: Clip) => void
   onReorder: (from: number, to: number) => void
@@ -17,7 +18,7 @@ type Props = {
 
 const ROW_HEIGHT = 36
 
-export function CarouselList({ clips, selectedId, picked, theme, onPress, onReorder }: Props) {
+export function CarouselList({ clips, selectedId, picked, progress = {}, theme, onPress, onReorder }: Props) {
   const [dragging, setDragging] = useState<{ index: number; offset: number } | null>(null)
   return (
     <View>
@@ -29,6 +30,7 @@ export function CarouselList({ clips, selectedId, picked, theme, onPress, onReor
           count={clips.length}
           selected={clip.id === selectedId}
           picked={picked ? picked.includes(clip.id) : null}
+          progress={progress[clip.id]}
           offset={dragging?.index === index ? dragging.offset : 0}
           theme={theme}
           onPress={() => onPress(clip)}
@@ -46,6 +48,7 @@ type RowProps = {
   count: number
   selected: boolean
   picked: boolean | null
+  progress?: number
   offset: number
   theme: Theme
   onPress: () => void
@@ -53,7 +56,7 @@ type RowProps = {
   onDrag: (offset: number | null) => void
 }
 
-function Row({ clip, index, count, selected, picked, offset, theme, onPress, onMove, onDrag }: RowProps) {
+function Row({ clip, index, count, selected, picked, progress, offset, theme, onPress, onMove, onDrag }: RowProps) {
   const past = isPastCarousel(index)
   const clamp = (to: number) => Math.min(count - 1, Math.max(0, to))
   const reorder = usePanGesture({
@@ -90,6 +93,9 @@ function Row({ clip, index, count, selected, picked, offset, theme, onPress, onM
         zIndex: offset ? 1 : 0
       }}
     >
+      {progress !== undefined && (
+        <View testID={`clip-progress-${clip.id}`} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${progress * 100}%`, borderRadius: 8, backgroundColor: theme.fill }} />
+      )}
       {picked !== null && <SymbolView name={picked ? 'checkmark.circle.fill' : 'circle'} size={20} tintColor={theme.ink} />}
       <View
         accessibilityLabel={index === 0 ? t.cover : undefined}
