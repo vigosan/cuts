@@ -3,8 +3,6 @@ import { useEditor } from '../editor/session'
 import { t } from '../i18n'
 import { useTheme } from '../theme'
 
-const CAROUSEL_CLIP = 59
-
 export function ClipSettings({ onClose }: { onClose: () => void }) {
   const theme = useTheme()
   const { clips, selectedClip, shownSettings, dispatch, format, setFormat } = useEditor()
@@ -14,7 +12,6 @@ export function ClipSettings({ onClose }: { onClose: () => void }) {
       settings={shownSettings}
       format={format}
       onFormat={setFormat}
-      clipLength={selectedClip ? selectedClip.end - selectedClip.start : CAROUSEL_CLIP}
       theme={theme}
       onChange={(change) => dispatch({ type: 'settings', change })}
       onClose={onClose}

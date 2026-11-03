@@ -58,7 +58,7 @@ it('the clip sheet changes the fades of the selected clip', async () => {
   await fireEvent.press(screen.getByTestId('clip-row-a'))
   await fireEvent.press(screen.getByTestId('clip-settings'))
   await fireEvent.press(screen.getByTestId('video-fade-white'))
-  await fireEvent(screen.getByTestId('fade-handle'), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } })
+  await fireEvent.press(screen.getByTestId('fade-seconds-2'))
   await act(async () => jest.advanceTimersByTime(300))
   expect(loadSession(store, 'A1')!.clipSettings.a).toMatchObject({ videoFade: 'white', fadeSeconds: 2 })
   jest.useRealTimers()
@@ -174,4 +174,11 @@ it('the clip sheet lists formats by their full names', async () => {
   await fireEvent.press(screen.getByTestId('clip-settings'))
   expect(screen.getByText(t.formats['9:16'])).toBeTruthy()
   expect(screen.getByText(t.formats['4:5'])).toBeTruthy()
+})
+
+it('fade length is picked from the same lengths as the Mac, shown as plain buttons', async () => {
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('clip-settings'))
+  for (const seconds of [0.5, 1, 2, 3, 5]) expect(screen.getByText(t.fadeSeconds(seconds))).toBeTruthy()
+  expect(screen.queryByTestId('fade-handle')).toBeNull()
 })

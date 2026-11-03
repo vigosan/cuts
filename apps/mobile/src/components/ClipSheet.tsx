@@ -1,10 +1,7 @@
-import { useState } from 'react'
-import { Text, View, type LayoutChangeEvent } from 'react-native'
-import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
-import { Canvas, Circle, Line, vec } from '@shopify/react-native-skia'
-import { AUDIO_FADES, VIDEO_FADES, type ClipSettings } from '@cuts/core/fades'
+import { Text, View } from 'react-native'
+import { FADE_OPTIONS } from '@cuts/core/clips'
+import { AUDIO_FADES, nearestFadeSeconds, VIDEO_FADES, type ClipSettings } from '@cuts/core/fades'
 import type { OutputFormat } from '@cuts/core/formats'
-import { fadeHandleX, fadeSecondsAt, stepFade } from '../editor/fade-line'
 import { haptics } from '../haptics'
 import { t } from '../i18n'
 import type { Theme } from '../theme'
@@ -16,13 +13,12 @@ type Props = {
   settings: ClipSettings
   format: OutputFormat
   onFormat: (format: OutputFormat) => void
-  clipLength: number
   theme: Theme
   onChange: (change: Partial<ClipSettings>) => void
   onClose: () => void
 }
 
-export function ClipSheet({ title, settings, format, onFormat, clipLength, theme, onChange, onClose }: Props) {
+export function ClipSheet({ title, settings, format, onFormat, theme, onChange, onClose }: Props) {
   return (
     <Sheet theme={theme} title={title} onClose={onClose}>
       <Label theme={theme}>{t.format}</Label>
@@ -41,11 +37,16 @@ export function ClipSheet({ title, settings, format, onFormat, clipLength, theme
       />
       <Label theme={theme}>{t.imageFade}</Label>
       <Segments theme={theme} prefix="video-fade" value={settings.videoFade} options={VIDEO_FADES.map((fade) => [fade, t.videoFades[fade]])} onChange={(videoFade) => onChange({ videoFade })} />
-      <Label theme={theme} trailing={t.fadeSeconds(settings.fadeSeconds)}>
-        {t.audioFade}
-      </Label>
+      <Label theme={theme}>{t.audioFade}</Label>
       <Segments theme={theme} prefix="audio-fade" value={settings.audioFade} options={AUDIO_FADES.map((fade) => [fade, t.audioFades[fade]])} onChange={(audioFade) => onChange({ audioFade })} />
-      <FadeLine theme={theme} seconds={settings.fadeSeconds} clipLength={clipLength} onChange={(fadeSeconds) => onChange({ fadeSeconds })} />
+      <Label theme={theme}>{t.fadeLength}</Label>
+      <Segments
+        theme={theme}
+        prefix="fade-seconds"
+        value={String(nearestFadeSeconds(settings.fadeSeconds))}
+        options={FADE_OPTIONS.map((seconds) => [String(seconds), t.fadeSeconds(seconds)])}
+        onChange={(seconds) => onChange({ fadeSeconds: Number(seconds) })}
+      />
     </Sheet>
   )
 }
@@ -64,13 +65,8 @@ export function Sheet({ title, theme, onClose, children }: { title: string; them
   )
 }
 
-function Label({ theme, trailing, children }: { theme: Theme; trailing?: string; children: string }) {
-  return (
-    <View style={{ flexDirection: 'row' }}>
-      <Text style={{ flex: 1, color: theme.muted, fontSize: 13 }}>{children}</Text>
-      {trailing && <Text style={{ color: theme.muted, fontSize: 13, fontVariant: ['tabular-nums'] }}>{trailing}</Text>}
-    </View>
-  )
+function Label({ theme, children }: { theme: Theme; children: string }) {
+  return <Text style={{ color: theme.muted, fontSize: 13 }}>{children}</Text>
 }
 
 type SegmentsProps<T extends string> = { theme: Theme; prefix: string; value: T; options: [T, string][]; onChange: (value: T) => void }
@@ -94,40 +90,5 @@ export function Segments<T extends string>({ theme, prefix, value, options, onCh
         </Tap>
       ))}
     </View>
-  )
-}
-
-function FadeLine({ theme, seconds, clipLength, onChange }: { theme: Theme; seconds: number; clipLength: number; onChange: (seconds: number) => void }) {
-  const [width, setWidth] = useState(0)
-  const handle = fadeHandleX(seconds, width, clipLength)
-  const pan = usePanGesture({
-    runOnJS: true,
-    minDistance: 0,
-    onUpdate: (event) => onChange(fadeSecondsAt(event.x < width / 2 ? event.x : width - event.x, width, clipLength))
-  })
-  const top = 4
-  const bottom = 30
-  return (
-    <GestureDetector gesture={pan}>
-      <View
-        testID="fade-handle"
-        accessible
-        accessibilityRole="adjustable"
-        accessibilityLabel={t.mobile.fadeHandle}
-        accessibilityValue={{ text: t.fadeSeconds(seconds) }}
-        accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-        onAccessibilityAction={(event) => onChange(stepFade(seconds, event.nativeEvent.actionName === 'increment' ? 1 : -1))}
-        onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
-        style={{ height: 36 }}
-      >
-        <Canvas style={{ position: 'absolute', inset: 0 }}>
-          <Line p1={vec(0, bottom)} p2={vec(handle, top)} color={theme.ink} strokeWidth={2} />
-          <Line p1={vec(handle, top)} p2={vec(width - handle, top)} color={theme.ink} strokeWidth={2} />
-          <Line p1={vec(width - handle, top)} p2={vec(width, bottom)} color={theme.ink} strokeWidth={2} />
-          <Circle cx={handle} cy={top} r={6} color={theme.ink} />
-          <Circle cx={width - handle} cy={top} r={6} color={theme.ink} />
-        </Canvas>
-      </View>
-    </GestureDetector>
   )
 }
