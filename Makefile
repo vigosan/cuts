@@ -52,8 +52,12 @@ web-dev:
 
 MOBILE := apps/mobile
 
-mobile-test:
+mobile-fixtures:
+	$(MOBILE)/scripts/make-fixtures.sh
+
+mobile-test: mobile-fixtures
 	cd $(MOBILE) && npx vitest run
+	swift test --package-path $(MOBILE)/native/CutsMedia
 
 mobile-ios:
 	cd $(MOBILE) && npx expo prebuild -p ios --clean && npx expo run:ios
