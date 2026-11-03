@@ -4,10 +4,11 @@ import { hitClip, type View } from './timeline-geometry'
 
 export type Drag = { kind: 'clip'; clip: Clip; mode: DragMode } | { kind: 'scrub' }
 
-export function beginDrag(clips: Clip[], view: View, x: number, edgeSlop: number): Drag {
+export function beginDrag(clips: Clip[], view: View, x: number, edgeSlop: number, { moveClips = true } = {}): Drag {
   const hit = hitClip(clips, view, x, edgeSlop)
   const clip = hit && clips.find((candidate) => candidate.id === hit.id)
-  return hit && clip ? { kind: 'clip', clip, mode: hit.mode } : { kind: 'scrub' }
+  if (!hit || !clip || (hit.mode === 'move' && !moveClips)) return { kind: 'scrub' }
+  return { kind: 'clip', clip, mode: hit.mode }
 }
 
 export function dragTo(drag: Drag, dx: number, view: View, duration: number, snap: (time: number) => number): Clip | null {

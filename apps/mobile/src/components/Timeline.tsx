@@ -8,6 +8,7 @@ import { nextViewStart } from '@cuts/core/timeline-view'
 import { elasticSpan, project } from '../editor/physics'
 import { beginDrag, dragTo, type Drag } from '../editor/timeline-drag'
 import { hitClip, pinch, thumbnailTime, timeAt, xAt, type View as TimelineView } from '../editor/timeline-geometry'
+import { haptics } from '../haptics'
 import { thumbnail } from '../media'
 import { useTheme } from '../theme'
 
@@ -71,33 +72,47 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
       onSeek(timeAt(view, event.x))
     }
   })
+  const beginDragAt = (event: { x: number; translationX: number }, moveClips: boolean) => {
+    setTouching(true)
+    const begun = beginDrag(clips, view, event.x - event.translationX, EDGE_SLOP, { moveClips })
+    drag.current = { drag: begun, view }
+    if (begun.kind !== 'clip') return
+    if (begun.mode === 'move') haptics.lift()
+    onSelect(begun.clip.id)
+    onDragStart()
+  }
+  const dragUpdate = (event: { x: number; translationX: number }) => {
+    const current = drag.current
+    if (!current) return
+    const moved = dragTo(current.drag, event.translationX, current.view, duration, snap)
+    if (moved) onDrag(moved)
+    else onSeek(timeAt(view, event.x))
+  }
+  const dragEnd = (event: { x: number; velocityX: number }) => {
+    if (drag.current?.drag.kind === 'scrub') onSeek(timeAt(view, event.x + project(event.velocityX)))
+    else if (drag.current?.drag.kind === 'clip' && drag.current.drag.mode === 'move') haptics.drop()
+  }
+  const dragFinish = () => {
+    drag.current = null
+    setTouching(false)
+  }
   const pan = usePanGesture({
     runOnJS: true,
     maxPointers: 1,
     minDistance: 4,
-    onActivate: (event) => {
-      setTouching(true)
-      const begun = beginDrag(clips, view, event.x - event.translationX, EDGE_SLOP)
-      drag.current = { drag: begun, view }
-      if (begun.kind === 'clip') {
-        onSelect(begun.clip.id)
-        onDragStart()
-      }
-    },
-    onUpdate: (event) => {
-      const current = drag.current
-      if (!current) return
-      const moved = dragTo(current.drag, event.translationX, current.view, duration, snap)
-      if (moved) onDrag(moved)
-      else onSeek(timeAt(view, event.x))
-    },
-    onDeactivate: (event) => {
-      if (drag.current?.drag.kind === 'scrub') onSeek(timeAt(view, event.x + project(event.velocityX)))
-    },
-    onFinalize: () => {
-      drag.current = null
-      setTouching(false)
-    }
+    onActivate: (event) => beginDragAt(event, false),
+    onUpdate: dragUpdate,
+    onDeactivate: dragEnd,
+    onFinalize: dragFinish
+  })
+  const hold = usePanGesture({
+    runOnJS: true,
+    maxPointers: 1,
+    activateAfterLongPress: 350,
+    onActivate: (event) => beginDragAt(event, true),
+    onUpdate: dragUpdate,
+    onDeactivate: dragEnd,
+    onFinalize: dragFinish
   })
   const zoom = usePinchGesture({
     runOnJS: true,
@@ -125,7 +140,7 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
       })
     }
   })
-  const gesture = useCompetingGestures(zoom, pan, tap)
+  const gesture = useCompetingGestures(zoom, hold, pan, tap)
 
   const tileWidth = Math.round((FILM * 16) / 9)
   const tiles = width ? filmstripTiles(view.start, view.span, width, tileWidth, duration) : []

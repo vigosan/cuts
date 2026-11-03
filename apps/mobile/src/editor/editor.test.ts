@@ -53,4 +53,9 @@ describe('editor', () => {
     )
     expect(state.picked).toEqual(['a'])
   })
+  it('a half-marked clip can be cancelled without touching the others', () => {
+    const state = [{ type: 'markStart', time: 40 } as const, { type: 'cancelMark' } as const].reduce(editorReducer, twoClips())
+    expect(state.history.present.pendingStart).toBeNull()
+    expect(state.history.present.clips.map((c) => c.id)).toEqual(['a', 'b'])
+  })
 })

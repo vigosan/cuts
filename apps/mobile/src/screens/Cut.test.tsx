@@ -107,3 +107,13 @@ it('marking Start and End gives a light tap you can feel', async () => {
   await mark(2, 6)
   expect(Haptics.impactAsync).toHaveBeenCalledTimes(2)
 })
+
+it('marking past the end of the audio cuts exactly instead of failing', async () => {
+  jest.useFakeTimers()
+  native.readPeaks.mockResolvedValue(beatPeaks().slice(0, 10 * 50))
+  const store = await renderCut()
+  await mark(12.3, 15.6)
+  await act(async () => jest.advanceTimersByTime(300))
+  expect(loadSession(store, 'A1')?.clips).toEqual([expect.objectContaining({ start: 12.3, end: 15.6 })])
+  jest.useRealTimers()
+})

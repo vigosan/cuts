@@ -38,9 +38,11 @@ export type EditorSession = {
   startExport: () => Promise<void>
   stopExport: () => void
   resetExport: () => void
-  notice: string | null
-  setNotice: (notice: string | null) => void
+  notice: Notice | null
+  setNotice: (text: string | null, undo?: boolean) => void
 }
+
+export type Notice = { text: string; undo: boolean }
 
 const EditorContext = createContext<EditorSession | null>(null)
 
@@ -66,7 +68,8 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   const [progress, setProgress] = useState<Record<string, number>>({})
   const [peaks, setPeaks] = useState<Float32Array | null>(null)
   const [peaksRequest] = useState(() => readPeaks(asset.id).catch(() => null))
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNoticeState] = useState<Notice | null>(null)
+  const setNotice = useCallback((text: string | null, undo = false) => setNoticeState(text ? { text, undo } : null), [])
   const stopped = useRef(false)
   const clips = state.history.present.clips
   const selectedClip = clips.find((clip) => clip.id === state.selectedId) ?? null
@@ -99,7 +102,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
     if (!notice) return
     const timer = setTimeout(() => setNotice(null), NOTICE_MS)
     return () => clearTimeout(timer)
-  }, [notice])
+  }, [notice, setNotice])
 
   const resetExport = useCallback(() => {
     setExporting({ status: 'idle' })
@@ -113,6 +116,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
     const moments = suggestMoments({ peaks: found, peaksPerSecond: PEAKS_PER_SECOND, duration: asset.duration, clipLength: MAX_CLIP_SECONDS, existing })
     if (moments.length === 0) return setNotice(t.mobile.suggestNoneFound)
     dispatch({ type: 'suggest', clips: moments.map((moment) => ({ id: randomUUID(), ...moment })) })
+    setNotice(t.mobile.momentsAdded(moments.length), true)
   }
 
   const startExport = async () => {

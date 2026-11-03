@@ -18,6 +18,7 @@ export type EditorAction =
   | { type: 'select'; id: string | null }
   | { type: 'settings'; change: Partial<ClipSettings> }
   | { type: 'magnet' }
+  | { type: 'cancelMark' }
   | { type: 'pickMode'; on: boolean }
   | { type: 'pick'; id: string }
   | { type: 'load'; session: Session | null; defaults: ClipSettings }
@@ -62,6 +63,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return changeSettings(state, action.change)
     case 'magnet':
       return { ...state, magnet: !state.magnet }
+    case 'cancelMark':
+      return { ...state, history: { ...state.history, present: { ...state.history.present, pendingStart: null } } }
     case 'pickMode':
       return { ...state, picked: action.on ? [] : null }
     case 'pick': {

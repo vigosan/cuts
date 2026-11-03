@@ -39,4 +39,9 @@ describe('timeline drag', () => {
     ].reduce(editorReducer, marked)
     expect(editorReducer(dragged, { type: 'undo' }).history.present.clips).toEqual([{ id: 'a', start: 20, end: 40 }])
   })
+  it('dragging inside a clip scrubs, so you never move a clip by accident', () => {
+    expect(beginDrag(clips, view, 30, 4)).toEqual({ kind: 'clip', clip: clips[0], mode: 'move' })
+    expect(beginDrag(clips, view, 30, 4, { moveClips: false })).toEqual({ kind: 'scrub' })
+    expect(beginDrag(clips, view, 41, 4, { moveClips: false })).toEqual({ kind: 'clip', clip: clips[0], mode: 'end' })
+  })
 })

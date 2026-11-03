@@ -60,7 +60,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
       resize(panelExpanded(expanded, event.translationY, event.velocityY, travel), panelOffset(expanded, event.translationY, travel))
   })
 
-  const at = (time: number) => (state.magnet && peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
+  const at = (time: number) => (state.magnet && peaks && time * PEAKS_PER_SECOND < peaks.length ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
   const seekTo = (time: number) => {
     seek(player, time, asset.duration)
     setSought({ time: player.currentTime, after: playedTime })
@@ -161,8 +161,18 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                   dispatch({ type: 'replace', clip, transient: true })
                 }}
               />
+              {state.history.present.pendingStart !== null && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 36, paddingLeft: 10, borderRadius: 10, backgroundColor: theme.fill }}>
+                  <Text style={{ flex: 1, color: theme.ink, fontSize: 14, fontVariant: ['tabular-nums'] }}>
+                    {t.mobile.markingFrom(formatTime(state.history.present.pendingStart))}
+                  </Text>
+                  <Tap testID="cancel-mark" onPress={() => dispatch({ type: 'cancelMark' })} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 }}>
+                    <Text style={{ color: theme.ink, fontSize: 14, fontWeight: '600' }}>{t.cancel}</Text>
+                  </Tap>
+                </View>
+              )}
               <View style={{ flexDirection: 'row', gap: 6 }}>
-                <Pill testID="start-here" label={t.mobile.startHere} theme={theme} grow onPress={() => {
+                <Pill testID="start-here" label={selected ? t.mobile.moveStartHere : t.mobile.startHere} theme={theme} grow onPress={() => {
                     haptics.mark()
                     dispatch(startHere(state.history.present, at(player.currentTime), selected))
                   }} />
@@ -170,7 +180,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                 <Pill testID="next-frame" icon="chevron.right" label={t.mobile.nextFrame} theme={theme} onPress={() => step(1)} />
                 <Pill
                   testID="end-here"
-                  label={t.mobile.endHere}
+                  label={selected ? t.mobile.moveEndHere : t.mobile.endHere}
                   theme={theme}
                   grow
                   onPress={() => {
@@ -184,7 +194,10 @@ export function Cut({ onBack, onOpenSheet }: Props) {
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {selected && <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />}
               <Pill testID="clip-settings" label={selected ? t.mobile.fadesAndFraming : `${t.mobile.fadesAndFraming} · ${t.settingsScopeAll}`} theme={theme} grow onPress={() => onOpenSheet('clip')} />
-              {selected && <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => dispatch({ type: 'remove', id: selected })} />}
+              {selected && <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => {
+                  dispatch({ type: 'remove', id: selected })
+                  setNotice(t.mobile.clipDeleted, true)
+                }} />}
             </View>
             )}
           </View>
@@ -240,9 +253,21 @@ export function Cut({ onBack, onOpenSheet }: Props) {
           <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
         </Tap>
         {notice && (
-          <Text testID="notice" style={{ position: 'absolute', bottom: 72, alignSelf: 'center', color: theme.inverse, backgroundColor: theme.ink, padding: 10, borderRadius: 10, overflow: 'hidden' }}>
-            {notice}
-          </Text>
+          <View testID="notice" style={{ position: 'absolute', bottom: 72, alignSelf: 'center', zIndex: 2, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.ink, paddingLeft: 14, paddingRight: notice.undo ? 4 : 14, minHeight: 44, borderRadius: 12 }}>
+            <Text style={{ color: theme.inverse, fontSize: 15 }}>{notice.text}</Text>
+            {notice.undo && (
+              <Tap
+                testID="notice-undo"
+                onPress={() => {
+                  dispatch({ type: 'undo' })
+                  setNotice(null)
+                }}
+                style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 10 }}
+              >
+                <Text style={{ color: theme.accent, fontSize: 15, fontWeight: '600' }}>{t.mobile.undo}</Text>
+              </Tap>
+            )}
+          </View>
         )}
       </View>
     </SafeAreaView>

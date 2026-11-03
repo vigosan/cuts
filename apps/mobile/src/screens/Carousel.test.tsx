@@ -105,3 +105,29 @@ it('tapping the selected clip again deselects it, so settings go back to all cli
   expect(screen.queryByTestId('delete-clip')).toBeNull()
   expect(screen.getByText(`${t.mobile.fadesAndFraming} · ${t.settingsScopeAll}`)).toBeTruthy()
 })
+
+it('with a clip selected, the mark buttons say they move its edges', async () => {
+  await renderCut(storeWith([{ id: 'a', start: 0, end: 10 }]))
+  expect(screen.getByText(t.mobile.startHere)).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('clip-row-a'))
+  expect(screen.getByText(t.mobile.moveStartHere)).toBeTruthy()
+  expect(screen.getByText(t.mobile.moveEndHere)).toBeTruthy()
+})
+
+it('a half-marked clip shows where it started and can be cancelled', async () => {
+  await renderCut()
+  player.currentTime = 423
+  await fireEvent.press(screen.getByTestId('start-here'))
+  expect(screen.getByText(t.mobile.markingFrom('00:07:03'))).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('cancel-mark'))
+  expect(screen.queryByTestId('cancel-mark')).toBeNull()
+})
+
+it('deleting a clip says so and offers to undo it', async () => {
+  await renderCut(storeWith([{ id: 'a', start: 0, end: 10 }, { id: 'b', start: 20, end: 30 }]))
+  await fireEvent.press(screen.getByTestId('clip-row-a'))
+  await fireEvent.press(screen.getByTestId('delete-clip'))
+  expect(screen.getByText(t.mobile.clipDeleted)).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('notice-undo'))
+  expect(rowIds()).toEqual(['a', 'b'])
+})
