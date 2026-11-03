@@ -188,7 +188,13 @@ function english(locale: Locale) {
     privacyUrl: 'https://cuts.vicent.io/privacy',
     supportUrl: 'https://cuts.vicent.io/support',
     aboutCredits:
-      'Uses FFmpeg (ffmpeg.org), licensed under the GNU LGPL v2.1. The license and build details are included in the app bundle.'
+      'Uses FFmpeg (ffmpeg.org), licensed under the GNU LGPL v2.1. The license and build details are included in the app bundle.',
+    mobile: {
+      chooseFromPhotos: 'Choose video from Photos',
+      downloading: (percent: number) => `Downloading from iCloud… ${percent}%`,
+      photosDenied: 'Cuts needs access to Photos to open your sessions.',
+      openSettings: 'Open Settings'
+    }
   }
 }
 
@@ -356,7 +362,13 @@ function spanish(locale: Locale): Messages {
     privacyUrl: 'https://cuts.vicent.io/es/privacidad',
     supportUrl: 'https://cuts.vicent.io/es/soporte',
     aboutCredits:
-      'Usa FFmpeg (ffmpeg.org), con licencia GNU LGPL v2.1. La licencia y los detalles de compilación se incluyen en el paquete de la app.'
+      'Usa FFmpeg (ffmpeg.org), con licencia GNU LGPL v2.1. La licencia y los detalles de compilación se incluyen en el paquete de la app.',
+    mobile: {
+      chooseFromPhotos: 'Elegir vídeo de Fotos',
+      downloading: (percent) => `Descargando de iCloud… ${percent} %`,
+      photosDenied: 'Cuts necesita acceso a Fotos para abrir tus sesiones.',
+      openSettings: 'Abrir Ajustes'
+    }
   }
 }
 

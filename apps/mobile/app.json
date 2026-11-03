@@ -44,10 +44,10 @@
             "deploymentTarget": "18.0"
           }
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
-      "typedRoutes": true,
       "reactCompiler": true
     }
   }
