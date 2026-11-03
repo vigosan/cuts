@@ -1,13 +1,15 @@
 import { useEffect, useReducer, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEvent } from 'expo'
 import { randomUUID } from 'expo-crypto'
 import { SymbolView, type SFSymbol } from 'expo-symbols'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { snapToBeat } from '@cuts/core/beats'
-import { defaultBaseName, formatTime } from '@cuts/core/clips'
+import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { suggestMoments } from '@cuts/core/suggest'
+import { CarouselList } from '../components/CarouselList'
 import { Timeline } from '../components/Timeline'
 import { editorReducer, initialEditor } from '../editor/editor'
 import { endHere, startHere } from '../editor/marks'
@@ -32,6 +34,7 @@ export function Cut({ asset, store, onBack }: Props) {
   )
   const [baseName] = useState(() => stored?.baseName ?? defaultBaseName(asset.name))
   const [peaks, setPeaks] = useState<Float32Array | null>(null)
+  const [peaksRequest] = useState(() => readPeaks(asset.id).catch(() => null))
   const [menu, setMenu] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const player = useVideoPlayer(asset.uri, (created) => {
@@ -44,8 +47,8 @@ export function Cut({ asset, store, onBack }: Props) {
   const clips = state.history.present.clips
 
   useEffect(() => {
-    void readPeaks(asset.id).then(setPeaks, () => setPeaks(null))
-  }, [asset.id])
+    void peaksRequest.then(setPeaks)
+  }, [peaksRequest])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -72,6 +75,31 @@ export function Cut({ asset, store, onBack }: Props) {
   }
   const selected = state.selectedId
   const framing = selected ? (state.clipSettings[selected] ?? state.defaultSettings) : state.defaultSettings
+
+  const suggest = async () => {
+    const found = await peaksRequest
+    if (!found) return setNotice(t.suggestNoAudio)
+    const existing = clips.filter((clip) => !clip.suggested)
+    const moments = suggestMoments({ peaks: found, peaksPerSecond: PEAKS_PER_SECOND, duration: asset.duration, clipLength: MAX_CLIP_SECONDS, existing })
+    if (moments.length === 0) return setNotice(t.mobile.suggestNoneFound)
+    dispatch({ type: 'suggest', clips: moments.map((moment) => ({ id: randomUUID(), ...moment })) })
+  }
+
+  const split = () => {
+    const time = player.currentTime
+    const inside = (clip: Clip) => clip.start < time && time < clip.end
+    const chosen = clips.find((clip) => clip.id === selected && inside(clip)) ?? clips.find(inside)
+    if (chosen) dispatch({ type: 'split', id: chosen.id, time, newId: randomUUID() })
+  }
+
+  const pressRow = (clip: Clip) => {
+    if (state.picked) return dispatch({ type: 'pick', id: clip.id })
+    dispatch({ type: 'select', id: clip.id })
+    seekTo(clip.start)
+  }
+
+  const picking = state.picked !== null
+  const exportLabel = state.picked?.length ? t.exportSelected(state.picked.length) : t.exportClips(clips.length)
 
   const saveCurrentFrame = async () => {
     setMenu(false)
@@ -157,9 +185,49 @@ export function Cut({ asset, store, onBack }: Props) {
             />
           </View>
         </View>
-        <View style={{ flex: 1 }} />
+        {selected && !picking && (
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />
+            <Pill testID="clip-settings" label={t.mobile.fadesAndFraming} theme={theme} grow onPress={() => {}} />
+            <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => dispatch({ type: 'remove', id: selected })} />
+          </View>
+        )}
+        <View style={{ flex: 1, backgroundColor: theme.card, borderRadius: 14, padding: 8, gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '700' }}>{t.carousel}</Text>
+            {clips.length > 0 && (
+              <>
+                <Pressable testID="suggest" onPress={() => void suggest()} style={{ marginLeft: 'auto', backgroundColor: theme.ink, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 5 }}>
+                  <Text style={{ color: theme.inverse, fontSize: 13, fontWeight: '600' }}>✦ {t.suggestShort}</Text>
+                </Pressable>
+                <Pressable testID="select" onPress={() => dispatch({ type: 'pickMode', on: !picking })}>
+                  <Text style={{ color: theme.ink, fontSize: 15 }}>{picking ? t.mobile.done : t.mobile.select}</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+          {clips.length === 0 ? (
+            <View testID="suggest-empty" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 12 }}>
+              <Pressable testID="suggest-moments" onPress={() => void suggest()} style={{ alignSelf: 'stretch', backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
+                <Text style={{ color: theme.inverse, fontSize: 16, fontWeight: '600' }}>✦ {t.suggestMoments}</Text>
+              </Pressable>
+              <Text style={{ color: theme.muted, fontSize: 13, textAlign: 'center' }}>{t.mobile.suggestExplain}</Text>
+            </View>
+          ) : (
+            <ScrollView>
+              <CarouselList
+                clips={clips}
+                selectedId={selected}
+                picked={state.picked}
+                theme={theme}
+                onPress={pressRow}
+                onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
+              />
+            </ScrollView>
+          )}
+        </View>
         <Pressable testID="export" style={{ backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 }}>
-          <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{t.exportClips(clips.length)}</Text>
+          <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
         </Pressable>
         {notice && (
           <Text testID="notice" style={{ position: 'absolute', bottom: 72, alignSelf: 'center', color: theme.inverse, backgroundColor: theme.ink, padding: 10, borderRadius: 10, overflow: 'hidden' }}>

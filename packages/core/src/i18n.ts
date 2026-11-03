@@ -203,7 +203,16 @@ function english(locale: Locale) {
       magnetOff: 'Cuts land exactly on the playhead',
       more: 'More',
       saveFrame: 'Save frame to Photos',
-      frameSaved: 'Frame saved to Photos'
+      frameSaved: 'Frame saved to Photos',
+      suggestExplain: 'Cuts listens to the session and adds 10 clips at its best moments. Or mark them yourself with Start here and End here.',
+      suggestNoneFound: 'No new moments found. Mark clips with Start here and End here.',
+      select: 'Select',
+      done: 'Done',
+      split: 'Split',
+      fadesAndFraming: 'Fades · framing',
+      moveUp: 'Move up',
+      moveDown: 'Move down',
+      reorder: 'Hold and drag to reorder'
     }
   }
 }
@@ -387,7 +396,16 @@ function spanish(locale: Locale): Messages {
       magnetOff: 'Los cortes caen justo en el cursor',
       more: 'Más',
       saveFrame: 'Guardar fotograma en Fotos',
-      frameSaved: 'Fotograma guardado en Fotos'
+      frameSaved: 'Fotograma guardado en Fotos',
+      suggestExplain: 'Cuts escucha la sesión y añade 10 clips en sus mejores momentos. O márcalos tú con Inicio aquí y Fin aquí.',
+      suggestNoneFound: 'No se encontraron momentos nuevos. Marca clips con Inicio aquí y Fin aquí.',
+      select: 'Seleccionar',
+      done: 'Listo',
+      split: 'Partir',
+      fadesAndFraming: 'Fundidos · encuadre',
+      moveUp: 'Subir',
+      moveDown: 'Bajar',
+      reorder: 'Mantén y arrastra para reordenar'
     }
   }
 }
