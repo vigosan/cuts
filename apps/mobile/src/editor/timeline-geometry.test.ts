@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hitClip, pinch, timeAt, xAt } from './timeline-geometry'
+import { hitClip, pinch, thumbnailTime, timeAt, xAt } from './timeline-geometry'
 
 const view = { start: 0, span: 600, width: 300 }
 
@@ -30,5 +30,11 @@ describe('timeline geometry', () => {
     expect(hitClip(clips, view, 98, 16)).toEqual({ id: 'a', mode: 'end' })
     expect(hitClip(clips, view, 75, 16)).toEqual({ id: 'a', mode: 'move' })
     expect(hitClip(clips, view, 200, 16)).toBeNull()
+  })
+
+  it('zooming reuses the same thumbnails instead of decoding new frames every step', () => {
+    expect(thumbnailTime(12.3, 9)).toBe(thumbnailTime(12.9, 10))
+    expect(thumbnailTime(301, 140)).toBe(300)
+    expect(thumbnailTime(0.4, 0.5)).toBe(0)
   })
 })

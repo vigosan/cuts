@@ -28,3 +28,10 @@ export function hitClip(clips: Clip[], view: View, x: number, edgeSlop: number):
   const inside = clips.find((clip) => xAt(view, clip.start) < x && x < xAt(view, clip.end))
   return inside ? { id: inside.id, mode: 'move' } : null
 }
+
+const THUMBNAIL_STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200]
+
+export function thumbnailTime(time: number, tileSpan: number): number {
+  const step = THUMBNAIL_STEPS.find((candidate) => candidate >= tileSpan) ?? THUMBNAIL_STEPS[THUMBNAIL_STEPS.length - 1]
+  return Math.floor(Math.max(0, time) / step) * step
+}

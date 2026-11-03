@@ -5,8 +5,9 @@ import { Canvas, Image, Rect, RoundedRect, useImage } from '@shopify/react-nativ
 import { formatDuration, isOverLimit, type Clip } from '@cuts/core/clips'
 import { filmstripTiles, PEAKS_PER_SECOND, waveformColumns } from '@cuts/core/filmstrip'
 import { nextViewStart } from '@cuts/core/timeline-view'
+import { elasticSpan, project } from '../editor/physics'
 import { beginDrag, dragTo, type Drag } from '../editor/timeline-drag'
-import { hitClip, pinch, timeAt, xAt, type View as TimelineView } from '../editor/timeline-geometry'
+import { hitClip, pinch, thumbnailTime, timeAt, xAt, type View as TimelineView } from '../editor/timeline-geometry'
 import { thumbnail } from '../media'
 import { useTheme } from '../theme'
 
@@ -29,6 +30,19 @@ const HEIGHT = 64
 const FILM = 40
 const WAVE = HEIGHT - FILM
 const EDGE_SLOP = 16
+const MIN_SPAN = 30
+const SETTLE_MS = 280
+
+function settleView(from: TimelineView, to: TimelineView, apply: (view: TimelineView) => void) {
+  const began = Date.now()
+  const frame = () => {
+    const progress = Math.min(1, (Date.now() - began) / SETTLE_MS)
+    const eased = 1 - (1 - progress) ** 3
+    apply({ ...to, span: from.span + (to.span - from.span) * eased, start: from.start + (to.start - from.start) * eased })
+    if (progress < 1) requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
+}
 
 export function Timeline({ assetId, duration, currentTime, clips, selectedId, pendingStart = null, peaks, snap, onSeek, onSelect, onDragStart, onDrag }: Props) {
   const theme = useTheme()
@@ -38,8 +52,9 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
   const [touching, setTouching] = useState(false)
   const drag = useRef<{ drag: Drag; view: TimelineView } | null>(null)
   const pinchFrom = useRef<TimelineView | null>(null)
+  const pinchLast = useRef<{ scale: number; focalX: number }>({ scale: 1, focalX: 0 })
 
-  const shownSpan = Math.min(span || duration, duration)
+  const shownSpan = touching ? span || duration : Math.min(span || duration, duration)
   const followed = touching ? start : nextViewStart(start, currentTime, duration, shownSpan >= duration ? null : shownSpan)
   if (followed !== start) setStart(followed)
   const view: TimelineView = { start: followed, span: shownSpan || 1, width: width || 1 }
@@ -73,6 +88,9 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
       if (moved) onDrag(moved)
       else onSeek(timeAt(view, event.x))
     },
+    onDeactivate: (event) => {
+      if (drag.current?.drag.kind === 'scrub') onSeek(timeAt(view, event.x + project(event.velocityX)))
+    },
     onFinalize: () => {
       drag.current = null
       setTouching(false)
@@ -85,14 +103,23 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
       pinchFrom.current = view
     },
     onUpdate: (event) => {
-      if (!pinchFrom.current) return
-      const next = pinch(pinchFrom.current, duration, event.scale, event.focalX)
-      setSpan(next.span)
-      setStart(next.start)
+      const from = pinchFrom.current
+      if (!from) return
+      pinchLast.current = { scale: event.scale, focalX: event.focalX }
+      const stretched = elasticSpan(from.span / event.scale, Math.min(MIN_SPAN, duration), duration)
+      setSpan(stretched)
+      setStart(timeAt(from, event.focalX) - (event.focalX / from.width) * stretched)
     },
     onFinalize: () => {
+      const from = pinchFrom.current
       pinchFrom.current = null
-      setTouching(false)
+      if (!from) return setTouching(false)
+      const target = pinch(from, duration, pinchLast.current.scale, pinchLast.current.focalX)
+      settleView(view, target, (next) => {
+        setSpan(next.span)
+        setStart(next.start)
+        if (next.span === target.span && next.start === target.start) setTouching(false)
+      })
     }
   })
   const gesture = useCompetingGestures(zoom, pan, tap)
@@ -107,7 +134,7 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
       <View testID="timeline" onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)} style={{ height: HEIGHT, borderRadius: 8, overflow: 'hidden', backgroundColor: '#8a8a8a' }}>
         <Canvas style={{ position: 'absolute', left: 0, top: 0, width, height: HEIGHT }}>
           {tiles.map((tile) => (
-            <Tile key={`${tile.time}`} assetId={assetId} time={tile.time} x={(tile.left / 100) * width} width={tileWidth} />
+            <Tile key={`${tile.left}`} assetId={assetId} time={thumbnailTime(tile.time, (view.span * tileWidth) / width)} x={(tile.left / 100) * width} width={tileWidth} />
           ))}
           <Rect x={0} y={FILM} width={width} height={WAVE} color="#3a3a3c" />
           {columns &&
