@@ -137,9 +137,10 @@ export function Cut({ onBack, onOpenSheet }: Props) {
                     haptics.tick()
                     dispatch({ type: 'magnet' })
                   }}
-                  style={{ marginLeft: 'auto', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: state.magnet ? theme.ink : theme.fill }}
+                  style={{ marginLeft: 'auto', height: 44, paddingHorizontal: 12, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: state.magnet ? theme.ink : theme.fill }}
                 >
                   <Icon name="metronome" theme={theme} inverse={state.magnet} />
+                  <Text style={{ color: state.magnet ? theme.inverse : theme.ink, fontSize: 15, fontWeight: '600' }}>{t.mobile.beat}</Text>
                 </Tap>
               </View>
               <Timeline

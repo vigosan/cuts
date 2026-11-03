@@ -117,3 +117,8 @@ it('marking past the end of the audio cuts exactly instead of failing', async ()
   expect(loadSession(store, 'A1')?.clips).toEqual([expect.objectContaining({ start: 12.3, end: 15.6 })])
   jest.useRealTimers()
 })
+
+it('the beat magnet says what it is, not just a metronome icon', async () => {
+  await renderCut()
+  expect(screen.getByText(t.mobile.beat)).toBeTruthy()
+})
