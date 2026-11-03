@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BREW, content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
+import { APP_STORE, BREW, content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -90,6 +90,11 @@ describe("site content", () => {
     const workflow = readFileSync("../../.github/workflows/release.yml", "utf8");
     expect(BREW).toBe("brew install --cask vigosan/cuts/cuts");
     expect(workflow).toContain("repository: vigosan/homebrew-cuts");
+  });
+
+  it("links to the Mac App Store by the app's Apple ID, so the link keeps working if the listing is renamed", () => {
+    expect(APP_STORE).toBe("https://apps.apple.com/app/id6826686848");
+    for (const lang of LANGS) expect(content[lang].home.appStore.link, lang).toContain("App Store");
   });
 
   it("keeps the intro under the headline to one short sentence, so the download button stays in the first screen", () => {

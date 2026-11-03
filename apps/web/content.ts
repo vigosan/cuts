@@ -22,6 +22,7 @@ export const DOWNLOADS = {
   linux: `${RELEASES}/Cuts-linux.AppImage`,
 } as const;
 export const BREW = "brew install --cask vigosan/cuts/cuts";
+export const APP_STORE = "https://apps.apple.com/app/id6826686848";
 
 export const FFMPEG_FILES = {
   source: "/ffmpeg/ffmpeg-9.0.2.tar.xz",
@@ -58,6 +59,7 @@ export const content = {
       requirements: { mac: "macOS 13 or later", windows: "Windows 10 or later", linux: "AppImage x86_64" },
       download: { mac: "Download for Mac", windows: "Download for Windows", linux: "Download for Linux", also: "Also for" },
       brew: "Or with Homebrew:",
+      appStore: { text: "Also on the", link: "Mac App Store" },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Version ${VERSION}`,
       downloads: { one: "download", other: "downloads" },
@@ -226,6 +228,7 @@ export const content = {
       requirements: { mac: "macOS 13 o posterior", windows: "Windows 10 o posterior", linux: "AppImage x86_64" },
       download: { mac: "Descargar para Mac", windows: "Descargar para Windows", linux: "Descargar para Linux", also: "También para" },
       brew: "O con Homebrew:",
+      appStore: { text: "También en el", link: "Mac App Store" },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Versión ${VERSION}`,
       downloads: { one: "descarga", other: "descargas" },

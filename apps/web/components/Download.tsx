@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BREW, DOWNLOADS, type Content, type Lang } from "@/content";
+import { APP_STORE, BREW, DOWNLOADS, type Content, type Lang } from "@/content";
 import { formatDownloads } from "@/downloads";
 import { detectOS, type OS } from "@/os";
 import { link } from "./Page";
@@ -80,6 +80,14 @@ export function Download({ home, lang, downloads, brew = false }: { home: Conten
           <code data-testid="brew" className="select-all rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-800 dark:bg-neutral-800 dark:text-gray-200">
             {BREW}
           </code>
+        </p>
+      )}
+      {brew && os === "mac" && (
+        <p className="text-sm">
+          {home.appStore.text}{" "}
+          <a data-testid="app-store" href={APP_STORE} className={link}>
+            {home.appStore.link}
+          </a>
         </p>
       )}
     </div>
