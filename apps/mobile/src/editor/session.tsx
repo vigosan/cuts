@@ -35,7 +35,7 @@ export type EditorSession = {
   exportLabel: string
   exporting: ExportState
   progress: Record<string, number>
-  startExport: () => Promise<void>
+  startExport: (only?: string) => Promise<void>
   stopExport: () => void
   resetExport: () => void
   notice: Notice | null
@@ -119,8 +119,8 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
     setNotice(t.mobile.momentsAdded(moments.length), true)
   }
 
-  const startExport = async () => {
-    const jobs = exportJobs(clips, (id) => settingsOf(state, id), format, baseName)
+  const startExport = async (only?: string) => {
+    const jobs = exportJobs(clips, (id) => settingsOf(state, id), format, baseName, only)
     const ids = jobs.map((job) => clips[job.position].id)
     stopped.current = false
     setProgress({})

@@ -24,6 +24,7 @@ export default function CutLayout() {
           options={{ presentation: 'formSheet', headerShown: false, sheetAllowedDetents: [0.6, 0.9], sheetLargestUndimmedDetentIndex: 0, sheetGrabberVisible: true }}
         />
         <Stack.Screen name="export" options={{ presentation: 'formSheet', headerShown: false, sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
+        <Stack.Screen name="export-clip" options={{ presentation: 'formSheet', headerShown: false, sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
       </Stack>
     </EditorProvider>
   )

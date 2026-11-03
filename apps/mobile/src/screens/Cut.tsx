@@ -24,7 +24,7 @@ import { useTheme, type Theme } from '../theme'
 import { backItem, cutHeaderItems } from './cut-header'
 import { Tap } from '../components/Tap'
 
-export type SheetKind = 'clip' | 'export'
+export type SheetKind = 'clip' | 'export' | 'export-clip'
 
 const STEP_REPEAT_MS = 80
 
@@ -32,7 +32,7 @@ type Props = { onBack: () => void; onOpenSheet: (sheet: SheetKind) => void }
 
 export function Cut({ onBack, onOpenSheet }: Props) {
   const theme = useTheme()
-  const { asset, state, dispatch, clips, shownSettings, baseName, format, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
+  const { asset, state, dispatch, clips, selectedClip, shownSettings, baseName, format, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
   const player = useVideoPlayer(asset.uri, (created) => {
     created.timeUpdateEventInterval = 0.1
   })
@@ -111,7 +111,8 @@ export function Cut({ onBack, onOpenSheet }: Props) {
               canRedo: state.history.future.length > 0,
               onUndo: () => dispatch({ type: 'undo' }),
               onRedo: () => dispatch({ type: 'redo' }),
-              onSaveFrame: () => void saveCurrentFrame()
+              onSaveFrame: () => void saveCurrentFrame(),
+              exportClip: selectedClip ? { number: clips.indexOf(selectedClip) + 1, onPress: () => onOpenSheet('export-clip') } : null
             })
         }}
       />

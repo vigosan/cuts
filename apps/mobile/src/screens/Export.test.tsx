@@ -7,7 +7,7 @@ import { memoryStore } from '../editor/memory-store'
 import { savePreferences } from '../editor/preferences'
 import { loadSession, saveSession } from '../editor/sessions'
 import { t } from '../i18n'
-import { CutHarness } from '../test-utils/CutHarness'
+import { CutHarness, pressMenuAction } from '../test-utils/CutHarness'
 
 const native = jest.mocked(CutsMedia)
 const asset = { id: 'A1', name: 'set.mov', duration: 600, width: 1920, height: 1080, frameRate: 25, uri: 'file:///set.mov' }
@@ -71,6 +71,21 @@ it('export saves clips to the Cuts album in carousel order', async () => {
   expect(native.exportClip.mock.calls.map(([, job]) => [job.start, job.videoFadeIn])).toEqual([[100, false], [10, true]])
   expect(native.saveToCutsAlbum).toHaveBeenCalledWith(['file:///tmp/set-1.mp4', 'file:///tmp/set-2.mp4'])
   expect(await screen.findByText(t.mobile.savedToAlbum(2))).toBeTruthy()
+})
+
+it('Export clip in the ··· menu saves only the selected clip, keeping its carousel number so its file sits beside the others', async () => {
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('clip-row-a'))
+  await pressMenuAction(t.exportClip(2))
+  expect(screen.getByTestId('start-export')).toHaveTextContent(t.exportClip(2))
+  await fireEvent.press(screen.getByTestId('start-export'))
+  expect(native.exportClip.mock.calls.map(([, job]) => [job.start, job.videoFadeIn])).toEqual([[10, true]])
+  expect(native.saveToCutsAlbum).toHaveBeenCalledWith(['file:///tmp/set-2.mp4'])
+})
+
+it('without a selected clip the ··· menu offers no single-clip export, since there is nothing to pick', async () => {
+  await renderCut(storeWith(twoClips))
+  await expect(pressMenuAction(t.exportClip(1))).rejects.toThrow('no menu action')
 })
 
 it('stopping keeps the finished clips and says how many', async () => {

@@ -7,9 +7,10 @@ export function exportJobs(
   clips: Clip[],
   settingsOf: (id: string) => ClipSettings,
   format: OutputFormat,
-  baseName: string
+  baseName: string,
+  only?: string
 ): ExportJob[] {
-  return clips.map((clip, position) => ({
+  const jobs = clips.map((clip, position) => ({
     ...settingsOf(clip.id),
     start: clip.start,
     end: clip.end,
@@ -18,4 +19,5 @@ export function exportJobs(
     fileName: outputFileName(safeBaseName(baseName), position),
     position
   }))
+  return only ? jobs.filter((job) => clips[job.position].id === only) : jobs
 }
