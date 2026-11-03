@@ -1,6 +1,8 @@
 # Ficha de App Store Connect para iPhone: BORRADOR
 
-> Borrador basado en lo que hace Cuts para iPhone hoy (rama `mobile`). Lo revisa el propietario antes de usarlo. Nada de esto está publicado.
+> Basado en lo que hace Cuts para iPhone hoy (rama `mobile`).
+>
+> **Estado en App Store Connect (2026-11-03):** creada la versión de iOS 1.7 (`fe17aad0-ebd7-4059-9000-32a25cd98ea6`, "Preparar para envío"). Ya tiene los textos en inglés y español, las URL de soporte y marketing, las notas de revisión y las 8 capturas. Falta elegir el build y enviarla a revisión, después de probarla en un iPhone real. Los textos se subieron con los scripts de la sesión; si cambias este documento, hay que volver a subirlos.
 
 ## Qué se comparte con la ficha del Mac
 
@@ -10,8 +12,8 @@ Cuts es una compra universal (`com.vigosan.cuts`). En App Store Connect, estos c
 |---|---|---|
 | Nombre (en) | Cuts – Video Clips | Ninguno |
 | Nombre (es) | Cuts – Clips de vídeo | Ninguno |
-| Subtítulo (en) | Cut your best moments into clips | Ninguno: sirve para los dos |
-| Subtítulo (es) | Corta tus mejores momentos en clips | Ninguno |
+| Subtítulo (en) | Cut your best moments | Ninguno: sirve para los dos |
+| Subtítulo (es) | Corta tus mejores momentos | Ninguno |
 | Categoría | Photo & Video | Ninguno |
 | Precio | El de la app del Mac | Ninguno: compra universal |
 | URL de política de privacidad | La de la web | Ninguno en la URL; sí en el texto, ver `privacy.md` |
@@ -93,4 +95,4 @@ Una primera versión de iOS no lleva "Novedades". Se rellenan a partir de la seg
 
 ## Capturas de pantalla
 
-Pendientes. Apple pide al menos el tamaño de 6,9" (1320 × 2868 o 1290 × 2796, vertical). Se hacen en el simulador del iPhone 18 Pro Max con un vídeo real del propietario: inicio, pantalla de corte con clips, encuadre 9:16 y carrusel ampliado, en inglés y en español.
+Hechas y subidas: `docs/release/screenshots/iphone/`, 4 escenas por idioma a 1320 × 2868 (6,9"), del simulador del iPhone 18 Pro Max con la sesión del 2026-10-22 del propietario y la barra de estado limpia (9:41). Las escenas son: pantalla de corte con los 10 momentos de Sugerir, hoja de encuadre en 9:16, carrusel ampliado e inicio con Recientes.
