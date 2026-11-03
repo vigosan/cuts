@@ -1,13 +1,17 @@
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
+import { useCallback, useState } from 'react'
 import { loadSession, touchRecent } from '../editor/sessions'
 import { rememberOpened } from '../opened'
 import { Home } from '../screens/Home'
 import { store } from '../store'
 
 export default function HomeRoute() {
+  const [visits, setVisits] = useState(0)
+  useFocusEffect(useCallback(() => setVisits((count) => count + 1), []))
   return (
     <Home
       store={store}
+      visits={visits}
       onOpen={(asset) => {
         rememberOpened(asset)
         touchRecent(store, {

@@ -10,9 +10,9 @@ import { cancelOpen, openAsset, pickFile, pickVideo, poster, requestLibraryAcces
 import { useTheme } from '../theme'
 import { Tap } from '../components/Tap'
 
-type Props = { store: KeyValue; onOpen: (asset: AssetInfo) => void }
+type Props = { store: KeyValue; onOpen: (asset: AssetInfo) => void; visits?: number }
 
-export function Home({ store, onOpen }: Props) {
+export function Home({ store, onOpen, visits = 0 }: Props) {
   const theme = useTheme()
   const [problem, setProblem] = useState<string | null>(null)
   const [needsSettings, setNeedsSettings] = useState(false)
@@ -84,7 +84,7 @@ export function Home({ store, onOpen }: Props) {
           </View>
         )}
         {download !== null && <OpeningProgress ratio={download} theme={theme} onCancel={cancel} />}
-        <Recents store={store} onPress={open} />
+        <Recents key={visits} store={store} onPress={open} />
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 24 }}>
           <Tap testID="privacy-link" onPress={() => void Linking.openURL(t.privacyUrl)} style={{ minHeight: 44, justifyContent: 'center' }}>
             <Text style={{ color: theme.muted, fontSize: 13 }}>{t.menuPrivacy}</Text>

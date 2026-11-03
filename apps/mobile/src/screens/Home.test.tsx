@@ -120,3 +120,11 @@ it('links to the privacy policy and support from inside the app, as App Review r
   await fireEvent.press(screen.getByTestId('support-link'))
   expect(open).toHaveBeenCalledWith(t.supportUrl)
 })
+
+it('coming back to Home shows the set you just opened in Recent', async () => {
+  const store = memoryStore()
+  await render(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} visits={1} /></GestureHandlerRootView>)
+  touchRecent(store, { assetId: 'just-opened', name: 'Set', duration: 60, clips: 2, openedAt: 1 })
+  await screen.rerender(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} visits={2} /></GestureHandlerRootView>)
+  expect(screen.getByTestId('recent-just-opened')).toBeTruthy()
+})
