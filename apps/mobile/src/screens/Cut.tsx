@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ScrollView, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEvent } from 'expo'
 import { randomUUID } from 'expo-crypto'
@@ -184,17 +184,15 @@ export function Cut({ onBack, onOpenSheet }: Props) {
               <Text style={{ color: theme.muted, fontSize: 13, textAlign: 'center' }}>{t.mobile.suggestExplain}</Text>
             </View>
           ) : (
-            <ScrollView>
-              <CarouselList
-                clips={clips}
-                selectedId={selected}
-                picked={state.picked}
-                theme={theme}
-                onPress={pressRow}
-                progress={progress}
-                onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
-              />
-            </ScrollView>
+            <CarouselList
+              clips={clips}
+              selectedId={selected}
+              picked={state.picked}
+              theme={theme}
+              onPress={pressRow}
+              progress={progress}
+              onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
+            />
           )}
         </View>
         <Tap testID="export" onPress={() => clips.length > 0 && onOpenSheet('export')} style={{ backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 }}>

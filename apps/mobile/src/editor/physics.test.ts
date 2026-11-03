@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { elasticSpan, project, reorderTarget, rowShift, rubberband } from './physics'
+import { autoScrollSpeed, elasticSpan, project, reorderTarget, rowShift, rubberband } from './physics'
 
 describe('physics', () => {
   it('a flick keeps travelling like iOS scrolling (Apple projection, 0.998)', () => {
@@ -35,5 +35,13 @@ describe('physics', () => {
     expect(rowShift(3, 0, 2, 48)).toBe(0)
     expect(rowShift(0, 3, 1, 48)).toBe(0)
     expect(rowShift(1, 3, 1, 48)).toBe(48)
+  })
+
+  it('dragging a row near the edge of the list scrolls it, faster the closer you get', () => {
+    expect(autoScrollSpeed(150, 300)).toBe(0)
+    expect(autoScrollSpeed(30, 300)).toBeLessThan(0)
+    expect(autoScrollSpeed(0, 300)).toBeLessThan(autoScrollSpeed(30, 300))
+    expect(autoScrollSpeed(280, 300)).toBeGreaterThan(0)
+    expect(autoScrollSpeed(320, 300)).toBe(autoScrollSpeed(300, 300))
   })
 })

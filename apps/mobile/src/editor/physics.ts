@@ -19,3 +19,13 @@ export function rowShift(index: number, from: number, to: number, height: number
   if (to < from && index >= to && index < from) return height
   return 0
 }
+
+const SCROLL_EDGE = 56
+const SCROLL_MAX = 14
+
+export function autoScrollSpeed(position: number, height: number): number {
+  const clamped = Math.min(height, Math.max(0, position))
+  if (clamped < SCROLL_EDGE) return -SCROLL_MAX * (1 - clamped / SCROLL_EDGE)
+  if (clamped > height - SCROLL_EDGE) return SCROLL_MAX * (1 - (height - clamped) / SCROLL_EDGE)
+  return 0
+}

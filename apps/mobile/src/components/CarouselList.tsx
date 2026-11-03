@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Animated, Text, View } from 'react-native'
+import { Animated, ScrollView, Text, View, type ScrollViewInstance } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { SymbolView } from 'expo-symbols'
 import { clipDuration, formatDuration, formatTime, isOverLimit, isPastCarousel, MAX_CAROUSEL_ITEMS, type Clip } from '@cuts/core/clips'
-import { reorderTarget, rowShift } from '../editor/physics'
+import { autoScrollSpeed, reorderTarget, rowShift } from '../editor/physics'
 import { haptics } from '../haptics'
 import { t } from '../i18n'
 import type { Theme } from '../theme'
@@ -24,37 +24,97 @@ const GAP = 4
 const settle = (value: Animated.Value, toValue: number) =>
   Animated.spring(value, { toValue, useNativeDriver: true, bounciness: 0, speed: 16 }).start()
 
+type Drag = { index: number; translation: number; finger: number; height: number; startScroll: number }
+
 export function CarouselList({ clips, selectedId, picked, progress = {}, theme, onPress, onReorder }: Props) {
   const [dragging, setDragging] = useState<{ index: number; offset: number; height: number } | null>(null)
   const [settled, setSettled] = useState<{ id: string; from: number; at: number } | null>(null)
+  const scroll = useRef<ScrollViewInstance>(null)
+  const scrollY = useRef(0)
+  const viewport = useRef({ top: 0, height: 0 })
+  const content = useRef(0)
+  const drag = useRef<Drag | null>(null)
+  const frame = useRef<number | null>(null)
   const target = dragging ? reorderTarget(dragging.index, dragging.offset, dragging.height + GAP, clips.length) : null
+
+  const offsetOf = (current: Drag) => current.translation + scrollY.current - current.startScroll
+  const publish = () => {
+    const current = drag.current
+    if (current) setDragging({ index: current.index, offset: offsetOf(current), height: current.height })
+  }
+  const autoScroll = () => {
+    const current = drag.current
+    if (!current) return
+    const speed = autoScrollSpeed(current.finger - viewport.current.top, viewport.current.height)
+    const next = Math.min(Math.max(0, content.current - viewport.current.height), Math.max(0, scrollY.current + speed))
+    if (next !== scrollY.current) {
+      scrollY.current = next
+      scroll.current?.scrollTo({ y: next, animated: false })
+      publish()
+    }
+    frame.current = requestAnimationFrame(autoScroll)
+  }
+
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current)
+  }, [])
+
   return (
-    <View style={{ gap: GAP }}>
-      {clips.map((clip, index) => (
-        <Row
-          key={clip.id}
-          clip={clip}
-          index={index}
-          count={clips.length}
-          selected={clip.id === selectedId}
-          picked={picked ? picked.includes(clip.id) : null}
-          progress={progress[clip.id]}
-          lifted={dragging?.index === index}
-          offset={dragging?.index === index ? dragging.offset : dragging && target !== null ? rowShift(index, dragging.index, target, dragging.height + GAP) : 0}
-          settleFrom={settled?.id === clip.id ? settled : null}
-          theme={theme}
-          onPress={() => onPress(clip)}
-          onMove={(to) => onReorder(index, to)}
-          onDrag={(offset, height) => setDragging(offset === null ? null : { index, offset, height })}
-          onDrop={(offset, height) => {
-            const to = reorderTarget(index, offset, height + GAP, clips.length)
-            setDragging(null)
-            setSettled({ id: clip.id, from: offset - (to - index) * (height + GAP), at: Date.now() })
-            if (to !== index) onReorder(index, to)
-          }}
-        />
-      ))}
-    </View>
+    <ScrollView
+      ref={scroll}
+      scrollEnabled={!dragging}
+      scrollEventThrottle={16}
+      onScroll={(event) => {
+        if (!drag.current) scrollY.current = event.nativeEvent.contentOffset.y
+      }}
+      onLayout={(event) => {
+        viewport.current.height = event.nativeEvent.layout.height
+        scroll.current?.measureInWindow((_x: number, y: number) => {
+          viewport.current.top = y
+        })
+      }}
+      onContentSizeChange={(_width, height) => {
+        content.current = height
+      }}
+    >
+      <View style={{ gap: GAP }}>
+        {clips.map((clip, index) => (
+          <Row
+            key={clip.id}
+            clip={clip}
+            index={index}
+            count={clips.length}
+            selected={clip.id === selectedId}
+            picked={picked ? picked.includes(clip.id) : null}
+            progress={progress[clip.id]}
+            lifted={dragging?.index === index}
+            offset={dragging?.index === index ? dragging.offset : dragging && target !== null ? rowShift(index, dragging.index, target, dragging.height + GAP) : 0}
+            settleFrom={settled?.id === clip.id ? settled : null}
+            theme={theme}
+            onPress={() => onPress(clip)}
+            onMove={(to) => onReorder(index, to)}
+            onDrag={(translation, height, finger) => {
+              const starting = !drag.current
+              drag.current = { index, translation, finger, height, startScroll: drag.current?.startScroll ?? scrollY.current }
+              publish()
+              if (starting) frame.current = requestAnimationFrame(autoScroll)
+            }}
+            onDrop={() => {
+              const current = drag.current
+              if (frame.current !== null) cancelAnimationFrame(frame.current)
+              frame.current = null
+              drag.current = null
+              setDragging(null)
+              if (!current) return
+              const offset = offsetOf(current)
+              const to = reorderTarget(index, offset, current.height + GAP, clips.length)
+              setSettled({ id: clip.id, from: offset - (to - index) * (current.height + GAP), at: Date.now() })
+              if (to !== index) onReorder(index, to)
+            }}
+          />
+        ))}
+      </View>
+    </ScrollView>
   )
 }
 
@@ -71,8 +131,8 @@ type RowProps = {
   theme: Theme
   onPress: () => void
   onMove: (to: number) => void
-  onDrag: (offset: number | null, height: number) => void
-  onDrop: (offset: number, height: number) => void
+  onDrag: (translation: number, height: number, finger: number) => void
+  onDrop: () => void
 }
 
 function Row({ clip, index, count, selected, picked, progress, lifted, offset, settleFrom, theme, onPress, onMove, onDrag, onDrop }: RowProps) {
@@ -99,14 +159,14 @@ function Row({ clip, index, count, selected, picked, progress, lifted, offset, s
   const reorder = usePanGesture({
     runOnJS: true,
     activateAfterLongPress: 250,
-    onActivate: () => {
+    onActivate: (event) => {
       haptics.lift()
-      onDrag(0, height.current)
+      onDrag(0, height.current, event.absoluteY)
     },
-    onUpdate: (event) => onDrag(event.translationY, height.current),
-    onDeactivate: (event) => {
+    onUpdate: (event) => onDrag(event.translationY, height.current, event.absoluteY),
+    onDeactivate: () => {
       haptics.drop()
-      onDrop(event.translationY, height.current)
+      onDrop()
     }
   })
   return (
