@@ -1,13 +1,12 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import { AppState, Linking } from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
 import { savePreferences } from '../editor/preferences'
 import { loadSession, saveSession } from '../editor/sessions'
 import { t } from '../i18n'
-import { Cut } from './Cut'
+import { CutHarness } from '../test-utils/CutHarness'
 
 const native = jest.mocked(CutsMedia)
 const asset = { id: 'A1', name: 'set.mov', duration: 600, width: 1920, height: 1080, frameRate: 25, uri: 'file:///set.mov' }
@@ -20,11 +19,7 @@ const storeWith = (clips: { id: string; start: number; end: number }[], format: 
 }
 
 const renderCut = async (store: ReturnType<typeof memoryStore>) => {
-  await render(
-    <GestureHandlerRootView>
-      <Cut asset={asset} store={store} onBack={jest.fn()} />
-    </GestureHandlerRootView>
-  )
+  await render(<CutHarness asset={asset} store={store} />)
   await act(async () => {})
   await fireEvent(screen.getByTestId('stage'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 384, height: 216 } } })
 }

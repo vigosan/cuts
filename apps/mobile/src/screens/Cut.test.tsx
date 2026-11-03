@@ -1,10 +1,9 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
 import { loadSession } from '../editor/sessions'
 import { t } from '../i18n'
-import { Cut } from './Cut'
+import { CutHarness, pressHeaderButton, pressMenuAction } from '../test-utils/CutHarness'
 
 const native = jest.mocked(CutsMedia)
 const player = jest.requireMock('expo-video').__player as { currentTime: number }
@@ -17,11 +16,7 @@ const beatPeaks = () => {
 }
 
 const renderCut = async (store = memoryStore()) => {
-  await render(
-    <GestureHandlerRootView>
-      <Cut asset={asset} store={store} onBack={jest.fn()} />
-    </GestureHandlerRootView>
-  )
+  await render(<CutHarness asset={asset} store={store} />)
   await act(async () => {})
   return store
 }
@@ -71,7 +66,7 @@ it('undo button reverts the last clip change', async () => {
   await renderCut()
   await mark(2, 6)
   expect(screen.getByText(t.exportClips(1))).toBeTruthy()
-  await fireEvent.press(screen.getByTestId('undo'))
+  await pressHeaderButton('undo')
   expect(screen.getByText(t.exportClips(0))).toBeTruthy()
 })
 
@@ -89,8 +84,7 @@ it('the session is saved and comes back on reopen', async () => {
 it('Save frame saves the current frame with the clip framing', async () => {
   await renderCut()
   player.currentTime = 7
-  await fireEvent.press(screen.getByTestId('more'))
-  await fireEvent.press(screen.getByTestId('save-frame'))
+  await pressMenuAction(t.mobile.saveFrame)
   expect(native.saveFrame).toHaveBeenCalledWith('A1', 7, { format: 'original', framing: 'crop', cropX: 0.5, cropY: 0.5 })
   expect(await screen.findByText(t.mobile.frameSaved)).toBeTruthy()
 })

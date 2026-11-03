@@ -43,10 +43,10 @@ export function ClipSheet({ title, settings, clipLength, theme, onChange, onClos
 
 export function Sheet({ title, theme, onClose, children }: { title: string; theme: Theme; onClose: () => void; children: React.ReactNode }) {
   return (
-    <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 20, backgroundColor: theme.card, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, paddingBottom: 32, gap: 10, shadowOpacity: 0.18, shadowRadius: 16 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <View style={{ backgroundColor: theme.card, padding: 16, paddingTop: 20, paddingBottom: 32, gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 44 }}>
         <Text style={{ flex: 1, color: theme.ink, fontSize: 17, fontWeight: '700' }}>{title}</Text>
-        <Pressable testID="close-sheet" onPress={onClose} hitSlop={12}>
+        <Pressable testID="close-sheet" onPress={onClose} hitSlop={12} style={{ minHeight: 44, justifyContent: 'center' }}>
           <Text style={{ color: theme.ink, fontSize: 17, fontWeight: '600' }}>{t.mobile.done}</Text>
         </Pressable>
       </View>

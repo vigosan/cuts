@@ -1,11 +1,10 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
 import { saveSession } from '../editor/sessions'
 import { t } from '../i18n'
-import { Cut } from './Cut'
+import { CutHarness } from '../test-utils/CutHarness'
 
 const native = jest.mocked(CutsMedia)
 const player = jest.requireMock('expo-video').__player as { currentTime: number }
@@ -20,11 +19,7 @@ const storeWith = (clips: { id: string; start: number; end: number }[]) => {
 }
 
 const renderCut = async (store = memoryStore()) => {
-  await render(
-    <GestureHandlerRootView>
-      <Cut asset={asset} store={store} onBack={jest.fn()} />
-    </GestureHandlerRootView>
-  )
+  await render(<CutHarness asset={asset} store={store} />)
   await act(async () => {})
 }
 

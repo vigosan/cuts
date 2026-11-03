@@ -41,3 +41,18 @@ jest.mock('@shopify/react-native-skia', () => {
   const none = () => null
   return { Canvas: View, Group: View, Circle: none, Rect: none, RoundedRect: none, Line: none, Image: none, Path: none, useImage: () => null, vec: (x: number, y: number) => ({ x, y }) }
 })
+
+jest.mock('expo-router', () => ({
+  router: { back: jest.fn(), push: jest.fn() },
+  Stack: {
+    Screen: ({ options }: { options?: object }) => {
+      const store = globalThis as { __screenOptions?: object[] }
+      store.__screenOptions = [...(store.__screenOptions ?? []), options ?? {}]
+      return null
+    }
+  }
+}))
+
+beforeEach(() => {
+  ;(globalThis as { __screenOptions?: object[] }).__screenOptions = []
+})

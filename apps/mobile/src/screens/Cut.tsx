@@ -1,52 +1,32 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
-import { AppState, Pressable, ScrollView, Text, View } from 'react-native'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEvent } from 'expo'
 import { randomUUID } from 'expo-crypto'
+import { Stack } from 'expo-router'
 import { SymbolView, type SFSymbol } from 'expo-symbols'
 import { useVideoPlayer } from 'expo-video'
 import { snapToBeat } from '@cuts/core/beats'
-import { defaultBaseName, formatTime, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
+import { formatTime, type Clip } from '@cuts/core/clips'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
-import { suggestMoments } from '@cuts/core/suggest'
 import { CarouselList } from '../components/CarouselList'
-import { ClipSheet } from '../components/ClipSheet'
-import { ExportSheet, type ExportState } from '../components/ExportSheet'
 import { Stage } from '../components/Stage'
 import { Timeline } from '../components/Timeline'
-import { editorReducer, initialEditor, settingsOf } from '../editor/editor'
-import { exportJobs } from '../editor/export-jobs'
-import { runExport } from '../editor/export-run'
 import { endHere, startHere } from '../editor/marks'
-import { loadPreferences, savePreferences } from '../editor/preferences'
-import { loadSession, saveSession, touchRecent, type KeyValue } from '../editor/sessions'
+import { useEditor } from '../editor/session'
 import { t } from '../i18n'
-import { cancelExport, exportClip, readPeaks, saveFrame, saveToCutsAlbum, type AssetInfo } from '../media'
+import { saveFrame } from '../media'
 import { seek } from '../seek'
 import { useTheme, type Theme } from '../theme'
+import { backItem, cutHeaderItems } from './cut-header'
 
-type Props = { asset: AssetInfo; store: KeyValue; onBack: () => void }
+export type SheetKind = 'clip' | 'export'
 
-const SAVE_DELAY_MS = 300
-const NOTICE_MS = 5000
+type Props = { onBack: () => void; onOpenSheet: (sheet: SheetKind) => void }
 
-export function Cut({ asset, store, onBack }: Props) {
+export function Cut({ onBack, onOpenSheet }: Props) {
   const theme = useTheme()
-  const [preferences] = useState(() => loadPreferences(store))
-  const [stored] = useState(() => loadSession(store, asset.id))
-  const [state, dispatch] = useReducer(editorReducer, null, () =>
-    editorReducer(initialEditor(preferences.settings), { type: 'load', session: stored, defaults: preferences.settings })
-  )
-  const [baseName, setBaseName] = useState(() => stored?.baseName ?? defaultBaseName(asset.name))
-  const [format, setFormat] = useState(preferences.format)
-  const [sheet, setSheet] = useState<'clip' | 'export' | null>(null)
-  const [exporting, setExporting] = useState<ExportState>({ status: 'idle' })
-  const [progress, setProgress] = useState<Record<string, number>>({})
-  const stopped = useRef(false)
-  const [peaks, setPeaks] = useState<Float32Array | null>(null)
-  const [peaksRequest] = useState(() => readPeaks(asset.id).catch(() => null))
-  const [menu, setMenu] = useState(false)
-  const [notice, setNotice] = useState<string | null>(null)
+  const { asset, state, dispatch, clips, shownSettings, baseName, format, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
   const player = useVideoPlayer(asset.uri, (created) => {
     created.timeUpdateEventInterval = 0.1
   })
@@ -54,37 +34,8 @@ export function Cut({ asset, store, onBack }: Props) {
   const [sought, setSought] = useState<{ time: number; after: number } | null>(null)
   const currentTime = sought && sought.after === playedTime ? sought.time : playedTime
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing, oldIsPlaying: false })
-  const clips = state.history.present.clips
-
-  useEffect(() => {
-    void peaksRequest.then(setPeaks)
-  }, [peaksRequest])
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      saveSession(store, asset.id, { clips, clipSettings: state.clipSettings, defaultSettings: state.defaultSettings, baseName })
-      touchRecent(store, { assetId: asset.id, name: asset.name, duration: asset.duration, clips: clips.length, openedAt: Date.now() })
-    }, SAVE_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [store, asset, clips, state.clipSettings, state.defaultSettings, baseName])
-
-  useEffect(() => savePreferences(store, { settings: state.defaultSettings }), [store, state.defaultSettings])
-
-  useEffect(() => {
-    if (exporting.status !== 'running') return
-    const subscription = AppState.addEventListener('change', (next) => {
-      if (next !== 'background') return
-      stopped.current = true
-      cancelExport()
-    })
-    return () => subscription.remove()
-  }, [exporting.status])
-
-  useEffect(() => {
-    if (!notice) return
-    const timer = setTimeout(() => setNotice(null), NOTICE_MS)
-    return () => clearTimeout(timer)
-  }, [notice])
+  const selected = state.selectedId
+  const picking = state.picked !== null
 
   const at = (time: number) => (state.magnet && peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
   const seekTo = (time: number) => {
@@ -94,18 +45,6 @@ export function Cut({ asset, store, onBack }: Props) {
   const step = (frames: number) => {
     player.pause()
     seekTo(player.currentTime + frames / asset.frameRate)
-  }
-  const selected = state.selectedId
-  const framing = selected ? settingsOf(state, selected) : state.defaultSettings
-  const selectedClip = clips.find((clip) => clip.id === selected) ?? null
-
-  const suggest = async () => {
-    const found = await peaksRequest
-    if (!found) return setNotice(t.suggestNoAudio)
-    const existing = clips.filter((clip) => !clip.suggested)
-    const moments = suggestMoments({ peaks: found, peaksPerSecond: PEAKS_PER_SECOND, duration: asset.duration, clipLength: MAX_CLIP_SECONDS, existing })
-    if (moments.length === 0) return setNotice(t.mobile.suggestNoneFound)
-    dispatch({ type: 'suggest', clips: moments.map((moment) => ({ id: randomUUID(), ...moment })) })
   }
 
   const split = () => {
@@ -121,76 +60,33 @@ export function Cut({ asset, store, onBack }: Props) {
     seekTo(clip.start)
   }
 
-  const picking = state.picked !== null
-  const exportLabel = state.picked?.length ? t.exportSelected(state.picked.length) : t.exportClips(clips.length)
-
-  const stop = () => {
-    stopped.current = true
-    cancelExport()
-  }
-
-  const startExport = async () => {
-    const jobs = exportJobs(clips, state.picked, (id) => settingsOf(state, id), format, baseName)
-    const ids = jobs.map((job) => clips[job.position].id)
-    stopped.current = false
-    setProgress({})
-    setExporting({ status: 'running', index: 0, total: jobs.length })
-    const outcome = await runExport(jobs, {
-      exportClip: (job, onProgress) => exportClip(asset.id, job, onProgress),
-      saveToCutsAlbum,
-      cancelled: () => stopped.current,
-      onProgress: (index, ratio) => {
-        setExporting({ status: 'running', index, total: jobs.length })
-        setProgress((current) => ({ ...current, [ids[index]]: ratio }))
-      },
-      t
-    }).catch((error: Error) => ({ ok: false as const, saved: 0, error: error.message }))
-    setExporting({ status: 'done', outcome })
-  }
-
-  const closeExport = () => {
-    if (exporting.status === 'running') return
-    setSheet(null)
-    setExporting({ status: 'idle' })
-    setProgress({})
-  }
-
   const saveCurrentFrame = async () => {
-    setMenu(false)
-    await saveFrame(asset.id, player.currentTime, { format, framing: framing.framing, cropX: framing.cropX, cropY: framing.cropY })
+    await saveFrame(asset.id, player.currentTime, { format, framing: shownSettings.framing, cropX: shownSettings.cropX, cropY: shownSettings.cropY })
     setNotice(t.mobile.frameSaved)
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ flex: 1, paddingHorizontal: 12, gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 44 }}>
-          <Pressable testID="back" onPress={onBack} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Icon name="chevron.left" theme={theme} />
-            <Text style={{ color: theme.ink, fontSize: 17 }}>{t.mobile.back}</Text>
-          </Pressable>
-          <Text numberOfLines={1} style={{ flex: 1, textAlign: 'center', color: theme.ink, fontSize: 17, fontWeight: '600' }}>
-            {baseName}
-          </Text>
-          <Pressable testID="undo" accessibilityLabel={t.menuUndo} onPress={() => dispatch({ type: 'undo' })} disabled={state.history.past.length === 0}>
-            <Icon name="arrow.uturn.backward" theme={theme} faded={state.history.past.length === 0} />
-          </Pressable>
-          <Pressable testID="more" accessibilityLabel={t.mobile.more} onPress={() => setMenu(!menu)}>
-            <Icon name="ellipsis.circle" theme={theme} />
-          </Pressable>
-        </View>
-        {menu && (
-          <View style={{ position: 'absolute', top: 48, right: 12, zIndex: 10, backgroundColor: theme.card, borderRadius: 12, padding: 4, shadowOpacity: 0.15, shadowRadius: 12 }}>
-            <Pressable testID="save-frame" onPress={() => void saveCurrentFrame()} style={{ padding: 12 }}>
-              <Text style={{ color: theme.ink, fontSize: 15 }}>{t.mobile.saveFrame}</Text>
-            </Pressable>
-          </View>
-        )}
+    <SafeAreaView edges={['bottom']} style={{ flex: 1, backgroundColor: theme.background }}>
+      <Stack.Screen
+        options={{
+          title: baseName,
+          unstable_headerLeftItems: () => backItem(onBack),
+          unstable_headerRightItems: () =>
+            cutHeaderItems({
+              canUndo: state.history.past.length > 0,
+              canRedo: state.history.future.length > 0,
+              onUndo: () => dispatch({ type: 'undo' }),
+              onRedo: () => dispatch({ type: 'redo' }),
+              onSaveFrame: () => void saveCurrentFrame()
+            })
+        }}
+      />
+      <View style={{ flex: 1, paddingHorizontal: 12, paddingTop: 8, gap: 8 }}>
         <Stage
           player={player}
           asset={asset}
           format={format}
-          settings={framing}
+          settings={shownSettings}
           currentTime={currentTime}
           onCrop={(zone) => dispatch({ type: 'settings', change: zone })}
         />
@@ -198,9 +94,9 @@ export function Cut({ asset, store, onBack }: Props) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Pressable
               testID="play"
-              accessibilityLabel={isPlaying ? t.pause : t.play}
+              accessibilityLabel={isPlaying ? t.mobile.pause : t.mobile.play}
               onPress={() => (isPlaying ? player.pause() : player.play())}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.ink, alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.ink, alignItems: 'center', justifyContent: 'center' }}
             >
               <Icon name={isPlaying ? 'pause.fill' : 'play.fill'} theme={theme} inverse />
             </Pressable>
@@ -212,7 +108,7 @@ export function Cut({ asset, store, onBack }: Props) {
               accessibilityLabel={state.magnet ? t.mobile.magnetOn : t.mobile.magnetOff}
               accessibilityState={{ selected: state.magnet }}
               onPress={() => dispatch({ type: 'magnet' })}
-              style={{ marginLeft: 'auto', padding: 8, borderRadius: 10, backgroundColor: state.magnet ? theme.ink : theme.fill }}
+              style={{ marginLeft: 'auto', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: state.magnet ? theme.ink : theme.fill }}
             >
               <Icon name="metronome" theme={theme} inverse={state.magnet} />
             </Pressable>
@@ -247,19 +143,19 @@ export function Cut({ asset, store, onBack }: Props) {
         {selected && !picking && (
           <View style={{ flexDirection: 'row', gap: 6 }}>
             <Pill testID="split" icon="scissors" label={t.mobile.split} theme={theme} onPress={split} />
-            <Pill testID="clip-settings" label={t.mobile.fadesAndFraming} theme={theme} grow onPress={() => setSheet('clip')} />
+            <Pill testID="clip-settings" label={t.mobile.fadesAndFraming} theme={theme} grow onPress={() => onOpenSheet('clip')} />
             <Pill testID="delete-clip" icon="trash" label={t.deleteClip} theme={theme} onPress={() => dispatch({ type: 'remove', id: selected })} />
           </View>
         )}
         <View style={{ flex: 1, backgroundColor: theme.card, borderRadius: 14, padding: 8, gap: 6 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 }}>
             <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '700' }}>{t.carousel}</Text>
             {clips.length > 0 && (
               <>
-                <Pressable testID="suggest" onPress={() => void suggest()} style={{ marginLeft: 'auto', backgroundColor: theme.ink, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 5 }}>
-                  <Text style={{ color: theme.inverse, fontSize: 13, fontWeight: '600' }}>✦ {t.suggestShort}</Text>
+                <Pressable testID="suggest" onPress={() => void suggest()} style={{ marginLeft: 'auto', minHeight: 36, justifyContent: 'center', backgroundColor: theme.ink, borderRadius: 10, paddingHorizontal: 12 }}>
+                  <Text style={{ color: theme.inverse, fontSize: 15, fontWeight: '600' }}>✦ {t.suggestShort}</Text>
                 </Pressable>
-                <Pressable testID="select" onPress={() => dispatch({ type: 'pickMode', on: !picking })}>
+                <Pressable testID="select" onPress={() => dispatch({ type: 'pickMode', on: !picking })} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
                   <Text style={{ color: theme.ink, fontSize: 15 }}>{picking ? t.mobile.done : t.mobile.select}</Text>
                 </Pressable>
               </>
@@ -286,36 +182,9 @@ export function Cut({ asset, store, onBack }: Props) {
             </ScrollView>
           )}
         </View>
-        <Pressable testID="export" onPress={() => clips.length > 0 && setSheet('export')} style={{ backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 }}>
+        <Pressable testID="export" onPress={() => clips.length > 0 && onOpenSheet('export')} style={{ backgroundColor: theme.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 }}>
           <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
         </Pressable>
-        {sheet === 'clip' && (
-          <ClipSheet
-            title={selectedClip ? t.settingsScopeClip(clips.indexOf(selectedClip) + 1) : t.settingsScopeAll}
-            settings={framing}
-            clipLength={selectedClip ? selectedClip.end - selectedClip.start : 59}
-            theme={theme}
-            onChange={(change) => dispatch({ type: 'settings', change })}
-            onClose={() => setSheet(null)}
-          />
-        )}
-        {sheet === 'export' && (
-          <ExportSheet
-            theme={theme}
-            label={exportLabel}
-            format={format}
-            baseName={baseName}
-            state={exporting}
-            onFormat={(next) => {
-              setFormat(next)
-              savePreferences(store, { format: next })
-            }}
-            onName={setBaseName}
-            onStart={() => void startExport()}
-            onStop={stop}
-            onClose={closeExport}
-          />
-        )}
         {notice && (
           <Text testID="notice" style={{ position: 'absolute', bottom: 72, alignSelf: 'center', color: theme.inverse, backgroundColor: theme.ink, padding: 10, borderRadius: 10, overflow: 'hidden' }}>
             {notice}
@@ -326,8 +195,8 @@ export function Cut({ asset, store, onBack }: Props) {
   )
 }
 
-function Icon({ name, theme, inverse, faded }: { name: SFSymbol; theme: Theme; inverse?: boolean; faded?: boolean }) {
-  return <SymbolView name={name} size={20} tintColor={inverse ? theme.inverse : faded ? theme.muted : theme.ink} />
+function Icon({ name, theme, inverse }: { name: SFSymbol; theme: Theme; inverse?: boolean }) {
+  return <SymbolView name={name} size={20} tintColor={inverse ? theme.inverse : theme.ink} />
 }
 
 type PillProps = { testID: string; label: string; icon?: SFSymbol; theme: Theme; grow?: boolean; onPress: () => void }
@@ -338,7 +207,7 @@ function Pill({ testID, label, icon, theme, grow, onPress }: PillProps) {
       testID={testID}
       accessibilityLabel={label}
       onPress={onPress}
-      style={{ flexGrow: grow ? 1 : 0, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.fill, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12 }}
+      style={{ flexGrow: grow ? 1 : 0, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.fill, borderRadius: 10, paddingHorizontal: 12 }}
     >
       {icon ? <Icon name={icon} theme={theme} /> : <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>{label}</Text>}
     </Pressable>

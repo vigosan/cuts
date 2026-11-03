@@ -49,9 +49,8 @@ export function Home({ store, onOpen }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 34, fontWeight: '800', color: theme.ink }}>Cuts</Text>
+    <SafeAreaView edges={['bottom']} style={{ flex: 1, backgroundColor: theme.background }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16, gap: 12 }}>
         <Pressable
           testID="choose-video"
           onPress={() => void choose()}
