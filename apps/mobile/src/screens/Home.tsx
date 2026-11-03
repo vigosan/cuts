@@ -5,7 +5,7 @@ import { formatTime } from '@cuts/core/clips'
 import { recents, type KeyValue, type Recent } from '../editor/sessions'
 import { t } from '../i18n'
 import { OpeningProgress } from '../components/OpeningProgress'
-import { cancelOpen, openAsset, pickVideo, poster, requestLibraryAccess, type AssetInfo } from '../media'
+import { cancelOpen, openAsset, pickFile, pickVideo, poster, requestLibraryAccess, type AssetInfo } from '../media'
 import { useTheme } from '../theme'
 import { Tap } from '../components/Tap'
 
@@ -43,6 +43,12 @@ export function Home({ store, onOpen }: Props) {
     if (id) await open(id)
   }
 
+  const chooseFile = async () => {
+    setProblem(null)
+    const id = await pickFile()
+    if (id) await open(id)
+  }
+
   const cancel = () => {
     opening.current++
     if (openingId) cancelOpen(openingId)
@@ -58,6 +64,13 @@ export function Home({ store, onOpen }: Props) {
           style={{ backgroundColor: theme.ink, borderRadius: 14, paddingVertical: 15, alignItems: 'center' }}
         >
           <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{t.mobile.chooseFromPhotos}</Text>
+        </Tap>
+        <Tap
+          testID="choose-file"
+          onPress={() => void chooseFile()}
+          style={{ backgroundColor: theme.fill, borderRadius: 14, paddingVertical: 15, alignItems: 'center' }}
+        >
+          <Text style={{ color: theme.ink, fontSize: 17, fontWeight: '600' }}>{t.mobile.chooseFromFiles}</Text>
         </Tap>
         {problem && (
           <View style={{ gap: 8 }}>

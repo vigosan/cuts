@@ -26,6 +26,7 @@ export type NativeFrameJob = { format: string; framing: string; cropX: number; c
 declare class CutsMediaModule extends NativeModule<Events> {
   requestLibraryAccess(): Promise<'granted' | 'limited' | 'denied'>
   pickVideo(): Promise<string | null>
+  pickFile(): Promise<string | null>
   openAsset(id: string): Promise<NativeAsset>
   cancelOpen(id: string): void
   poster(id: string, height: number): Promise<string>

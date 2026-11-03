@@ -26,6 +26,8 @@ export const requestLibraryAccess = () => CutsMedia.requestLibraryAccess()
 
 export const pickVideo = () => CutsMedia.pickVideo()
 
+export const pickFile = () => CutsMedia.pickFile()
+
 export async function openAsset(id: string, onDownload: (ratio: number) => void): Promise<AssetInfo> {
   const subscription = CutsMedia.addListener('onDownload', (event) => event.id === id && onDownload(event.ratio))
   try {

@@ -89,3 +89,14 @@ it('limited Photos access explains that Cuts needs all of Photos', async () => {
   expect(await screen.findByText(t.mobile.photosLimited)).toBeTruthy()
   expect(native.pickVideo).not.toHaveBeenCalled()
 })
+
+it('a video from iCloud Drive opens through Files without asking for Photos', async () => {
+  native.pickFile.mockResolvedValue('file:abc')
+  native.openAsset.mockResolvedValue({ ...asset, id: 'file:abc' })
+  const onOpen = jest.fn()
+  await render(<Home store={memoryStore()} onOpen={onOpen} />)
+  await fireEvent.press(screen.getByTestId('choose-file'))
+  await waitFor(() => expect(onOpen).toHaveBeenCalledWith({ ...asset, id: 'file:abc' }))
+  expect(native.requestLibraryAccess).not.toHaveBeenCalled()
+  expect(screen.getByText(t.mobile.chooseFromFiles)).toBeTruthy()
+})

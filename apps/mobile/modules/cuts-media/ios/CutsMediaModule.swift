@@ -2,6 +2,7 @@ import AVFoundation
 import ExpoModulesCore
 import Photos
 import PhotosUI
+import UniformTypeIdentifiers
 
 struct JobRecord: Record {
   @Field var start: Double = 0
@@ -30,6 +31,9 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
   private var exporter: Exporter?
   private var picker: PickerDelegate?
   private var openRequests: [String: PHImageRequestID] = [:]
+  private var cancelledFiles: Set<String> = []
+  private var documentPicker: DocumentPickerDelegate?
+  private let files = FileBookmarks()
   private static let posterDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("posters")
 
   private func remember(_ id: String, _ asset: AVURLAsset) {
@@ -38,7 +42,7 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
 
   private func asset(_ id: String) async throws -> AVURLAsset {
     if let cached = lock.withLock({ assets[id] }) { return cached }
-    let resolved = try await resolveAsset(id: id) { _ in }
+    let resolved = FileBookmarks.isFileId(id) ? AVURLAsset(url: try files.url(for: id)) : try await resolveAsset(id: id) { _ in }
     remember(id, resolved)
     return resolved
   }
@@ -74,7 +78,23 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
       self.appContext?.utilities?.currentViewController()?.present(controller, animated: true)
     }.runOnQueue(.main)
 
+    AsyncFunction("pickFile") { (promise: Promise) in
+      let controller = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .video], asCopy: false)
+      controller.allowsMultipleSelection = false
+      let delegate = DocumentPickerDelegate { url in
+        self.documentPicker = nil
+        guard let url else { return promise.resolve(nil) }
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        do { promise.resolve(try self.files.remember(url)) } catch { promise.reject(error) }
+      }
+      self.documentPicker = delegate
+      controller.delegate = delegate
+      self.appContext?.utilities?.currentViewController()?.present(controller, animated: true)
+    }.runOnQueue(.main)
+
     AsyncFunction("openAsset") { (id: String) -> [String: Any] in
+      if FileBookmarks.isFileId(id) { return try await self.openFile(id) }
       let resolved = try await resolveAsset(id: id, onRequest: { request in
         self.lock.withLock { self.openRequests[id] = request }
       }) { ratio in
@@ -89,17 +109,20 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
     }
 
     Function("cancelOpen") { (id: String) in
+      if FileBookmarks.isFileId(id) { self.lock.withLock { _ = self.cancelledFiles.insert(id) } }
       if let request = self.lock.withLock({ self.openRequests.removeValue(forKey: id) }) {
         PHImageManager.default().cancelImageRequest(request)
       }
     }
 
     AsyncFunction("poster") { (id: String, height: Int) -> String in
-      let file = Self.posterDir.appendingPathComponent(id.replacingOccurrences(of: "/", with: "_") + "-\(height).jpg")
+      let file = Self.posterDir.appendingPathComponent(id.replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: ":", with: "_") + "-\(height).jpg")
       if FileManager.default.fileExists(atPath: file.path) { return file.absoluteString }
       try FileManager.default.createDirectory(at: Self.posterDir, withIntermediateDirectories: true)
       let scale = 3.0
-      let image = try await poster(id: id, size: CGSize(width: Double(height) * 16 / 9 * scale, height: Double(height) * scale))
+      let image = FileBookmarks.isFileId(id)
+        ? try await self.filePoster(id, height: Int(Double(height) * scale))
+        : try await poster(id: id, size: CGSize(width: Double(height) * 16 / 9 * scale, height: Double(height) * scale))
       guard let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.8) else { throw CocoaError(.fileWriteUnknown) }
       try data.write(to: file, options: .atomic)
       return file.absoluteString
@@ -150,6 +173,47 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
       let data = try await frame(asset: try await self.asset(id), at: time, job: job)
       try await saveImageToAlbum(data: data, album: "Cuts")
     }
+  }
+}
+
+extension CutsMediaModule {
+  fileprivate func openFile(_ id: String) async throws -> [String: Any] {
+    lock.withLock { _ = cancelledFiles.remove(id) }
+    let url = try files.url(for: id)
+    try await ensureDownloaded(url, cancelled: { self.lock.withLock { self.cancelledFiles.contains(id) } }) { ratio in
+      self.sendEvent("onDownload", ["id": id, "ratio": ratio])
+    }
+    let asset = AVURLAsset(url: url)
+    remember(id, asset)
+    let duration = try await asset.load(.duration).seconds
+    guard let track = try await asset.loadTracks(withMediaType: .video).first else { throw LibraryError.notAVideo }
+    let (size, transform, rate) = try await track.load(.naturalSize, .preferredTransform, .nominalFrameRate)
+    let upright = CGRect(origin: .zero, size: size).applying(transform)
+    return ["id": id, "name": url.lastPathComponent, "duration": duration, "width": Int(abs(upright.width)), "height": Int(abs(upright.height)),
+            "frameRate": Double(rate > 0 ? rate : 30), "uri": url.absoluteString]
+  }
+
+  fileprivate func filePoster(_ id: String, height: Int) async throws -> CGImage {
+    let url = try files.url(for: id)
+    let status = try url.resourceValues(forKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey])
+    if status.isUbiquitousItem == true && status.ubiquitousItemDownloadingStatus != .current { throw LibraryError.missing }
+    return try await thumbnail(asset: AVURLAsset(url: url), at: 10, height: height)
+  }
+}
+
+final class DocumentPickerDelegate: NSObject, UIDocumentPickerDelegate {
+  private let done: (URL?) -> Void
+
+  init(done: @escaping (URL?) -> Void) {
+    self.done = done
+  }
+
+  func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+    done(urls.first)
+  }
+
+  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+    done(nil)
   }
 }
 

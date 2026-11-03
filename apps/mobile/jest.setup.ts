@@ -4,6 +4,7 @@ jest.mock('./modules/cuts-media', () => ({
   default: {
     requestLibraryAccess: jest.fn(async () => 'granted'),
     pickVideo: jest.fn(async () => null),
+    pickFile: jest.fn(async () => null),
     openAsset: jest.fn(),
     cancelOpen: jest.fn(),
     poster: jest.fn(async () => 'file:///poster.jpg'),

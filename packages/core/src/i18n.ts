@@ -191,6 +191,8 @@ function english(locale: Locale) {
       'Uses FFmpeg (ffmpeg.org), licensed under the GNU LGPL v2.1. The license and build details are included in the app bundle.',
     mobile: {
       chooseFromPhotos: 'Choose video from Photos',
+      chooseFromFiles: 'Choose from Files',
+      framingNeedsFormat: 'Pick 4:5, 1:1 or 9:16 to frame the clip.',
       downloading: (percent: number) => `Downloading from iCloud… ${percent}%`,
       photosDenied: 'Cuts needs access to Photos to open your sessions.',
       openSettings: 'Open Settings',
@@ -393,6 +395,8 @@ function spanish(locale: Locale): Messages {
       'Usa FFmpeg (ffmpeg.org), con licencia GNU LGPL v2.1. La licencia y los detalles de compilación se incluyen en el paquete de la app.',
     mobile: {
       chooseFromPhotos: 'Elegir vídeo de Fotos',
+      chooseFromFiles: 'Elegir de Archivos',
+      framingNeedsFormat: 'Elige 4:5, 1:1 o 9:16 para encuadrar el clip.',
       downloading: (percent) => `Descargando de iCloud… ${percent} %`,
       photosDenied: 'Cuts necesita acceso a Fotos para abrir tus sesiones.',
       openSettings: 'Abrir Ajustes',
