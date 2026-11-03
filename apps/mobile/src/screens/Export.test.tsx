@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import { AppState, Linking } from 'react-native'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
+import * as Haptics from 'expo-haptics'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
 import { savePreferences } from '../editor/preferences'
@@ -117,4 +118,20 @@ it('if saving to Photos fails the sheet says so and can be closed', async () => 
   expect(await screen.findByText('album unavailable')).toBeTruthy()
   await fireEvent.press(screen.getByTestId('close-sheet'))
   expect(screen.queryByTestId('start-export')).toBeNull()
+})
+
+it('a finished export confirms with the success haptic, a failed one with the error haptic', async () => {
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('start-export'))
+  await screen.findByText(t.mobile.savedToAlbum(2))
+  expect(Haptics.notificationAsync).toHaveBeenCalledWith(Haptics.NotificationFeedbackType.Success)
+})
+
+it('changing an option ticks like an iOS picker', async () => {
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('clip-row-a'))
+  await fireEvent.press(screen.getByTestId('clip-settings'))
+  await fireEvent.press(screen.getByTestId('framing-fit'))
+  expect(Haptics.selectionAsync).toHaveBeenCalled()
 })

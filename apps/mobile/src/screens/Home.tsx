@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Image, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { Image, Linking, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { formatTime } from '@cuts/core/clips'
 import { recents, type KeyValue, type Recent } from '../editor/sessions'
@@ -7,6 +7,7 @@ import { t } from '../i18n'
 import { OpeningProgress } from '../components/OpeningProgress'
 import { cancelOpen, openAsset, pickVideo, poster, requestLibraryAccess, type AssetInfo } from '../media'
 import { useTheme } from '../theme'
+import { Tap } from '../components/Tap'
 
 type Props = { store: KeyValue; onOpen: (asset: AssetInfo) => void }
 
@@ -51,20 +52,20 @@ export function Home({ store, onOpen }: Props) {
   return (
     <SafeAreaView edges={['bottom']} style={{ flex: 1, backgroundColor: theme.background }}>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <Pressable
+        <Tap
           testID="choose-video"
           onPress={() => void choose()}
           style={{ backgroundColor: theme.ink, borderRadius: 14, paddingVertical: 15, alignItems: 'center' }}
         >
           <Text style={{ color: theme.inverse, fontSize: 17, fontWeight: '600' }}>{t.mobile.chooseFromPhotos}</Text>
-        </Pressable>
+        </Tap>
         {problem && (
           <View style={{ gap: 8 }}>
             <Text style={{ color: theme.ink, fontSize: 15 }}>{problem}</Text>
             {needsSettings && (
-              <Pressable testID="open-settings" onPress={() => Linking.openSettings()}>
+              <Tap testID="open-settings" onPress={() => Linking.openSettings()}>
                 <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>{t.mobile.openSettings}</Text>
-              </Pressable>
+              </Tap>
             )}
           </View>
         )}
@@ -96,7 +97,7 @@ function RecentRow({ recent, onPress }: { recent: Recent; onPress: () => void })
     void poster(recent.assetId, 80).then(setImage, () => {})
   }, [recent.assetId])
   return (
-    <Pressable
+    <Tap
       testID={`recent-${recent.assetId}`}
       onPress={onPress}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, borderRadius: 12, padding: 10 }}
@@ -112,6 +113,6 @@ function RecentRow({ recent, onPress }: { recent: Recent; onPress: () => void })
           {formatTime(recent.duration)} · {t.recentClips(recent.clips)}
         </Text>
       </View>
-    </Pressable>
+    </Tap>
   )
 }

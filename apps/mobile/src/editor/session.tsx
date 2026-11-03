@@ -7,6 +7,7 @@ import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import type { OutputFormat } from '@cuts/core/formats'
 import { suggestMoments } from '@cuts/core/suggest'
 import type { ExportState } from '../components/ExportSheet'
+import { haptics } from '../haptics'
 import { t } from '../i18n'
 import { cancelExport, exportClip, readPeaks, saveToCutsAlbum, type AssetInfo } from '../media'
 import { editorReducer, initialEditor, settingsOf, type EditorAction, type EditorState } from './editor'
@@ -130,6 +131,8 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
       },
       t
     }).catch((error: Error) => ({ ok: false as const, saved: 0, error: error.message }))
+    if (outcome.ok) haptics.success()
+    else haptics.failure()
     setExporting({ status: 'done', outcome })
   }
 

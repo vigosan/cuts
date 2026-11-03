@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native'
+import * as Haptics from 'expo-haptics'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
 import { loadSession } from '../editor/sessions'
@@ -99,4 +100,10 @@ it('marks clips without the web crypto global, which Hermes lacks', async () => 
   } finally {
     Object.defineProperty(globalThis, 'crypto', { value: webCrypto, configurable: true })
   }
+})
+
+it('marking Start and End gives a light tap you can feel', async () => {
+  await renderCut()
+  await mark(2, 6)
+  expect(Haptics.impactAsync).toHaveBeenCalledTimes(2)
 })

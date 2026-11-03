@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Linking, Pressable, Text, TextInput } from 'react-native'
+import { Linking, Text, TextInput } from 'react-native'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import type { ExportOutcome } from '../editor/export-run'
 import { t } from '../i18n'
 import type { Theme } from '../theme'
 import { Segments, Sheet } from './ClipSheet'
+import { Tap } from './Tap'
 
 export type ExportState = { status: 'idle' } | { status: 'running'; index: number; total: number } | { status: 'done'; outcome: ExportOutcome }
 
@@ -29,9 +30,9 @@ export function ExportSheet({ theme, label, format, baseName, state, onFormat, o
     void Linking.canOpenURL(INSTAGRAM).then(setInstagram, () => setInstagram(false))
   }, [])
   const button = (testID: string, text: string, onPress: () => void, primary = true) => (
-    <Pressable testID={testID} onPress={onPress} style={{ backgroundColor: primary ? theme.ink : theme.fill, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
+    <Tap testID={testID} onPress={onPress} style={{ backgroundColor: primary ? theme.ink : theme.fill, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
       <Text style={{ color: primary ? theme.inverse : theme.ink, fontSize: 17, fontWeight: '600' }}>{text}</Text>
-    </Pressable>
+    </Tap>
   )
   return (
     <Sheet theme={theme} title={label} onClose={onClose}>

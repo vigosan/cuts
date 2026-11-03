@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native'
+import { Text, View, type LayoutChangeEvent } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { Canvas, Circle, Line, vec } from '@shopify/react-native-skia'
 import { AUDIO_FADES, VIDEO_FADES, type ClipSettings } from '@cuts/core/fades'
 import { fadeHandleX, fadeSecondsAt, stepFade } from '../editor/fade-line'
+import { haptics } from '../haptics'
 import { t } from '../i18n'
 import type { Theme } from '../theme'
+import { Tap } from './Tap'
 
 type Props = {
   title: string
@@ -46,9 +48,9 @@ export function Sheet({ title, theme, onClose, children }: { title: string; them
     <View style={{ backgroundColor: theme.card, padding: 16, paddingTop: 20, paddingBottom: 32, gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 44 }}>
         <Text style={{ flex: 1, color: theme.ink, fontSize: 17, fontWeight: '700' }}>{title}</Text>
-        <Pressable testID="close-sheet" onPress={onClose} hitSlop={12} style={{ minHeight: 44, justifyContent: 'center' }}>
+        <Tap testID="close-sheet" onPress={onClose} hitSlop={12} style={{ minHeight: 44, justifyContent: 'center' }}>
           <Text style={{ color: theme.ink, fontSize: 17, fontWeight: '600' }}>{t.mobile.done}</Text>
-        </Pressable>
+        </Tap>
       </View>
       {children}
     </View>
@@ -70,16 +72,19 @@ export function Segments<T extends string>({ theme, prefix, value, options, onCh
   return (
     <View accessibilityRole="tablist" style={{ flexDirection: 'row', backgroundColor: theme.fill, borderRadius: 9, padding: 2 }}>
       {options.map(([option, label]) => (
-        <Pressable
+        <Tap
           key={option}
           testID={`${prefix}-${option}`}
           accessibilityRole="tab"
           accessibilityState={{ selected: option === value }}
-          onPress={() => onChange(option)}
+          onPress={() => {
+            if (option !== value) haptics.tick()
+            onChange(option)
+          }}
           style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 7, backgroundColor: option === value ? theme.card : theme.fill }}
         >
           <Text style={{ fontSize: 13, color: option === value ? theme.ink : theme.muted, fontWeight: option === value ? '600' : '400' }}>{label}</Text>
-        </Pressable>
+        </Tap>
       ))}
     </View>
   )

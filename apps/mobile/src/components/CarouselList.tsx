@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { SymbolView } from 'expo-symbols'
 import { clipDuration, formatDuration, formatTime, isOverLimit, isPastCarousel, MAX_CAROUSEL_ITEMS, type Clip } from '@cuts/core/clips'
+import { haptics } from '../haptics'
 import { t } from '../i18n'
 import type { Theme } from '../theme'
+import { Tap } from './Tap'
 
 type Props = {
   clips: Clip[]
@@ -62,8 +64,10 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
   const reorder = usePanGesture({
     runOnJS: true,
     activateAfterLongPress: 250,
+    onActivate: () => haptics.lift(),
     onUpdate: (event) => onDrag(event.translationY),
     onDeactivate: (event) => {
+      haptics.drop()
       onDrag(null)
       const to = clamp(index + Math.round(event.translationY / ROW_HEIGHT))
       if (to !== index) onMove(to)
@@ -71,7 +75,7 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
     onFinalize: () => onDrag(null)
   })
   return (
-    <Pressable
+    <Tap
       testID={`clip-row-${clip.id}`}
       onPress={onPress}
       accessibilityHint={past ? t.pastCarousel(MAX_CAROUSEL_ITEMS) : undefined}
@@ -126,6 +130,6 @@ function Row({ clip, index, count, selected, picked, progress, offset, theme, on
           <SymbolView name="line.3.horizontal" size={16} tintColor={theme.muted} />
         </View>
       </GestureDetector>
-    </Pressable>
+    </Tap>
   )
 }
