@@ -192,6 +192,10 @@ function english(locale: Locale) {
     mobile: {
       chooseFromPhotos: 'Choose video from Photos',
       chooseFromFiles: 'Choose from Files',
+      fromPhotos: 'Photos',
+      fromFiles: 'Files',
+      tagline: 'Cut your best moments',
+      steps: ['Pick your set recording from Photos or Files.', 'Tap ✦ Suggest, or mark the moments yourself.', 'Export the carousel to Photos and post it.'],
       framingNeedsFormat: 'Pick 4:5, 1:1 or 9:16 to frame the clip.',
       carouselGrow: 'Make the carousel bigger',
       moveStartHere: 'Move start here',
@@ -406,6 +410,10 @@ function spanish(locale: Locale): Messages {
     mobile: {
       chooseFromPhotos: 'Elegir vídeo de Fotos',
       chooseFromFiles: 'Elegir de Archivos',
+      fromPhotos: 'Fotos',
+      fromFiles: 'Archivos',
+      tagline: 'Corta tus mejores momentos',
+      steps: ['Elige la grabación de tu sesión en Fotos o Archivos.', 'Pulsa ✦ Sugerir o marca tú los momentos.', 'Exporta el carrusel a Fotos y publícalo.'],
       framingNeedsFormat: 'Elige 4:5, 1:1 o 9:16 para encuadrar el clip.',
       carouselGrow: 'Agrandar el carrusel',
       moveStartHere: 'Mover inicio aquí',

@@ -67,11 +67,11 @@ it('denied Photos access explains and links to Settings', async () => {
   expect(native.pickVideo).not.toHaveBeenCalled()
 })
 
-it('recent rows use the Photos thumbnail, never download the whole set', async () => {
+it('recent cards use a Photos thumbnail sharp enough for a full-width card, never download the whole set', async () => {
   const store = memoryStore()
   touchRecent(store, { assetId: 'cloud', name: 'Set', duration: 60, clips: 1, openedAt: 1 })
   await render(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} /></GestureHandlerRootView>)
-  expect(native.poster).toHaveBeenCalledWith('cloud', 80)
+  expect(native.poster).toHaveBeenCalledWith('cloud', 600)
   expect(native.thumbnail).not.toHaveBeenCalled()
 })
 
@@ -99,7 +99,7 @@ it('a video from iCloud Drive opens through Files without asking for Photos', as
   await fireEvent.press(screen.getByTestId('choose-file'))
   await waitFor(() => expect(onOpen).toHaveBeenCalledWith({ ...asset, id: 'file:abc' }))
   expect(native.requestLibraryAccess).not.toHaveBeenCalled()
-  expect(screen.getByText(t.mobile.chooseFromFiles)).toBeTruthy()
+  expect(screen.getByLabelText(t.mobile.chooseFromFiles)).toBeTruthy()
 })
 
 it('a recent set can be removed from the list', async () => {
@@ -127,4 +127,25 @@ it('coming back to Home shows the set you just opened in Recent', async () => {
   touchRecent(store, { assetId: 'just-opened', name: 'Set', duration: 60, clips: 2, openedAt: 1 })
   await screen.rerender(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} visits={2} /></GestureHandlerRootView>)
   expect(screen.getByTestId('recent-just-opened')).toBeTruthy()
+})
+
+it('a first visit shows the Cuts logo and the three steps, so the screen explains itself', async () => {
+  await render(<GestureHandlerRootView><Home store={memoryStore()} onOpen={jest.fn()} /></GestureHandlerRootView>)
+  expect(screen.getByTestId('home-logo')).toBeTruthy()
+  expect(screen.getByText(t.mobile.tagline)).toBeTruthy()
+  t.mobile.steps.forEach((step) => expect(screen.getByText(step)).toBeTruthy())
+})
+
+it('the steps give way to Recent once a set has been opened', async () => {
+  const store = memoryStore()
+  touchRecent(store, { assetId: 'A1', name: 'Set', duration: 60, clips: 1, openedAt: 1 })
+  await render(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} /></GestureHandlerRootView>)
+  expect(screen.queryByTestId('home-steps')).toBeNull()
+})
+
+it('the short Photos and Files tiles keep their full names for VoiceOver', async () => {
+  await render(<GestureHandlerRootView><Home store={memoryStore()} onOpen={jest.fn()} /></GestureHandlerRootView>)
+  expect(screen.getByTestId('choose-video').props.accessibilityLabel).toBe(t.mobile.chooseFromPhotos)
+  expect(screen.getByTestId('choose-file').props.accessibilityLabel).toBe(t.mobile.chooseFromFiles)
+  expect(screen.getByText(t.mobile.fromPhotos)).toBeTruthy()
 })

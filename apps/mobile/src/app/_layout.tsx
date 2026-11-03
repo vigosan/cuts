@@ -6,7 +6,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack>
-        <Stack.Screen name="index" options={{ title: 'Cuts', headerLargeTitleEnabled: true, headerTransparent: true }} />
+        <Stack.Screen name="index" options={{ title: 'Cuts', headerShown: false }} />
         <Stack.Screen name="cut/[assetId]" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>
