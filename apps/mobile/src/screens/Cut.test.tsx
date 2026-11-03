@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
 import { loadSession } from '../editor/sessions'
@@ -16,7 +17,11 @@ const beatPeaks = () => {
 }
 
 const renderCut = async (store = memoryStore()) => {
-  await render(<Cut asset={asset} store={store} onBack={jest.fn()} />)
+  await render(
+    <GestureHandlerRootView>
+      <Cut asset={asset} store={store} onBack={jest.fn()} />
+    </GestureHandlerRootView>
+  )
   await act(async () => {})
   return store
 }

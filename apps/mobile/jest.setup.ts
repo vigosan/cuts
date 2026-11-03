@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler/jestSetup'
 jest.mock('./modules/cuts-media', () => ({
   __esModule: true,
   default: {
@@ -31,4 +32,10 @@ jest.mock('expo-video', () => {
     addListener: jest.fn(() => ({ remove: jest.fn() }))
   }
   return { __player: player, useVideoPlayer: () => player, VideoView: View }
+})
+
+jest.mock('@shopify/react-native-skia', () => {
+  const { View } = jest.requireActual('react-native')
+  const none = () => null
+  return { Canvas: View, Group: View, Rect: none, RoundedRect: none, Line: none, Image: none, Path: none, useImage: () => null, vec: (x: number, y: number) => ({ x, y }) }
 })

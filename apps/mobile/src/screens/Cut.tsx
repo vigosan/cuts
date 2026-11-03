@@ -8,6 +8,7 @@ import { useVideoPlayer, VideoView } from 'expo-video'
 import { snapToBeat } from '@cuts/core/beats'
 import { defaultBaseName, formatTime } from '@cuts/core/clips'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { Timeline } from '../components/Timeline'
 import { editorReducer, initialEditor } from '../editor/editor'
 import { endHere, startHere } from '../editor/marks'
 import { loadPreferences } from '../editor/preferences'
@@ -36,7 +37,9 @@ export function Cut({ asset, store, onBack }: Props) {
   const player = useVideoPlayer(asset.uri, (created) => {
     created.timeUpdateEventInterval = 0.1
   })
-  const { currentTime } = useEvent(player, 'timeUpdate', { currentTime: 0, currentLiveTimestamp: null, currentOffsetFromLive: null, bufferedPosition: 0 })
+  const { currentTime: playedTime } = useEvent(player, 'timeUpdate', { currentTime: 0, currentLiveTimestamp: null, currentOffsetFromLive: null, bufferedPosition: 0 })
+  const [sought, setSought] = useState<{ time: number; after: number } | null>(null)
+  const currentTime = sought && sought.after === playedTime ? sought.time : playedTime
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing, oldIsPlaying: false })
   const clips = state.history.present.clips
 
@@ -59,9 +62,13 @@ export function Cut({ asset, store, onBack }: Props) {
   }, [notice])
 
   const at = (time: number) => (state.magnet && peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
+  const seekTo = (time: number) => {
+    seek(player, time, asset.duration)
+    setSought({ time: player.currentTime, after: playedTime })
+  }
   const step = (frames: number) => {
     player.pause()
-    seek(player, player.currentTime + frames / asset.frameRate, asset.duration)
+    seekTo(player.currentTime + frames / asset.frameRate)
   }
   const selected = state.selectedId
   const framing = selected ? (state.clipSettings[selected] ?? state.defaultSettings) : state.defaultSettings
@@ -123,7 +130,20 @@ export function Cut({ asset, store, onBack }: Props) {
               <Icon name="metronome" theme={theme} inverse={state.magnet} />
             </Pressable>
           </View>
-          <View testID="timeline" style={{ height: 58, borderRadius: 8, backgroundColor: theme.fill }} />
+          <Timeline
+            assetId={asset.id}
+            duration={asset.duration}
+            currentTime={currentTime}
+            clips={clips}
+            selectedId={selected}
+            pendingStart={state.history.present.pendingStart}
+            peaks={peaks}
+            snap={at}
+            onSeek={seekTo}
+            onSelect={(id) => dispatch({ type: 'select', id })}
+            onDragStart={() => dispatch({ type: 'checkpoint' })}
+            onDrag={(clip) => dispatch({ type: 'replace', clip, transient: true })}
+          />
           <View style={{ flexDirection: 'row', gap: 6 }}>
             <Pill testID="start-here" label={t.mobile.startHere} theme={theme} grow onPress={() => dispatch(startHere(state.history.present, at(player.currentTime), selected))} />
             <Pill testID="previous-frame" icon="chevron.left" label={t.mobile.previousFrame} theme={theme} onPress={() => step(-1)} />
