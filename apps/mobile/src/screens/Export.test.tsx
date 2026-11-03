@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
-import { ActionSheetIOS, AppState, Linking } from 'react-native'
+import { AppState, Linking } from 'react-native'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import * as Haptics from 'expo-haptics'
 import CutsMedia from '../../modules/cuts-media'
@@ -148,15 +148,6 @@ it('the clip sheet has the format, so framing shows its preview right away like 
   expect(screen.getByTestId('fit-preview')).toBeTruthy()
 })
 
-it('the format shows its full name next to Export and changes from an iOS action sheet', async () => {
-  const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation((_options, choose) => choose(3))
-  await renderCut(storeWith(twoClips))
-  expect(screen.getByText(t.formats.original)).toBeTruthy()
-  await fireEvent.press(screen.getByTestId('format-button'))
-  expect(sheet.mock.calls[0][0].options).toEqual([t.formats.original, t.formats['4:5'], t.formats['1:1'], t.formats['9:16'], t.cancel])
-  expect(screen.getByText(t.formats['9:16'])).toBeTruthy()
-})
-
 it('with no clip selected, the clip sheet changes all clips, like the Mac', async () => {
   jest.useFakeTimers()
   const store = storeWith(twoClips)
@@ -181,4 +172,10 @@ it('fade length is picked from the same lengths as the Mac, shown as plain butto
   await fireEvent.press(screen.getByTestId('clip-settings'))
   for (const seconds of [0.5, 1, 2, 3, 5]) expect(screen.getByText(t.fadeSeconds(seconds))).toBeTruthy()
   expect(screen.queryByTestId('fade-handle')).toBeNull()
+})
+
+it('Export spans the whole width; the format lives in the clip sheet', async () => {
+  await renderCut(storeWith(twoClips))
+  expect(screen.queryByTestId('format-button')).toBeNull()
+  expect(screen.getByTestId('export')).toHaveStyle({ alignSelf: 'stretch' })
 })
