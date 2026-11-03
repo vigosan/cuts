@@ -67,11 +67,11 @@ it('denied Photos access explains and links to Settings', async () => {
   expect(native.pickVideo).not.toHaveBeenCalled()
 })
 
-it('recent cards use a Photos thumbnail sharp enough for a full-width card, never download the whole set', async () => {
+it('recent rows use a small Photos thumbnail, never download the whole set', async () => {
   const store = memoryStore()
   touchRecent(store, { assetId: 'cloud', name: 'Set', duration: 60, clips: 1, openedAt: 1 })
   await render(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} /></GestureHandlerRootView>)
-  expect(native.poster).toHaveBeenCalledWith('cloud', 600)
+  expect(native.poster).toHaveBeenCalledWith('cloud', 80)
   expect(native.thumbnail).not.toHaveBeenCalled()
 })
 
@@ -148,4 +148,11 @@ it('the short Photos and Files tiles keep their full names for VoiceOver', async
   expect(screen.getByTestId('choose-video').props.accessibilityLabel).toBe(t.mobile.chooseFromPhotos)
   expect(screen.getByTestId('choose-file').props.accessibilityLabel).toBe(t.mobile.chooseFromFiles)
   expect(screen.getByText(t.mobile.fromPhotos)).toBeTruthy()
+})
+
+it('a recent row at rest has no Remove button behind it, so pressing the row never flashes red', async () => {
+  const store = memoryStore()
+  touchRecent(store, { assetId: 'A1', name: 'Set', duration: 60, clips: 1, openedAt: 1 })
+  await render(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} /></GestureHandlerRootView>)
+  expect(screen.queryByTestId('remove-A1')).toBeNull()
 })

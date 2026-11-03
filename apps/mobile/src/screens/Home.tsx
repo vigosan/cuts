@@ -137,7 +137,7 @@ function Steps() {
 }
 
 const REMOVE_WIDTH = 88
-const POSTER_HEIGHT = 600
+const POSTER_HEIGHT = 80
 
 function Recents({ store, onPress }: { store: KeyValue; onPress: (id: string) => Promise<void> }) {
   const theme = useTheme()
@@ -148,7 +148,7 @@ function Recents({ store, onPress }: { store: KeyValue; onPress: (id: string) =>
     setList(recents(store))
   }
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: 8 }}>
       <Text accessibilityRole="header" style={{ color: theme.ink, fontSize: 22, fontWeight: '700', letterSpacing: -0.3, marginTop: 8 }}>
         {t.recentVideos}
       </Text>
@@ -164,29 +164,33 @@ function RecentRow({ recent, onPress, onRemove }: { recent: Recent; onPress: () 
   const [image, setImage] = useState<string | null>(null)
   const [x] = useState(() => new Animated.Value(0))
   const [open, setOpen] = useState(false)
+  const [revealed, setRevealed] = useState(false)
   useEffect(() => {
     void poster(recent.assetId, POSTER_HEIGHT).then(setImage, () => {})
   }, [recent.assetId])
   const slide = (to: number) => {
     setOpen(to !== 0)
-    Animated.spring(x, { toValue: to, useNativeDriver: true, bounciness: 0, speed: 18 }).start()
+    Animated.spring(x, { toValue: to, useNativeDriver: true, bounciness: 0, speed: 18 }).start(({ finished }) => finished && to === 0 && setRevealed(false))
   }
   const swipe = usePanGesture({
     runOnJS: true,
     activeOffsetX: [-12, 12],
     failOffsetY: [-10, 10],
+    onActivate: () => setRevealed(true),
     onUpdate: (event) => x.setValue(Math.min(0, (open ? -REMOVE_WIDTH : 0) + event.translationX)),
     onDeactivate: (event) => slide((open ? -REMOVE_WIDTH : 0) + event.translationX < -REMOVE_WIDTH / 2 || event.velocityX < -300 ? -REMOVE_WIDTH : 0)
   })
   return (
-    <View style={{ borderRadius: 18, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: theme.danger }}>
+    <View style={{ borderRadius: 12, borderCurve: 'continuous', overflow: 'hidden' }}>
+      {revealed && (
       <Tap
         testID={`remove-${recent.assetId}`}
         onPress={onRemove}
-        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: REMOVE_WIDTH, alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: REMOVE_WIDTH, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.danger }}
       >
         <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>{t.mobile.removeRecent}</Text>
       </Tap>
+      )}
       <GestureDetector gesture={swipe}>
         <Animated.View style={{ transform: [{ translateX: x }] }}>
           <Tap
@@ -194,16 +198,16 @@ function RecentRow({ recent, onPress, onRemove }: { recent: Recent; onPress: () 
             onPress={() => (open ? slide(0) : onPress())}
             accessibilityActions={[{ name: 'delete', label: t.mobile.removeRecent }]}
             onAccessibilityAction={(event) => event.nativeEvent.actionName === 'delete' && onRemove()}
-            style={{ backgroundColor: theme.card }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, padding: 10 }}
           >
-            <View style={{ aspectRatio: 16 / 9, backgroundColor: theme.fill }}>
-              {image && <Image source={{ uri: image }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />}
+            <View style={{ width: 64, height: 40, borderRadius: 6, overflow: 'hidden', backgroundColor: theme.fill }}>
+              {image && <Image source={{ uri: image }} style={{ width: 64, height: 40 }} />}
             </View>
-            <View style={{ paddingHorizontal: 14, paddingVertical: 12, gap: 2 }}>
-              <Text numberOfLines={1} style={{ color: theme.ink, fontSize: 17, fontWeight: '600' }}>
+            <View style={{ flex: 1 }}>
+              <Text numberOfLines={1} style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>
                 {recent.name}
               </Text>
-              <Text style={{ color: theme.muted, fontSize: 15, fontVariant: ['tabular-nums'] }}>
+              <Text style={{ color: theme.muted, fontSize: 13, fontVariant: ['tabular-nums'] }}>
                 {formatTime(recent.duration)} · {t.recentClips(recent.clips)}
               </Text>
             </View>
