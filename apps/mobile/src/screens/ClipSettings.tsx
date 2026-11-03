@@ -7,11 +7,13 @@ const CAROUSEL_CLIP = 59
 
 export function ClipSettings({ onClose }: { onClose: () => void }) {
   const theme = useTheme()
-  const { clips, selectedClip, shownSettings, dispatch } = useEditor()
+  const { clips, selectedClip, shownSettings, dispatch, format, setFormat } = useEditor()
   return (
     <ClipSheet
       title={selectedClip ? t.settingsScopeClip(clips.indexOf(selectedClip) + 1) : t.settingsScopeAll}
       settings={shownSettings}
+      format={format}
+      onFormat={setFormat}
       clipLength={selectedClip ? selectedClip.end - selectedClip.start : CAROUSEL_CLIP}
       theme={theme}
       onChange={(change) => dispatch({ type: 'settings', change })}

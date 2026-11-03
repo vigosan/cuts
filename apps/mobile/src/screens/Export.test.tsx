@@ -135,3 +135,15 @@ it('changing an option ticks like an iOS picker', async () => {
   await fireEvent.press(screen.getByTestId('framing-fit'))
   expect(Haptics.selectionAsync).toHaveBeenCalled()
 })
+
+it('the clip sheet has the format, so framing shows its preview right away like on the Mac', async () => {
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('clip-row-a'))
+  await fireEvent.press(screen.getByTestId('clip-settings'))
+  expect(screen.getByText(t.mobile.framingNeedsFormat)).toBeTruthy()
+  expect(screen.queryByTestId('crop-frame')).toBeNull()
+  await fireEvent.press(screen.getByTestId('format-4:5'))
+  expect(screen.getByTestId('crop-frame')).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('framing-fit'))
+  expect(screen.getByTestId('fit-preview')).toBeTruthy()
+})
