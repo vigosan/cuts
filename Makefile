@@ -1,4 +1,4 @@
-.PHONY: install dev test typecheck lint build app ffmpeg icon media mas web web-dev
+.PHONY: install dev test mobile-fixtures mobile-test mobile-ios mobile-testflight typecheck lint build app ffmpeg icon media mas web web-dev
 
 DESKTOP := apps/desktop
 
@@ -49,3 +49,11 @@ web:
 
 web-dev:
 	npm run dev:web
+
+MOBILE := apps/mobile
+
+mobile-test:
+	cd $(MOBILE) && npx vitest run
+
+mobile-ios:
+	cd $(MOBILE) && npx expo prebuild -p ios --clean && npx expo run:ios

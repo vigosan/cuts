@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Cuts",
+    "slug": "cuts",
+    "version": "1.7.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "cuts",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.vigosan.cuts",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": ["instagram"],
+        "NSPhotoLibraryUsageDescription": "Cuts opens your recorded sets from Photos so you can cut them into clips.",
+        "NSPhotoLibraryAddUsageDescription": "Cuts saves your clips to the Cuts album in Photos.",
+        "CFBundleAllowMixedLocalizations": true
+      }
+    },
+    "locales": {
+      "es": "./locales/es.json"
+    },
+    "android": {
+      "package": "com.vigosan.cuts"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#161617",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

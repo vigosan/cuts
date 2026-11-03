@@ -1,0 +1,6 @@
+{
+  "ios": {
+    "NSPhotoLibraryUsageDescription": "Cuts abre tus sesiones grabadas desde Fotos para que las cortes en clips.",
+    "NSPhotoLibraryAddUsageDescription": "Cuts guarda tus clips en el álbum Cuts de Fotos."
+  }
+}
