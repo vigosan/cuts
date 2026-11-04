@@ -1,5 +1,5 @@
 import type { Content, Lang } from "@/content";
-import { type Day, fetchStats, installsInLast, lastTwelveMonths, type Stats as StatsData, weeklyMacInstalls } from "@/stats";
+import { type Day, fetchStats, installsInLast, lastTwelveMonths, type Stats as StatsData, totalInstalls, weeklyMacInstalls } from "@/stats";
 import { Page } from "./Page";
 
 const heading = "text-2xl font-semibold tracking-tight text-balance text-gray-900 dark:text-gray-50";
@@ -140,7 +140,7 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
     <>
       <section className="flex flex-col gap-3">
         <p data-testid="stats-total" className="text-6xl font-semibold tracking-tight tabular-nums text-gray-900 sm:text-7xl dark:text-gray-50">
-          {format.number(latest.mac + latest.windows + latest.linux)}
+          {format.number(totalInstalls(stats))}
         </p>
         <p>{c.stats.total.replace("{date}", format.day(days[0].date))}</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">

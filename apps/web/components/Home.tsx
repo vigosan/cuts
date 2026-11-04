@@ -1,6 +1,6 @@
 import { DARK_SCREENSHOTS, DROPS_VIDEO, type Content } from "@/content";
-import { fetchDownloads } from "@/downloads";
 import { splitKeys } from "@/keys";
+import { fetchStats, totalInstalls } from "@/stats";
 import { Download } from "./Download";
 import { IPhone } from "./IPhone";
 import { LoopVideo } from "./LoopVideo";
@@ -27,7 +27,8 @@ function Keys({ text }: { text: string }) {
 }
 
 export async function Home({ c }: { c: Content }) {
-  const downloads = await fetchDownloads();
+  const stats = await fetchStats();
+  const downloads = stats && totalInstalls(stats);
 
   return (
     <Page c={c} current="home">

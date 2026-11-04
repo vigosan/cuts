@@ -103,6 +103,11 @@ export function recordSnapshot(previous: Stats | null, releases: StatsRelease[],
   return { days: [...history, rounded(today, totals)], macUpdates: macUpdates(releases, 8) };
 }
 
+export function totalInstalls(stats: Stats): number {
+  const latest = stats.days[stats.days.length - 1];
+  return latest.mac + latest.windows + latest.linux;
+}
+
 export function lastTwelveMonths(days: Day[]): Day[] {
   const last = days.at(-1);
   if (!last) return days;
