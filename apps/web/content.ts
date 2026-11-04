@@ -7,7 +7,7 @@ export const REPO = "https://github.com/vigosan/cuts";
 export const UPDATED = "2026-11-03";
 export const VERSION = "1.7";
 export const SCREENSHOTS = ["timeline", "framing", "dark"] as const;
-export const IPHONE_SCREENSHOTS = ["cut", "carousel", "framing"] as const;
+export const IPHONE_SCREENSHOTS = ["home", "cut", "carousel"] as const;
 export const DARK_SCREENSHOTS = { timeline: "timeline-dark", framing: "framing-dark", dark: "light" } as const;
 export const DROPS_VIDEO = {
   video: "drops.mp4",
@@ -68,7 +68,7 @@ export const content = {
         alts: {
           cut: "Cuts on iPhone: the video, the timeline with ten suggested clips and the carousel",
           carousel: "The carousel expanded, with every clip in posting order",
-          framing: "Choosing the 9:16 format and the fades for a clip",
+          home: "Opening a set from Photos or Files, with the recent videos below",
         },
         download: "Download on the App Store",
         requirements: "iOS 18 or later",
@@ -261,7 +261,7 @@ export const content = {
         alts: {
           cut: "Cuts en el iPhone: el vídeo, la línea de tiempo con diez clips sugeridos y el carrusel",
           carousel: "El carrusel ampliado, con todos los clips en el orden de publicación",
-          framing: "Eligiendo el formato 9:16 y los fundidos de un clip",
+          home: "Abriendo una sesión desde Fotos o Archivos, con los vídeos recientes debajo",
         },
         download: "Descargar en la App Store",
         requirements: "iOS 18 o posterior",
