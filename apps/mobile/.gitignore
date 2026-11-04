@@ -44,6 +44,8 @@ example
 
 /ios
 /android
-/fixtures
+/fixtures/*
+!/fixtures/set-reference-peaks.json
+!/fixtures/set-swift-peaks.json
 /modules/cuts-media/ios/CutsMedia/.build
 /build
