@@ -57,38 +57,6 @@ export async function Home({ c }: { c: Content }) {
         <p className="max-w-2xl text-pretty">{c.home.dropsText}</p>
       </article>
       <article className="flex flex-col gap-6">
-        <h2 className={heading}>{c.home.featuresTitle}</h2>
-        <ol className="border-b border-gray-200 dark:border-gray-800">
-          {c.home.features.map((group, groupIndex) => (
-            <li
-              key={group.title}
-              data-testid="feature-group"
-              className="scroll-track grid gap-4 border-t border-gray-200 py-6 sm:grid-cols-[11rem_1fr] sm:gap-8 dark:border-gray-800"
-            >
-              <h3 className="flex items-baseline gap-3 text-gray-800 dark:text-gray-100">
-                <span className="scroll-track-number font-mono text-xs tabular-nums text-gray-400 dark:text-gray-600">{String(groupIndex + 1).padStart(2, "0")}</span>
-                <span className="font-medium">{group.title}</span>
-              </h3>
-              <ul className="flex flex-col gap-3 leading-relaxed">
-                {group.items.map((item, itemIndex) => (
-                  <li key={item} className="sm:grid sm:grid-cols-[2.5rem_1fr]">
-                    <span className="hidden font-mono text-xs leading-7 tabular-nums text-gray-400 sm:inline dark:text-gray-600">
-                      {groupIndex + 1}.{itemIndex + 1}
-                    </span>
-                    <span>
-                      <Keys text={item} />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ol>
-        <p className="text-sm text-gray-500">
-          <Keys text={c.home.shortcuts} />
-        </p>
-      </article>
-      <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.timelineTitle}</h2>
         <p className="max-w-2xl text-pretty">{c.home.timelineText}</p>
         <div className={wide}>
@@ -139,6 +107,38 @@ export async function Home({ c }: { c: Content }) {
         </div>
       </article>
       <IPhone c={c} />
+      <article className="flex flex-col gap-6">
+        <h2 className={heading}>{c.home.featuresTitle}</h2>
+        <ol className="border-b border-gray-200 dark:border-gray-800">
+          {c.home.features.map((group, groupIndex) => (
+            <li
+              key={group.title}
+              data-testid="feature-group"
+              className="scroll-track grid gap-4 border-t border-gray-200 py-6 sm:grid-cols-[11rem_1fr] sm:gap-8 dark:border-gray-800"
+            >
+              <h3 className="flex items-baseline gap-3 text-gray-800 dark:text-gray-100">
+                <span className="scroll-track-number font-mono text-xs tabular-nums text-gray-400 dark:text-gray-600">{String(groupIndex + 1).padStart(2, "0")}</span>
+                <span className="font-medium">{group.title}</span>
+              </h3>
+              <ul className="flex flex-col gap-3 leading-relaxed">
+                {group.items.map((item, itemIndex) => (
+                  <li key={item} className="sm:grid sm:grid-cols-[2.5rem_1fr]">
+                    <span className="hidden font-mono text-xs leading-7 tabular-nums text-gray-400 sm:inline dark:text-gray-600">
+                      {groupIndex + 1}.{itemIndex + 1}
+                    </span>
+                    <span>
+                      <Keys text={item} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
+        <p className="text-sm text-gray-500">
+          <Keys text={c.home.shortcuts} />
+        </p>
+      </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.privacyTitle}</h2>
         <p className="text-xl font-medium tracking-tight text-balance text-gray-900 sm:text-3xl dark:text-gray-50">{c.home.privacy}</p>
