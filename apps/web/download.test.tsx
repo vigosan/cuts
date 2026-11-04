@@ -29,10 +29,12 @@ describe("download", () => {
     expect(html).toContain(content.es.home.iphone.requirements);
   });
 
-  it("the iPhone section links to the App Store", () => {
+  it("the iPhone section ends with the same download button as the hero, so it reads as a download and not as a footnote", () => {
     const html = renderToStaticMarkup(<IPhone c={content.es} />);
     expect(html).toContain('id="iphone"');
     expect(html).toContain(`data-testid="iphone-app-store" href="${APP_STORE}"`);
+    expect(html).toContain(content.es.home.iphone.requirements);
+    expect(html).toContain(content.es.home.free);
     expect(html.match(/<img /g)).toHaveLength(IPHONE_SCREENSHOTS.length);
   });
 });

@@ -31,10 +31,11 @@ function Meta({ items }: { items: string[] }) {
   );
 }
 
-export function PhoneDownload({ home }: { home: Content["home"] }) {
+export function PhoneDownload({ home, testId = "download" }: { home: Content["home"]; testId?: string }) {
   return (
     <div className="flex flex-col items-center gap-3">
-      <a data-testid="download" href={APP_STORE} className={button}>
+      <a data-testid={testId} href={APP_STORE} className={button}>
+        <ArrowDown />
         {home.iphone.download}
       </a>
       <Meta items={[home.free, home.version, home.iphone.requirements]} />
