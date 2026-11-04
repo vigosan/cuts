@@ -50,7 +50,7 @@ export const content = {
       title: "Cuts: cut your best moments into clips",
       image: "/og-en.png",
       description:
-        "An app for Mac, Windows and Linux to mark the best moments of a long video and export them as short clips, ready for an Instagram carousel.",
+        "An app for Mac, iPhone, Windows and Linux to mark the best moments of a long video and export them as short clips, ready for an Instagram carousel.",
     },
     home: {
       tagline: "Cut your best moments into clips",
@@ -70,7 +70,8 @@ export const content = {
           carousel: "The carousel expanded, with every clip in posting order",
           framing: "Choosing the 9:16 format and the fades for a clip",
         },
-        soon: "Coming soon to the App Store",
+        download: "Download on the App Store",
+        requirements: "iOS 18 or later",
       },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Version ${VERSION}`,
@@ -241,7 +242,7 @@ export const content = {
       title: "Cuts: corta tus mejores momentos en clips",
       image: "/og-es.png",
       description:
-        "Una app para Mac, Windows y Linux que marca los mejores momentos de un vídeo largo y los exporta como clips cortos, listos para un carrusel de Instagram.",
+        "Una app para Mac, iPhone, Windows y Linux que marca los mejores momentos de un vídeo largo y los exporta como clips cortos, listos para un carrusel de Instagram.",
     },
     home: {
       tagline: "Corta tus mejores momentos en clips",
@@ -261,7 +262,8 @@ export const content = {
           carousel: "El carrusel ampliado, con todos los clips en el orden de publicación",
           framing: "Eligiendo el formato 9:16 y los fundidos de un clip",
         },
-        soon: "Muy pronto en la App Store",
+        download: "Descargar en la App Store",
+        requirements: "iOS 18 o posterior",
       },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Versión ${VERSION}`,

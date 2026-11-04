@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { APP_STORE, BREW, DOWNLOADS, type Content, type Lang } from "@/content";
 import { formatDownloads } from "@/downloads";
-import { detectOS, type OS } from "@/os";
+import { detectOS, isIPhone, type OS } from "@/os";
 import { link } from "./Page";
 
 const PLATFORMS: OS[] = ["mac", "windows", "linux"];
@@ -31,14 +31,31 @@ function Meta({ items }: { items: string[] }) {
   );
 }
 
+export function PhoneDownload({ home }: { home: Content["home"] }) {
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <a data-testid="download" href={APP_STORE} className={button}>
+        {home.iphone.download}
+      </a>
+      <Meta items={[home.free, home.version, home.iphone.requirements]} />
+    </div>
+  );
+}
+
 export function Download({ home, lang, downloads, brew = false }: { home: Content["home"]; lang: Lang; downloads: number | null; brew?: boolean }) {
   const [detected, setDetected] = useState<OS | null | undefined>(undefined);
-  useEffect(() => setDetected(detectOS(navigator.userAgent)), []);
+  const [iphone, setIPhone] = useState(false);
+  useEffect(() => {
+    setDetected(detectOS(navigator.userAgent));
+    setIPhone(isIPhone(navigator.userAgent));
+  }, []);
   const os = detected === undefined ? "mac" : detected;
 
   const meta = [home.free, home.version, downloads !== null && formatDownloads(downloads, lang, home.downloads)].filter(
     (item): item is string => Boolean(item),
   );
+
+  if (iphone) return <PhoneDownload home={home} />;
 
   if (!os) {
     return (
@@ -73,7 +90,7 @@ export function Download({ home, lang, downloads, brew = false }: { home: Conten
             {" · "}
           </span>
         ))}
-        <a data-testid="iphone-link" href="#iphone" className={link}>
+        <a data-testid="iphone-link" href={APP_STORE} className={link}>
           {home.iphone.link}
         </a>
         {os === "mac" && (

@@ -1,4 +1,5 @@
-import { IPHONE_SCREENSHOTS, type Content } from "@/content";
+import { APP_STORE, IPHONE_SCREENSHOTS, type Content } from "@/content";
+import { link } from "./Page";
 
 const phone =
   "w-full rounded-[1.75rem] shadow-[0_1px_2px_rgba(15,23,42,0.06),0_24px_48px_-24px_rgba(15,23,42,0.25)] ring-1 ring-black/5 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_24px_48px_-24px_rgba(0,0,0,0.7)] dark:ring-white/10";
@@ -22,7 +23,11 @@ export function IPhone({ c }: { c: Content }) {
           />
         ))}
       </div>
-      <p className="font-mono text-xs text-gray-500 dark:text-gray-400">{iphone.soon}</p>
+      <p>
+        <a data-testid="iphone-app-store" href={APP_STORE} className={link}>
+          {iphone.download}
+        </a>
+      </p>
     </article>
   );
 }

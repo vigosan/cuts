@@ -7,3 +7,7 @@ export function detectOS(userAgent: string): OS | null {
   if (/Linux|X11/i.test(userAgent)) return "linux";
   return null;
 }
+
+export function isIPhone(userAgent: string): boolean {
+  return /iPhone|iPod/i.test(userAgent);
+}
