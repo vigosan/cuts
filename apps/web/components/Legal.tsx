@@ -1,5 +1,5 @@
-import { FFMPEG_FILES, type Content } from "@/content";
-import { link, Page, Paragraph } from "./Page";
+import { CONTACT, FFMPEG_FILES, type Content } from "@/content";
+import { button, link, Page, Paragraph } from "./Page";
 
 export function Privacy({ c }: { c: Content }) {
   return (
@@ -28,6 +28,9 @@ export function Support({ c }: { c: Content }) {
         {c.support.body.map((text) => (
           <Paragraph key={text} text={text} />
         ))}
+        <a data-testid="support-email" href={`mailto:${CONTACT}`} className={`${button} self-start`}>
+          {c.support.email}
+        </a>
       </article>
     </Page>
   );

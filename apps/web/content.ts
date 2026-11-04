@@ -177,6 +177,7 @@ export const content = {
     },
     support: {
       title: "Support",
+      email: "Email support",
       body: [
         `For help, bug reports or feature ideas, write to ${CONTACT}. Please include your system and its version (macOS, Windows, Linux or iOS) and, if you can, the file type of the video you were using.`,
         "Clips are saved by default to Cuts › the name of your video, inside your Movies folder on Mac or your Videos folder on Windows and Linux. You can choose another folder from the Folder field before exporting.",
@@ -369,6 +370,7 @@ export const content = {
     },
     support: {
       title: "Soporte",
+      email: "Escribir a soporte",
       body: [
         `Para ayuda, errores o ideas, escribe a ${CONTACT}. Indica tu sistema y su versión (macOS, Windows, Linux o iOS) y, si puedes, el tipo de archivo del vídeo que usabas.`,
         "Los clips se guardan por defecto en Cuts › el nombre de tu vídeo, dentro de tu carpeta Películas en Mac o Vídeos en Windows y Linux. Puedes elegir otra carpeta en el campo Carpeta antes de exportar.",

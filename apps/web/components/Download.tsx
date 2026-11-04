@@ -4,13 +4,10 @@ import { useEffect, useState } from "react";
 import { APP_STORE, BREW, DOWNLOADS, type Content, type Lang } from "@/content";
 import { formatDownloads } from "@/downloads";
 import { detectOS, isIPhone, type OS } from "@/os";
-import { link } from "./Page";
+import { base, button, link } from "./Page";
 
 const PLATFORMS: OS[] = ["mac", "windows", "linux"];
 
-const base =
-  "inline-flex items-center gap-3 rounded-lg px-5 py-2.5 font-medium transition-[background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950";
-const button = `${base} bg-gray-800 text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white`;
 const outline = `${base} border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:border-gray-500 dark:hover:border-gray-400`;
 
 function ArrowDown() {

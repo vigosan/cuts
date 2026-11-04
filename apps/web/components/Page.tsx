@@ -6,6 +6,10 @@ import { ThemeToggle } from "./ThemeToggle";
 
 export const link = "underline font-medium hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 rounded px-1";
 
+export const base =
+  "inline-flex items-center gap-3 rounded-lg px-5 py-2.5 font-medium transition-[background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950";
+export const button = `${base} bg-gray-800 text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white`;
+
 type Route = keyof Content["routes"];
 
 export function Page({ c, current, children }: { c: Content; current: Route; children: React.ReactNode }) {
