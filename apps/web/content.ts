@@ -7,6 +7,7 @@ export const REPO = "https://github.com/vigosan/cuts";
 export const UPDATED = "2026-11-03";
 export const VERSION = "1.7";
 export const SCREENSHOTS = ["timeline", "framing", "dark"] as const;
+export const IPHONE_SCREENSHOTS = ["cut", "carousel", "framing"] as const;
 export const DARK_SCREENSHOTS = { timeline: "timeline-dark", framing: "framing-dark", dark: "light" } as const;
 export const DROPS_VIDEO = {
   video: "drops.mp4",
@@ -59,7 +60,18 @@ export const content = {
       requirements: { mac: "macOS 13 or later", windows: "Windows 10 or later", linux: "AppImage x86_64" },
       download: { mac: "Download for Mac", windows: "Download for Windows", linux: "Download for Linux", also: "Also for" },
       brew: "Or with Homebrew:",
-      appStore: { text: "Also on the", link: "Mac App Store" },
+      appStore: { link: "Mac App Store" },
+      iphone: {
+        link: "iPhone",
+        title: "Also on your iPhone",
+        text: "Record your set on your phone, cut the best moments into a carousel and post it. No computer needed: the iPhone app suggests the drops, frames each clip and exports the carousel to Photos.",
+        alts: {
+          cut: "Cuts on iPhone: the video, the timeline with ten suggested clips and the carousel",
+          carousel: "The carousel expanded, with every clip in posting order",
+          framing: "Choosing the 9:16 format and the fades for a clip",
+        },
+        soon: "Coming soon to the App Store",
+      },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Version ${VERSION}`,
       downloads: { one: "download", other: "downloads" },
@@ -239,7 +251,18 @@ export const content = {
       requirements: { mac: "macOS 13 o posterior", windows: "Windows 10 o posterior", linux: "AppImage x86_64" },
       download: { mac: "Descargar para Mac", windows: "Descargar para Windows", linux: "Descargar para Linux", also: "También para" },
       brew: "O con Homebrew:",
-      appStore: { text: "También en el", link: "Mac App Store" },
+      appStore: { link: "Mac App Store" },
+      iphone: {
+        link: "iPhone",
+        title: "También en tu iPhone",
+        text: "Graba tu sesión con el móvil, corta los mejores momentos en un carrusel y publícalo. Sin ordenador: la app del iPhone sugiere los subidones, encuadra cada clip y exporta el carrusel a Fotos.",
+        alts: {
+          cut: "Cuts en el iPhone: el vídeo, la línea de tiempo con diez clips sugeridos y el carrusel",
+          carousel: "El carrusel ampliado, con todos los clips en el orden de publicación",
+          framing: "Eligiendo el formato 9:16 y los fundidos de un clip",
+        },
+        soon: "Muy pronto en la App Store",
+      },
       platforms: { mac: "Mac", windows: "Windows", linux: "Linux" },
       version: `Versión ${VERSION}`,
       downloads: { one: "descarga", other: "descargas" },

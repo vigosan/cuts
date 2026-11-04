@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { APP_STORE, BREW, content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
+import { APP_STORE, BREW, content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, IPHONE_SCREENSHOTS, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -41,6 +41,7 @@ describe("site content", () => {
   it("has every screenshot the home page shows, in both languages", () => {
     for (const lang of LANGS) {
       for (const name of SCREENSHOTS) expect(existsSync(`public/screenshots/${lang}-${name}.png`), `${lang}-${name}`).toBe(true);
+      for (const name of IPHONE_SCREENSHOTS) expect(existsSync(`public/screenshots/${lang}-iphone-${name}.png`), `${lang}-iphone-${name}`).toBe(true);
     }
   });
 

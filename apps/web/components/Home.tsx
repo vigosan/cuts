@@ -2,6 +2,7 @@ import { DARK_SCREENSHOTS, DROPS_VIDEO, type Content } from "@/content";
 import { fetchDownloads } from "@/downloads";
 import { splitKeys } from "@/keys";
 import { Download } from "./Download";
+import { IPhone } from "./IPhone";
 import { LoopVideo } from "./LoopVideo";
 import { Page } from "./Page";
 import { frame, Screenshot } from "./Screenshot";
@@ -137,6 +138,7 @@ export async function Home({ c }: { c: Content }) {
           />
         </div>
       </article>
+      <IPhone c={c} />
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.privacyTitle}</h2>
         <p className="text-xl font-medium tracking-tight text-balance text-gray-900 sm:text-3xl dark:text-gray-50">{c.home.privacy}</p>
