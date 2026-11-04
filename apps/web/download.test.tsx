@@ -29,12 +29,12 @@ describe("download", () => {
     expect(html).toContain(content.es.home.iphone.requirements);
   });
 
-  it("the iPhone section ends with the same download button as the hero, so it reads as a download and not as a footnote", () => {
+  it("the iPhone section ends with Apple's App Store badge rather than a second big button competing with the main download", () => {
     const html = renderToStaticMarkup(<IPhone c={content.es} />);
     expect(html).toContain('id="iphone"');
-    expect(html).toContain(`data-testid="iphone-app-store" href="${APP_STORE}"`);
+    expect(html).toMatch(new RegExp(`data-testid="iphone-app-store" href="${APP_STORE}"[^>]*><img src="/badges/app-store-es.svg" alt="${content.es.home.iphone.download}"`));
     expect(html).toContain(content.es.home.iphone.requirements);
-    expect(html).toContain(content.es.home.free);
-    expect(html.match(/<img /g)).toHaveLength(IPHONE_SCREENSHOTS.length);
+    expect(html).not.toContain(content.es.home.version);
+    expect(html.match(/<img /g)).toHaveLength(IPHONE_SCREENSHOTS.length + 1);
   });
 });

@@ -21,7 +21,7 @@ function ArrowDown() {
   );
 }
 
-function Meta({ items }: { items: string[] }) {
+export function Meta({ items }: { items: string[] }) {
   return (
     <p className="flex flex-wrap justify-center gap-x-4 font-mono text-xs text-gray-500 dark:text-gray-400">
       {items.map((item) => (
@@ -31,10 +31,10 @@ function Meta({ items }: { items: string[] }) {
   );
 }
 
-export function PhoneDownload({ home, testId = "download" }: { home: Content["home"]; testId?: string }) {
+export function PhoneDownload({ home }: { home: Content["home"] }) {
   return (
     <div className="flex flex-col items-center gap-3">
-      <a data-testid={testId} href={APP_STORE} className={button}>
+      <a data-testid="download" href={APP_STORE} className={button}>
         <ArrowDown />
         {home.iphone.download}
       </a>
