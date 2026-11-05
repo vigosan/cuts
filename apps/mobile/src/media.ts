@@ -1,7 +1,8 @@
 import type { AudioFade, VideoFade } from '@cuts/core/fades'
 import type { OutputFormat } from '@cuts/core/formats'
 import type { Framing } from '@cuts/core/framing'
-import CutsMedia, { type NativeAsset } from '../modules/cuts-media'
+import type { ExportOverlay } from '@cuts/core/overlay'
+import CutsMedia, { type NativeAsset, type NativeOverlayFields } from '../modules/cuts-media'
 
 export type AssetInfo = NativeAsset
 
@@ -18,15 +19,23 @@ export type ExportJob = {
   videoFadeIn: boolean
   fileName: string
   position: number
+  overlay?: ExportOverlay
 }
 
-export type FrameJob = { format: OutputFormat; framing: Framing; cropX: number; cropY: number }
+export type FrameJob = { format: OutputFormat; framing: Framing; cropX: number; cropY: number; overlay?: ExportOverlay }
+
+function withOverlay<T extends { overlay?: ExportOverlay }>({ overlay, ...job }: T): Omit<T, 'overlay'> & NativeOverlayFields {
+  if (!overlay) return job
+  return { ...job, overlayPath: overlay.path, overlayX: overlay.x, overlayY: overlay.y, overlayWidth: overlay.width }
+}
 
 export const requestLibraryAccess = () => CutsMedia.requestLibraryAccess()
 
 export const pickVideo = () => CutsMedia.pickVideo()
 
 export const pickFile = () => CutsMedia.pickFile()
+
+export const pickOverlay = (source: 'files' | 'photos') => CutsMedia.pickOverlay(source)
 
 export async function openAsset(id: string, onDownload: (ratio: number) => void): Promise<AssetInfo> {
   const subscription = CutsMedia.addListener('onDownload', (event) => event.id === id && onDownload(event.ratio))
@@ -51,7 +60,7 @@ export const thumbnail = (id: string, time: number, height: number) => CutsMedia
 export async function exportClip(id: string, job: ExportJob, onProgress: (ratio: number) => void): Promise<string> {
   const subscription = CutsMedia.addListener('onExportProgress', (event) => onProgress(event.ratio))
   try {
-    return await CutsMedia.exportClip(id, job)
+    return await CutsMedia.exportClip(id, withOverlay(job))
   } finally {
     subscription.remove()
   }
@@ -61,4 +70,4 @@ export const cancelExport = () => CutsMedia.cancelExport()
 
 export const saveToCutsAlbum = (uris: string[]) => CutsMedia.saveToCutsAlbum(uris)
 
-export const saveFrame = (id: string, time: number, job: FrameJob) => CutsMedia.saveFrame(id, time, job)
+export const saveFrame = (id: string, time: number, job: FrameJob) => CutsMedia.saveFrame(id, time, withOverlay(job))

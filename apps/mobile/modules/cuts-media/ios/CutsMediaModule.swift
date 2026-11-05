@@ -1,5 +1,6 @@
 import AVFoundation
 import ExpoModulesCore
+import ImageIO
 import Photos
 import PhotosUI
 import UniformTypeIdentifiers
@@ -47,6 +48,7 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
   private var openRequests: [String: PHImageRequestID] = [:]
   private var cancelledFiles: Set<String> = []
   private var documentPicker: DocumentPickerDelegate?
+  private var overlayPicker: OverlayPickerDelegate?
   private let files = FileBookmarks()
   private static let posterDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("posters")
 
@@ -63,6 +65,7 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
 
   private static let exportDir = FileManager.default.temporaryDirectory.appendingPathComponent("exports")
   private static let thumbDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("thumbs")
+  private static let overlayDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("overlays")
 
   public func definition() -> ModuleDefinition {
     Name("CutsMedia")
@@ -105,6 +108,47 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
       self.documentPicker = delegate
       controller.delegate = delegate
       self.appContext?.utilities?.currentViewController()?.present(controller, animated: true)
+    }.runOnQueue(.main)
+
+    AsyncFunction("pickOverlay") { (source: String, promise: Promise) in
+      let finish = { (data: Data?, name: String) in
+        guard let data else { return promise.resolve("invalid") }
+        do {
+          guard let stored = try Self.storeOverlay(data, name: name) else { return promise.resolve("invalid") }
+          promise.resolve(stored)
+        } catch { promise.reject(error) }
+      }
+      let presenter = self.appContext?.utilities?.currentViewController()
+      if source == "photos" {
+        var configuration = PHPickerConfiguration()
+        configuration.filter = .images
+        configuration.selectionLimit = 1
+        configuration.preferredAssetRepresentationMode = .current
+        let controller = PHPickerViewController(configuration: configuration)
+        let delegate = OverlayPickerDelegate { provider in
+          self.overlayPicker = nil
+          guard let provider else { return promise.resolve(nil) }
+          let type = provider.hasItemConformingToTypeIdentifier(UTType.png.identifier) ? UTType.png : UTType.image
+          let base = provider.suggestedName ?? "overlay"
+          provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, _ in
+            finish(data, base.lowercased().hasSuffix(".png") ? base : base + ".png")
+          }
+        }
+        self.overlayPicker = delegate
+        controller.delegate = delegate
+        presenter?.present(controller, animated: true)
+        return
+      }
+      let controller = UIDocumentPickerViewController(forOpeningContentTypes: [.png], asCopy: true)
+      controller.allowsMultipleSelection = false
+      let delegate = DocumentPickerDelegate { url in
+        self.documentPicker = nil
+        guard let url else { return promise.resolve(nil) }
+        finish(try? Data(contentsOf: url), url.lastPathComponent)
+      }
+      self.documentPicker = delegate
+      controller.delegate = delegate
+      presenter?.present(controller, animated: true)
     }.runOnQueue(.main)
 
     AsyncFunction("openAsset") { (id: String) -> [String: Any] in
@@ -193,6 +237,23 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
 }
 
 extension CutsMediaModule {
+  fileprivate static func storeOverlay(_ data: Data, name: String) throws -> [String: Any]? {
+    guard let image = CGImageSourceCreateWithData(data as CFData, nil),
+          CGImageSourceGetType(image) as String? == UTType.png.identifier,
+          let properties = CGImageSourceCopyPropertiesAtIndex(image, 0, nil) as? [CFString: Any],
+          let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
+          let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue,
+          width > 0, height > 0
+    else { return nil }
+    let manager = FileManager.default
+    try manager.createDirectory(at: overlayDir, withIntermediateDirectories: true)
+    let older = (try? manager.contentsOfDirectory(at: overlayDir, includingPropertiesForKeys: nil)) ?? []
+    let file = overlayDir.appendingPathComponent("overlay-\(Int(Date().timeIntervalSince1970 * 1000)).png")
+    try data.write(to: file, options: .atomic)
+    older.forEach { try? manager.removeItem(at: $0) }
+    return ["path": file.absoluteString, "aspect": height / width, "name": name]
+  }
+
   fileprivate func openFile(_ id: String) async throws -> [String: Any] {
     lock.withLock { _ = cancelledFiles.remove(id) }
     let url = try files.url(for: id)
@@ -230,6 +291,19 @@ final class DocumentPickerDelegate: NSObject, UIDocumentPickerDelegate {
 
   func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
     done(nil)
+  }
+}
+
+final class OverlayPickerDelegate: NSObject, PHPickerViewControllerDelegate {
+  private let done: (NSItemProvider?) -> Void
+
+  init(done: @escaping (NSItemProvider?) -> Void) {
+    self.done = done
+  }
+
+  func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+    picker.dismiss(animated: true)
+    done(results.first?.itemProvider)
   }
 }
 

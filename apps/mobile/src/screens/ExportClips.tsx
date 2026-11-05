@@ -1,16 +1,24 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
+import { defaultPlacement, outputFrame } from '@cuts/core/overlay'
 import { ExportSheet } from '../components/ExportSheet'
 import { useEditor } from '../editor/session'
 import { t } from '../i18n'
+import { pickOverlay } from '../media'
 import { useTheme } from '../theme'
 
 export function ExportClips({ onClose, onlySelected = false }: { onClose: () => void; onlySelected?: boolean }) {
   const theme = useTheme()
-  const { clips, selectedClip, exportLabel, format, setFormat, baseName, setBaseName, exporting, startExport, stopExport, resetExport } = useEditor()
+  const { asset, clips, selectedClip, exportLabel, format, setFormat, overlay, setOverlay, baseName, setBaseName, exporting, startExport, stopExport, resetExport } = useEditor()
+  const [overlayInvalid, setOverlayInvalid] = useState(false)
   const running = exporting.status === 'running'
   const only = onlySelected ? selectedClip : null
   useEffect(() => resetExport, [resetExport])
+  const chooseOverlay = async (source: 'files' | 'photos') => {
+    const chosen = await pickOverlay(source).catch(() => 'invalid' as const)
+    setOverlayInvalid(chosen === 'invalid')
+    if (chosen && chosen !== 'invalid') setOverlay({ ...chosen, ...defaultPlacement(chosen.aspect, outputFrame(format, asset)) })
+  }
   return (
     <>
       <Stack.Screen options={{ gestureEnabled: !running }} />
@@ -21,6 +29,10 @@ export function ExportClips({ onClose, onlySelected = false }: { onClose: () => 
         baseName={baseName}
         state={exporting}
         onFormat={setFormat}
+        overlay={overlay}
+        overlayInvalid={overlayInvalid}
+        onChooseOverlay={(source) => void chooseOverlay(source)}
+        onRemoveOverlay={() => setOverlay(null)}
         onName={setBaseName}
         onStart={() => void startExport(only?.id)}
         onStop={stopExport}

@@ -5,13 +5,14 @@ import { defaultBaseName, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import type { OutputFormat } from '@cuts/core/formats'
+import type { Overlay } from '@cuts/core/overlay'
 import { suggestMoments } from '@cuts/core/suggest'
 import type { ExportState } from '../components/ExportSheet'
 import { haptics } from '../haptics'
 import { t } from '../i18n'
 import { cancelExport, exportClip, readPeaks, saveToCutsAlbum, type AssetInfo } from '../media'
 import { editorReducer, initialEditor, settingsOf, type EditorAction, type EditorState } from './editor'
-import { exportJobs } from './export-jobs'
+import { exportJobs, exportOverlay } from './export-jobs'
 import { runExport } from './export-run'
 import { loadPreferences, savePreferences } from './preferences'
 import { loadSession, saveSession, touchRecent, type KeyValue } from './sessions'
@@ -30,6 +31,8 @@ export type EditorSession = {
   setBaseName: (name: string) => void
   format: OutputFormat
   setFormat: (format: OutputFormat) => void
+  overlay: Overlay | null
+  setOverlay: (overlay: Overlay | null) => void
   peaks: Float32Array | null
   suggest: () => Promise<void>
   exportLabel: string
@@ -64,6 +67,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   )
   const [baseName, setBaseName] = useState(() => stored?.baseName ?? defaultBaseName(asset.name))
   const [format, setFormatState] = useState(preferences.format)
+  const [overlay, setOverlay] = useState(preferences.overlay)
   const [exporting, setExporting] = useState<ExportState>({ status: 'idle' })
   const [progress, setProgress] = useState<Record<string, number>>({})
   const [peaks, setPeaks] = useState<Float32Array | null>(null)
@@ -87,6 +91,8 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   }, [store, asset, clips, state.clipSettings, state.defaultSettings, baseName])
 
   useEffect(() => savePreferences(store, { settings: state.defaultSettings }), [store, state.defaultSettings])
+
+  useEffect(() => savePreferences(store, { overlay }), [store, overlay])
 
   useEffect(() => {
     if (exporting.status !== 'running') return
@@ -120,7 +126,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   }
 
   const startExport = async (only?: string) => {
-    const jobs = exportJobs(clips, (id) => settingsOf(state, id), format, baseName, only)
+    const jobs = exportJobs(clips, (id) => settingsOf(state, id), format, baseName, only, exportOverlay(overlay, format, asset))
     const ids = jobs.map((job) => clips[job.position].id)
     stopped.current = false
     setProgress({})
@@ -154,6 +160,8 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
       setFormatState(next)
       savePreferences(store, { format: next })
     },
+    overlay,
+    setOverlay,
     peaks,
     suggest,
     exportLabel: t.exportClips(clips.length),

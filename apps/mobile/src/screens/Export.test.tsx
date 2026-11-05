@@ -1,13 +1,14 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
-import { AppState, Linking } from 'react-native'
+import { ActionSheetIOS, AppState, Linking } from 'react-native'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import * as Haptics from 'expo-haptics'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
-import { savePreferences } from '../editor/preferences'
+import { loadPreferences, savePreferences } from '../editor/preferences'
 import { loadSession, saveSession } from '../editor/sessions'
 import { t } from '../i18n'
 import { CutHarness, pressMenuAction } from '../test-utils/CutHarness'
+import { defaultPlacement } from '@cuts/core/overlay'
 
 const native = jest.mocked(CutsMedia)
 const asset = { id: 'A1', name: 'set.mov', duration: 600, width: 1920, height: 1080, frameRate: 25, uri: 'file:///set.mov' }
@@ -201,4 +202,83 @@ it('while exporting, the sheet asks to keep Cuts open', async () => {
   await fireEvent.press(screen.getByTestId('export'))
   await fireEvent.press(screen.getByTestId('start-export'))
   expect(screen.getByText(t.mobile.keepOpen)).toBeTruthy()
+})
+
+const logo = { path: 'file:///overlays/overlay-1.png', aspect: 0.5, name: 'logo.png' }
+
+const pickFrom = (button: number) =>
+  jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation((_options, callback) => callback(button))
+
+it('with no overlay the export sheet offers Add…', async () => {
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('export'))
+  expect(screen.getByTestId('overlay-add')).toHaveTextContent(t.overlayAdd)
+  expect(screen.queryByTestId('overlay')).toBeNull()
+})
+
+it('Add… offers Files and Photos, and a picked PNG shows its name, sits on the stage and is remembered', async () => {
+  const sheet = pickFrom(2)
+  native.pickOverlay.mockResolvedValueOnce(logo)
+  const store = storeWith(twoClips, '4:5')
+  await renderCut(store)
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('overlay-add'))
+  expect(sheet.mock.calls[0][0].options).toEqual([t.cancel, t.mobile.overlayFromFiles, t.mobile.overlayFromPhotos])
+  expect(native.pickOverlay).toHaveBeenCalledWith('photos')
+  expect(await screen.findByTestId('overlay-name')).toHaveTextContent('logo.png')
+  expect(screen.getByTestId('overlay-remove')).toBeTruthy()
+  expect(screen.getByTestId('overlay')).toBeTruthy()
+  expect(loadPreferences(store).overlay).toEqual({ ...logo, ...defaultPlacement(logo.aspect, { width: 1080, height: 1350 }) })
+})
+
+it('cancelling the action sheet or the picker leaves things as they were', async () => {
+  pickFrom(0)
+  await renderCut(storeWith(twoClips))
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('overlay-add'))
+  expect(native.pickOverlay).not.toHaveBeenCalled()
+  expect(screen.getByTestId('overlay-add')).toBeTruthy()
+})
+
+it('a file that is not a PNG says so and keeps the previous overlay', async () => {
+  pickFrom(1)
+  const store = storeWith(twoClips)
+  savePreferences(store, { overlay: { ...logo, x: 0.1, y: 0.1, width: 0.25 } })
+  native.pickOverlay.mockResolvedValueOnce('invalid')
+  await renderCut(store)
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('overlay-change'))
+  expect(native.pickOverlay).toHaveBeenCalledWith('files')
+  expect(await screen.findByText(t.overlayInvalid)).toBeTruthy()
+  expect(screen.getByTestId('overlay-name')).toHaveTextContent('logo.png')
+  expect(loadPreferences(store).overlay?.path).toBe(logo.path)
+})
+
+it('✕ removes the overlay from the stage and from the preferences', async () => {
+  const store = storeWith(twoClips)
+  savePreferences(store, { overlay: { ...logo, x: 0.1, y: 0.1, width: 0.25 } })
+  await renderCut(store)
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('overlay-remove'))
+  expect(screen.getByTestId('overlay-add')).toBeTruthy()
+  expect(screen.queryByTestId('overlay')).toBeNull()
+  expect(loadPreferences(store).overlay).toBeNull()
+})
+
+it('every exported clip carries the overlay clamped to the chosen format, so it never leaves the frame', async () => {
+  const store = storeWith(twoClips, '4:5')
+  savePreferences(store, { overlay: { ...logo, x: 0.9, y: 0.1, width: 0.25 } })
+  await renderCut(store)
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('start-export'))
+  const sent = { overlayPath: logo.path, overlayX: 0.75, overlayY: 0.1, overlayWidth: 0.25 }
+  expect(native.exportClip.mock.calls.map(([, job]) => job)).toEqual([expect.objectContaining(sent), expect.objectContaining(sent)])
+})
+
+it('the saved frame photo carries the overlay too, so the cover matches the clips', async () => {
+  const store = storeWith(twoClips)
+  savePreferences(store, { overlay: { ...logo, x: 0.1, y: 0.1, width: 0.25 } })
+  await renderCut(store)
+  await pressMenuAction(t.mobile.saveFrame)
+  expect(native.saveFrame).toHaveBeenCalledWith('A1', expect.any(Number), expect.objectContaining({ overlayPath: logo.path, overlayX: 0.1, overlayY: 0.1, overlayWidth: 0.25 }))
 })

@@ -19,14 +19,19 @@ export type NativeJob = {
   fadeSeconds: number
   videoFadeIn: boolean
   fileName: string
-}
+} & NativeOverlayFields
 
-export type NativeFrameJob = { format: string; framing: string; cropX: number; cropY: number }
+export type NativeOverlayFields = { overlayPath?: string; overlayX?: number; overlayY?: number; overlayWidth?: number }
+
+export type NativeFrameJob = { format: string; framing: string; cropX: number; cropY: number } & NativeOverlayFields
+
+export type NativeOverlay = { path: string; aspect: number; name: string }
 
 declare class CutsMediaModule extends NativeModule<Events> {
   requestLibraryAccess(): Promise<'granted' | 'limited' | 'denied'>
   pickVideo(): Promise<string | null>
   pickFile(): Promise<string | null>
+  pickOverlay(source: 'files' | 'photos'): Promise<NativeOverlay | 'invalid' | null>
   openAsset(id: string): Promise<NativeAsset>
   cancelOpen(id: string): void
   poster(id: string, height: number): Promise<string>

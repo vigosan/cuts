@@ -15,6 +15,7 @@ import { Stage } from '../components/Stage'
 import { Timeline } from '../components/Timeline'
 import { endHere, startHere } from '../editor/marks'
 import { panelExpanded, panelOffset } from '../editor/physics'
+import { exportOverlay } from '../editor/export-jobs'
 import { useEditor } from '../editor/session'
 import { t } from '../i18n'
 import { saveFrame } from '../media'
@@ -32,7 +33,7 @@ type Props = { onBack: () => void; onOpenSheet: (sheet: SheetKind) => void }
 
 export function Cut({ onBack, onOpenSheet }: Props) {
   const theme = useTheme()
-  const { asset, state, dispatch, clips, selectedClip, shownSettings, baseName, format, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
+  const { asset, state, dispatch, clips, selectedClip, shownSettings, baseName, format, overlay, setOverlay, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
   const player = useVideoPlayer(asset.uri, (created) => {
     created.timeUpdateEventInterval = 0.1
   })
@@ -95,7 +96,13 @@ export function Cut({ onBack, onOpenSheet }: Props) {
   }
 
   const saveCurrentFrame = async () => {
-    await saveFrame(asset.id, player.currentTime, { format, framing: shownSettings.framing, cropX: shownSettings.cropX, cropY: shownSettings.cropY })
+    await saveFrame(asset.id, player.currentTime, {
+      format,
+      framing: shownSettings.framing,
+      cropX: shownSettings.cropX,
+      cropY: shownSettings.cropY,
+      overlay: exportOverlay(overlay, format, asset)
+    })
     setNotice(t.mobile.frameSaved)
   }
 
@@ -124,6 +131,9 @@ export function Cut({ onBack, onOpenSheet }: Props) {
           settings={shownSettings}
           currentTime={currentTime}
           onCrop={(zone) => dispatch({ type: 'settings', change: zone })}
+          overlay={overlay}
+          onOverlay={(placement) => overlay && setOverlay({ ...overlay, ...placement })}
+          onOverlayMissing={() => setOverlay(null)}
         />
         {!expanded && (
           <View onLayout={(event) => setTravel(event.nativeEvent.layout.height + 8)} style={{ gap: 8 }}>

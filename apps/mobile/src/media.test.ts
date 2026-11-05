@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
+const native = vi.hoisted(() => ({ exportClip: vi.fn(async () => 'file:///tmp/set-1.mp4'), saveFrame: vi.fn(async () => {}) }))
+
 vi.mock('../modules/cuts-media', () => ({
   default: {
+    saveFrame: native.saveFrame,
     readPeaks: async () => [0.1, 0.5, 0.25],
-    exportClip: async () => 'file:///tmp/set-1.mp4',
+    exportClip: native.exportClip,
     addListener: (_: string, listener: (event: { ratio: number }) => void) => {
       listener({ ratio: 0.5 })
       return { remove: () => {} }
@@ -24,5 +27,21 @@ describe('media', () => {
     const seen: number[] = []
     await exportClip('asset', {} as never, (ratio) => seen.push(ratio))
     expect(seen).toEqual([0.5])
+  })
+
+  it('sends the overlay as the flat fields the native record reads', async () => {
+    const { exportClip, saveFrame } = await import('./media')
+    const overlay = { path: 'file:///overlays/overlay-1.png', x: 0.1, y: 0.2, width: 0.3 }
+    const fields = { overlayPath: overlay.path, overlayX: 0.1, overlayY: 0.2, overlayWidth: 0.3 }
+    await exportClip('asset', { fileName: 'set-1.mp4', overlay } as never, () => {})
+    await saveFrame('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5, overlay })
+    expect(native.exportClip).toHaveBeenLastCalledWith('asset', { fileName: 'set-1.mp4', ...fields })
+    expect(native.saveFrame).toHaveBeenLastCalledWith('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5, ...fields })
+  })
+
+  it('without an overlay the native call gets no overlay fields, so it exports as before', async () => {
+    const { saveFrame } = await import('./media')
+    await saveFrame('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5 })
+    expect(native.saveFrame).toHaveBeenLastCalledWith('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5 })
   })
 })
