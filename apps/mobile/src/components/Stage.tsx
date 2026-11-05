@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Image, View, type LayoutChangeEvent } from 'react-native'
-import { GestureDetector, usePanGesture, usePinchGesture, useSimultaneousGestures } from 'react-native-gesture-handler'
+import { GestureDetector, usePanGesture, usePinchGesture, type PanGesture } from 'react-native-gesture-handler'
 import { VideoView, type VideoPlayer } from 'expo-video'
 import { cropBox, dragCrop, videoBox, type Box } from '@cuts/core/crop'
 import type { ClipSettings } from '@cuts/core/fades'
@@ -43,44 +43,99 @@ const DIM = 'rgba(0,0,0,0.55)'
 export function Stage({ player, asset, format, settings, currentTime, onCrop, overlay, onOverlay, onOverlayMissing }: Props) {
   const [size, setSize] = useState({ width: 0, height: 0 })
   const target = formatSize(format)
+  const frame = previewFrame(size, asset, target ?? null, settings.framing, settings)
+  const output = outputFrame(format, asset)
+  const touch = useOverlayTouch(overlay, frame, output, onOverlay)
   const video = <VideoView player={player} nativeControls={false} allowsVideoFrameAnalysis={false} contentFit="contain" style={{ flex: 1 }} />
   return (
-    <View
-      testID="stage"
-      onLayout={(event: LayoutChangeEvent) => setSize(event.nativeEvent.layout)}
-      style={{ aspectRatio: 16 / 9, borderRadius: 14, overflow: 'hidden', backgroundColor: '#000' }}
-    >
-      {!target || !size.width ? (
-        video
-      ) : settings.framing === 'fit' ? (
-        <FitPreview box={videoBox(size.width, size.height, target.width, target.height)} assetId={asset.id} time={currentTime}>
-          {video}
-        </FitPreview>
-      ) : (
-        <>
-          {video}
-          <CropFrame
-            video={videoBox(size.width, size.height, asset.width, asset.height)}
-            target={target}
-            zone={{ cropX: settings.cropX, cropY: settings.cropY }}
-            onCrop={onCrop}
-          />
-        </>
-      )}
-      {overlay && size.width > 0 && (
-        <OverlayLayer
-          frame={previewFrame(size, asset, target ?? null, settings.framing, settings)}
-          output={outputFrame(format, asset)}
-          overlay={overlay}
-          onChange={onOverlay}
-          onMissing={onOverlayMissing}
-        />
-      )}
-    </View>
+    <GestureDetector gesture={touch.pinch}>
+      <View
+        testID="stage"
+        onLayout={(event: LayoutChangeEvent) => setSize(event.nativeEvent.layout)}
+        style={{ aspectRatio: 16 / 9, borderRadius: 14, overflow: 'hidden', backgroundColor: '#000' }}
+      >
+        {!target || !size.width ? (
+          video
+        ) : settings.framing === 'fit' ? (
+          <FitPreview box={videoBox(size.width, size.height, target.width, target.height)} assetId={asset.id} time={currentTime}>
+            {video}
+          </FitPreview>
+        ) : (
+          <>
+            {video}
+            <CropFrame
+              video={videoBox(size.width, size.height, asset.width, asset.height)}
+              target={target}
+              zone={{ cropX: settings.cropX, cropY: settings.cropY }}
+              onCrop={onCrop}
+            />
+          </>
+        )}
+        {overlay && size.width > 0 && <OverlayLayer frame={frame} output={output} overlay={overlay} pan={touch.pan} guides={touch.guides} onMissing={onOverlayMissing} />}
+      </View>
+    </GestureDetector>
   )
 }
 
-type OverlayProps = { frame: Box; output: Size; overlay: Overlay; onChange: (placement: OverlayPlacement) => void; onMissing: () => void }
+function useOverlayTouch(overlay: Overlay | null, frame: Box, output: Size, onChange: (placement: OverlayPlacement) => void) {
+  const [guides, setGuides] = useState<Guide[]>([])
+  const none = { x: 0, y: 0, width: 0 }
+  const touch = useRef({ active: 0, start: none, last: none, x: 0, y: 0, fromX: 0, fromY: 0, scale: 1, fromScale: 1 })
+  const begin = () => {
+    if (!overlay) return
+    const current = touch.current
+    const start = current.active++ === 0 ? clampPlacement(overlay, overlay.aspect, output) : current.last
+    Object.assign(current, { start, last: start, fromX: current.x, fromY: current.y, fromScale: current.scale })
+  }
+  const end = () => {
+    touch.current.active = Math.max(0, touch.current.active - 1)
+    if (touch.current.active === 0) setGuides([])
+  }
+  const update = () => {
+    if (!overlay) return
+    const { start, x, y, fromX, fromY, scale, fromScale } = touch.current
+    const dx = x - fromX
+    const dy = y - fromY
+    const ratio = scale / fromScale
+    const moved = dx || dy ? moveOverlay(start, dx, dy, overlay.aspect, output) : { placement: start, guides: [] }
+    setGuides(ratio === 1 ? heldGuides(moved.placement, moved.guides, overlay.aspect, output) : [])
+    touch.current.last = ratio === 1 ? moved.placement : scaleOverlay(moved.placement, ratio, overlay.aspect, output)
+    onChange(touch.current.last)
+  }
+  const pinch = usePinchGesture({
+    runOnJS: true,
+    testID: 'overlay-pinch',
+    enabled: overlay !== null,
+    onActivate: () => {
+      begin()
+      Object.assign(touch.current, { scale: 1, fromScale: 1 })
+    },
+    onUpdate: (event) => {
+      touch.current.scale = event.scale
+      update()
+    },
+    onDeactivate: end
+  })
+  const pan = usePanGesture({
+    runOnJS: true,
+    testID: 'overlay-pan',
+    hitSlop: 20,
+    simultaneousWith: pinch,
+    onActivate: () => {
+      begin()
+      Object.assign(touch.current, { x: 0, y: 0, fromX: 0, fromY: 0 })
+    },
+    onUpdate: (event) => {
+      touch.current.x = event.translationX / frame.width
+      touch.current.y = event.translationY / frame.height
+      update()
+    },
+    onDeactivate: end
+  })
+  return { pinch, pan, guides }
+}
+
+type OverlayProps = { frame: Box; output: Size; overlay: Overlay; pan: PanGesture; guides: Guide[]; onMissing: () => void }
 
 function guideStyle(guide: Guide, frame: Box) {
   const margin = OVERLAY_MARGIN * frame.width
@@ -100,53 +155,15 @@ function guideStyle(guide: Guide, frame: Box) {
   }
 }
 
-function OverlayLayer({ frame, output, overlay, onChange, onMissing }: OverlayProps) {
+function OverlayLayer({ frame, output, overlay, pan, guides, onMissing }: OverlayProps) {
   const theme = useTheme()
-  const [guides, setGuides] = useState<Guide[]>([])
-  const placement = clampPlacement(overlay, overlay.aspect, output)
-  const box = overlayBox(frame, placement, overlay.aspect)
-  const touch = useRef({ active: 0, start: placement, dx: 0, dy: 0, scale: 1 })
-  const begin = () => {
-    if (touch.current.active++ === 0) touch.current = { active: 1, start: placement, dx: 0, dy: 0, scale: 1 }
-  }
-  const end = () => {
-    touch.current.active = Math.max(0, touch.current.active - 1)
-    if (touch.current.active === 0) setGuides([])
-  }
-  const update = () => {
-    const { start, dx, dy, scale } = touch.current
-    const moved = dx || dy ? moveOverlay(start, dx, dy, overlay.aspect, output) : { placement: start, guides: [] }
-    setGuides(scale === 1 ? heldGuides(moved.placement, moved.guides, overlay.aspect, output) : [])
-    onChange(scale === 1 ? moved.placement : scaleOverlay(moved.placement, scale, overlay.aspect, output))
-  }
-  const pan = usePanGesture({
-    runOnJS: true,
-    testID: 'overlay-pan',
-    onActivate: begin,
-    onUpdate: (event) => {
-      touch.current.dx = event.translationX / frame.width
-      touch.current.dy = event.translationY / frame.height
-      update()
-    },
-    onDeactivate: end
-  })
-  const pinch = usePinchGesture({
-    runOnJS: true,
-    testID: 'overlay-pinch',
-    onActivate: begin,
-    onUpdate: (event) => {
-      touch.current.scale = event.scale
-      update()
-    },
-    onDeactivate: end
-  })
-  const gesture = useSimultaneousGestures(pan, pinch)
+  const box = overlayBox(frame, clampPlacement(overlay, overlay.aspect, output), overlay.aspect)
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', inset: 0 }}>
       {guides.map((guide) => (
         <View key={guide} testID={`overlay-guide-${guide}`} pointerEvents="none" style={{ position: 'absolute', backgroundColor: theme.accent, ...guideStyle(guide, frame) }} />
       ))}
-      <GestureDetector gesture={gesture}>
+      <GestureDetector gesture={pan}>
         <View testID="overlay" style={{ position: 'absolute', left: box.left, top: box.top, width: box.width, height: box.height }}>
           <Image testID="overlay-image" source={{ uri: overlayUri(overlay.path) }} onError={onMissing} resizeMode="stretch" style={{ width: '100%', height: '100%' }} />
         </View>

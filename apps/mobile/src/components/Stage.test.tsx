@@ -101,6 +101,38 @@ it('moving and pinching at once keeps both, so a two-finger gesture places and s
   expect(onOverlay).toHaveBeenLastCalledWith(scaleOverlay(moved, 1.5, overlay.aspect, asset))
 })
 
+it('a second pinch while still dragging carries on from the size the first one left, so the logo does not jump', async () => {
+  const { onOverlay } = await renderStage('original', 'crop')
+  const pan = createGestureController('overlay-pan')
+  const pinch = createGestureController('overlay-pinch')
+  await act(async () => {
+    pan.begin({ translationX: 0, translationY: 0 })
+    pan.activate({ translationX: 0, translationY: 0 })
+    pan.update({ translationX: 38.4, translationY: 21.6 })
+    pinch.begin({ scale: 1 })
+    pinch.activate({ scale: 1 })
+    pinch.update({ scale: 1.5 })
+    pinch.end({ scale: 1.5 })
+    pinch.begin({ scale: 1 })
+    pinch.activate({ scale: 1 })
+    pinch.update({ scale: 1 })
+  })
+  const moved = moveOverlay(overlay, 0.1, 0.1, overlay.aspect, asset).placement
+  expect(onOverlay).toHaveBeenLastCalledWith(scaleOverlay(moved, 1.5, overlay.aspect, asset))
+})
+
+it('the pinch listens on the whole stage, since a logo a few points wide is too small to pinch on', async () => {
+  await renderStage('9:16', 'crop')
+  const pinch = getByGestureTestId('overlay-pinch') as unknown as { handlerTag: number }
+  expect(screen.getByTestId('stage').parent?.props.handlerTags).toContain(pinch.handlerTag)
+})
+
+it('the one-finger drag reaches past the edges of the logo, so a tiny logo can still be grabbed', async () => {
+  await renderStage('9:16', 'crop')
+  const pan = getByGestureTestId('overlay-pan') as unknown as { config: { hitSlop?: number } }
+  expect(pan.config.hitSlop).toBeGreaterThanOrEqual(16)
+})
+
 it('pinching resizes it around its centre, keeping the PNG aspect ratio', async () => {
   const { onOverlay } = await renderStage('original', 'crop')
   await act(async () =>
