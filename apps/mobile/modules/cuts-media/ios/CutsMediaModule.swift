@@ -36,7 +36,8 @@ struct FrameRecord: Record {
 
 private func overlaySpec(path: String, x: Double, y: Double, width: Double) -> OverlaySpec? {
   guard !path.isEmpty else { return nil }
-  let url = path.hasPrefix("file://") ? URL(string: path) : URL(fileURLWithPath: path)
+  let url = path.hasPrefix("file://") ? URL(string: path)
+    : path.contains("/") ? URL(fileURLWithPath: path) : CutsMediaModule.overlayDir.appendingPathComponent(path)
   return url.map { OverlaySpec(url: $0, x: x, y: y, width: width) }
 }
 
@@ -65,12 +66,14 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
 
   private static let exportDir = FileManager.default.temporaryDirectory.appendingPathComponent("exports")
   private static let thumbDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("thumbs")
-  private static let overlayDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("overlays")
+  static let overlayDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("overlays", isDirectory: true)
 
   public func definition() -> ModuleDefinition {
     Name("CutsMedia")
 
     Events("onDownload", "onExportProgress")
+
+    Constant("overlayDir") { Self.overlayDir.absoluteString }
 
     AsyncFunction("requestLibraryAccess") { () -> String in
       switch await requestLibraryAccess() {
@@ -251,7 +254,7 @@ extension CutsMediaModule {
     let file = overlayDir.appendingPathComponent("overlay-\(Int(Date().timeIntervalSince1970 * 1000)).png")
     try data.write(to: file, options: .atomic)
     older.forEach { try? manager.removeItem(at: $0) }
-    return ["path": file.absoluteString, "aspect": height / width, "name": name]
+    return ["path": file.lastPathComponent, "aspect": height / width, "name": name]
   }
 
   fileprivate func openFile(_ id: String) async throws -> [String: Any] {

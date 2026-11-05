@@ -24,9 +24,11 @@ export type ExportJob = {
 
 export type FrameJob = { format: OutputFormat; framing: Framing; cropX: number; cropY: number; overlay?: ExportOverlay }
 
+export const overlayUri = (path: string) => (path.includes('/') ? path : CutsMedia.overlayDir + path)
+
 function withOverlay<T extends { overlay?: ExportOverlay }>({ overlay, ...job }: T): Omit<T, 'overlay'> & NativeOverlayFields {
   if (!overlay) return job
-  return { ...job, overlayPath: overlay.path, overlayX: overlay.x, overlayY: overlay.y, overlayWidth: overlay.width }
+  return { ...job, overlayPath: overlayUri(overlay.path), overlayX: overlay.x, overlayY: overlay.y, overlayWidth: overlay.width }
 }
 
 export const requestLibraryAccess = () => CutsMedia.requestLibraryAccess()

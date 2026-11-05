@@ -112,3 +112,8 @@ it('pinching resizes it around its centre, keeping the PNG aspect ratio', async 
   )
   expect(onOverlay).toHaveBeenLastCalledWith(scaleOverlay(overlay, 2, overlay.aspect, asset))
 })
+
+it('a stored bare file name is drawn from the current overlays folder', async () => {
+  await renderStage('original', 'crop', { ...overlay, path: 'overlay-1.png' })
+  expect(screen.getByTestId('overlay-image').props.source).toEqual({ uri: 'file:///app-support/overlays/overlay-1.png' })
+})

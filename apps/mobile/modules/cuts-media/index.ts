@@ -28,6 +28,7 @@ export type NativeFrameJob = { format: string; framing: string; cropX: number; c
 export type NativeOverlay = { path: string; aspect: number; name: string }
 
 declare class CutsMediaModule extends NativeModule<Events> {
+  readonly overlayDir: string
   requestLibraryAccess(): Promise<'granted' | 'limited' | 'denied'>
   pickVideo(): Promise<string | null>
   pickFile(): Promise<string | null>

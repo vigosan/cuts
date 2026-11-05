@@ -20,7 +20,7 @@ import {
 } from '@cuts/core/overlay'
 import { stepCrop } from '../editor/crop-frame'
 import { t } from '../i18n'
-import { thumbnail, type AssetInfo } from '../media'
+import { overlayUri, thumbnail, type AssetInfo } from '../media'
 import { useTheme } from '../theme'
 
 type Zone = { cropX: number; cropY: number }
@@ -147,7 +147,7 @@ function OverlayLayer({ frame, output, overlay, onChange, onMissing }: OverlayPr
       ))}
       <GestureDetector gesture={gesture}>
         <View testID="overlay" style={{ position: 'absolute', left: box.left, top: box.top, width: box.width, height: box.height }}>
-          <Image testID="overlay-image" source={{ uri: overlay.path }} onError={onMissing} resizeMode="stretch" style={{ width: '100%', height: '100%' }} />
+          <Image testID="overlay-image" source={{ uri: overlayUri(overlay.path) }} onError={onMissing} resizeMode="stretch" style={{ width: '100%', height: '100%' }} />
         </View>
       </GestureDetector>
     </View>

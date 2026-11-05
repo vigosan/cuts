@@ -4,6 +4,7 @@ const native = vi.hoisted(() => ({ exportClip: vi.fn(async () => 'file:///tmp/se
 
 vi.mock('../modules/cuts-media', () => ({
   default: {
+    overlayDir: 'file:///app-support/overlays/',
     saveFrame: native.saveFrame,
     readPeaks: async () => [0.1, 0.5, 0.25],
     exportClip: native.exportClip,
@@ -43,5 +44,21 @@ describe('media', () => {
     const { saveFrame } = await import('./media')
     await saveFrame('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5 })
     expect(native.saveFrame).toHaveBeenLastCalledWith('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5 })
+  })
+
+  it('a stored bare file name is found in the current overlays folder, which iOS may move on an update', async () => {
+    const { exportClip, overlayUri, saveFrame } = await import('./media')
+    const overlay = { path: 'overlay-1.png', x: 0.1, y: 0.2, width: 0.3 }
+    expect(overlayUri('overlay-1.png')).toBe('file:///app-support/overlays/overlay-1.png')
+    await exportClip('asset', { fileName: 'set-1.mp4', overlay } as never, () => {})
+    await saveFrame('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5, overlay })
+    expect(native.exportClip).toHaveBeenLastCalledWith('asset', expect.objectContaining({ overlayPath: 'file:///app-support/overlays/overlay-1.png' }))
+    expect(native.saveFrame).toHaveBeenLastCalledWith('asset', 5, expect.objectContaining({ overlayPath: 'file:///app-support/overlays/overlay-1.png' }))
+  })
+
+  it('a full path or URL is used as it is', async () => {
+    const { overlayUri } = await import('./media')
+    expect(overlayUri('file:///elsewhere/logo.png')).toBe('file:///elsewhere/logo.png')
+    expect(overlayUri('/elsewhere/logo.png')).toBe('/elsewhere/logo.png')
   })
 })

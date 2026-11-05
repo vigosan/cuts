@@ -5,6 +5,7 @@ import type { OutputFormat } from '@cuts/core/formats'
 import type { Overlay } from '@cuts/core/overlay'
 import type { ExportOutcome } from '../editor/export-run'
 import { t } from '../i18n'
+import { overlayUri } from '../media'
 import type { Theme } from '../theme'
 import { Sheet } from './ClipSheet'
 import { FormatList } from './FormatList'
@@ -63,7 +64,7 @@ export function ExportSheet({ theme, label, format, baseName, state, onFormat, o
                   {Array.from({ length: 16 }, (_, cell) => (
                     <View key={cell} style={{ width: 6, height: 6, backgroundColor: (cell + Math.floor(cell / 4)) % 2 ? '#d4d4d8' : '#fff' }} />
                   ))}
-                  <Image testID="overlay-thumb" source={{ uri: overlay.path }} resizeMode="contain" style={{ position: 'absolute', inset: 0 }} />
+                  <Image testID="overlay-thumb" source={{ uri: overlayUri(overlay.path) }} resizeMode="contain" style={{ position: 'absolute', inset: 0 }} />
                 </View>
                 <Text testID="overlay-name" numberOfLines={1} style={{ flex: 1, color: theme.ink, fontSize: 15 }}>
                   {overlay.name}

@@ -282,3 +282,13 @@ it('the saved frame photo carries the overlay too, so the cover matches the clip
   await pressMenuAction(t.mobile.saveFrame)
   expect(native.saveFrame).toHaveBeenCalledWith('A1', expect.any(Number), expect.objectContaining({ overlayPath: logo.path, overlayX: 0.1, overlayY: 0.1, overlayWidth: 0.25 }))
 })
+
+it('the row thumbnail and the saved frame find a bare file name in the current overlays folder', async () => {
+  const store = storeWith(twoClips)
+  savePreferences(store, { overlay: { ...logo, path: 'overlay-1.png', x: 0.1, y: 0.1, width: 0.25 } })
+  await renderCut(store)
+  await pressMenuAction(t.mobile.saveFrame)
+  expect(native.saveFrame).toHaveBeenCalledWith('A1', expect.any(Number), expect.objectContaining({ overlayPath: 'file:///app-support/overlays/overlay-1.png' }))
+  await fireEvent.press(screen.getByTestId('export'))
+  expect(screen.getByTestId('overlay-thumb').props.source).toEqual({ uri: 'file:///app-support/overlays/overlay-1.png' })
+})
