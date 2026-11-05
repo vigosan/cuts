@@ -33,6 +33,8 @@ beforeEach(() => {
   native.exportClip.mockImplementation(async (_id, job) => `file:///tmp/${job.fileName}`)
 })
 
+afterEach(() => jest.restoreAllMocks())
+
 it('fit shows the whole video over a blurred copy', async () => {
   await renderCut(storeWith(twoClips, '4:5', 'fit'))
   expect(screen.getByTestId('fit-preview')).toBeTruthy()
@@ -265,6 +267,19 @@ it('picking a new PNG keeps the place of the overlay, so swapping the logo does 
   await fireEvent.press(screen.getByTestId('overlay-change'))
   expect(await screen.findByText('handle.png')).toBeTruthy()
   expect(loadPreferences(store).overlay).toEqual({ ...tall, ...clampPlacement({ x: 0.6, y: 0.6, width: 0.3 }, 2, { width: 1080, height: 1350 }) })
+})
+
+it('✕ clears the not-a-PNG message too, since there is no overlay left for it to be about', async () => {
+  pickFrom(1)
+  const store = storeWith(twoClips)
+  savePreferences(store, { overlay: { ...logo, x: 0.1, y: 0.1, width: 0.25 } })
+  native.pickOverlay.mockResolvedValueOnce('invalid')
+  await renderCut(store)
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('overlay-change'))
+  expect(await screen.findByText(t.overlayInvalid)).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('overlay-remove'))
+  expect(screen.queryByText(t.overlayInvalid)).toBeNull()
 })
 
 it('✕ removes the overlay from the stage and from the preferences', async () => {

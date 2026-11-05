@@ -34,7 +34,10 @@ export function ExportClips({ onClose, onlySelected = false }: { onClose: () => 
         overlay={overlay}
         overlayInvalid={overlayInvalid}
         onChooseOverlay={(source) => void chooseOverlay(source)}
-        onRemoveOverlay={() => setOverlay(null)}
+        onRemoveOverlay={() => {
+          setOverlayInvalid(false)
+          setOverlay(null)
+        }}
         onName={setBaseName}
         onStart={() => void startExport(only?.id)}
         onStop={stopExport}
