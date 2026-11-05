@@ -7,6 +7,7 @@ import type { ClipSettings } from '@cuts/core/fades'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import {
   clampPlacement,
+  heldGuides,
   moveOverlay,
   OVERLAY_MARGIN,
   outputFrame,
@@ -115,7 +116,7 @@ function OverlayLayer({ frame, output, overlay, onChange, onMissing }: OverlayPr
   const update = () => {
     const { start, dx, dy, scale } = touch.current
     const moved = dx || dy ? moveOverlay(start, dx, dy, overlay.aspect, output) : { placement: start, guides: [] }
-    setGuides(scale === 1 ? moved.guides : [])
+    setGuides(scale === 1 ? heldGuides(moved.placement, moved.guides, overlay.aspect, output) : [])
     onChange(scale === 1 ? moved.placement : scaleOverlay(moved.placement, scale, overlay.aspect, output))
   }
   const pan = usePanGesture({

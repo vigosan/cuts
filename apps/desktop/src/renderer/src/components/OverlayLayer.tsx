@@ -3,10 +3,10 @@ import type { Box } from '@cuts/core/crop'
 import type { Framing } from '@cuts/core/framing'
 import {
   clampPlacement,
+  heldGuides,
   moveOverlay,
   OVERLAY_MARGIN,
   overlayBox,
-  overlayHeight,
   previewFrame,
   resizeOverlay,
   type Corner,
@@ -34,7 +34,6 @@ const CORNER_STYLE: Record<Corner, string> = {
   bl: '-bottom-1.5 -left-1.5 cursor-nesw-resize',
   br: '-bottom-1.5 -right-1.5 cursor-nwse-resize'
 }
-const GUIDE_TOLERANCE = 1e-6
 
 function guideStyle(guide: Guide, frame: Box) {
   const margin = OVERLAY_MARGIN * frame.width
@@ -51,27 +50,6 @@ function guideStyle(guide: Guide, frame: Box) {
       return { left: frame.left, top: frame.top + margin, width: frame.width, height: 1 }
     case 'bottom':
       return { left: frame.left, top: frame.top + frame.height - margin, width: frame.width, height: 1 }
-  }
-}
-
-function guideStillHolds(guide: Guide, p: OverlayPlacement, aspect: number, frame: Size) {
-  const margin = OVERLAY_MARGIN
-  const height = overlayHeight(p, aspect, frame)
-  const marginY = (margin * frame.width) / frame.height
-  const near = (a: number, b: number) => Math.abs(a - b) < GUIDE_TOLERANCE
-  switch (guide) {
-    case 'centerX':
-      return near(p.x + p.width / 2, 0.5)
-    case 'centerY':
-      return near(p.y + height / 2, 0.5)
-    case 'left':
-      return near(p.x, margin)
-    case 'right':
-      return near(p.x + p.width, 1 - margin)
-    case 'top':
-      return near(p.y, marginY)
-    case 'bottom':
-      return near(p.y + height, 1 - marginY)
   }
 }
 
@@ -116,7 +94,7 @@ export function OverlayLayer({ video, target, framing, zone, overlay, onChange, 
     const start = placement
     track(e, (dx, dy) => {
       const moved = moveOverlay(start, dx, dy, overlay.aspect, outputSize)
-      setGuides(moved.guides.filter((guide) => guideStillHolds(guide, moved.placement, overlay.aspect, outputSize)))
+      setGuides(heldGuides(moved.placement, moved.guides, overlay.aspect, outputSize))
       onChange(moved.placement)
     })
   }

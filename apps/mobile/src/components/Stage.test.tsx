@@ -117,3 +117,15 @@ it('a stored bare file name is drawn from the current overlays folder', async ()
   await renderStage('original', 'crop', { ...overlay, path: 'overlay-1.png' })
   expect(screen.getByTestId('overlay-image').props.source).toEqual({ uri: 'file:///app-support/overlays/overlay-1.png' })
 })
+
+it('a snap the frame edge pushed the PNG off shows no guide, the same as the Mac', async () => {
+  await renderStage('original', 'crop', { ...overlay, aspect: 0.56, x: 0, y: 0, width: 1 })
+  const pan = createGestureController('overlay-pan')
+  await act(async () => {
+    pan.begin({ translationX: 0, translationY: 0 })
+    pan.activate({ translationX: 0, translationY: 0 })
+    pan.update({ translationX: 0, translationY: -10.8 })
+  })
+  expect(screen.queryByTestId('overlay-guide-bottom')).toBeNull()
+  expect(screen.getByTestId('overlay-guide-centerX')).toBeTruthy()
+})

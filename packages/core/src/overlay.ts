@@ -105,6 +105,32 @@ export function moveOverlay(
   return { placement, guides }
 }
 
+const GUIDE_TOLERANCE = 1e-6
+
+function guideHolds(guide: Guide, p: OverlayPlacement, aspect: number, frame: Size): boolean {
+  const height = overlayHeight(p, aspect, frame)
+  const marginY = (OVERLAY_MARGIN * frame.width) / frame.height
+  const near = (a: number, b: number) => Math.abs(a - b) < GUIDE_TOLERANCE
+  switch (guide) {
+    case 'centerX':
+      return near(p.x + p.width / 2, 0.5)
+    case 'centerY':
+      return near(p.y + height / 2, 0.5)
+    case 'left':
+      return near(p.x, OVERLAY_MARGIN)
+    case 'right':
+      return near(p.x + p.width, 1 - OVERLAY_MARGIN)
+    case 'top':
+      return near(p.y, marginY)
+    case 'bottom':
+      return near(p.y + height, 1 - marginY)
+  }
+}
+
+export function heldGuides(placement: OverlayPlacement, guides: Guide[], aspect: number, frame: Size): Guide[] {
+  return guides.filter((guide) => guideHolds(guide, placement, aspect, frame))
+}
+
 export function resizeOverlay(
   start: OverlayPlacement,
   corner: Corner,

@@ -3,6 +3,7 @@ import { cropBox, videoBox } from './crop'
 import {
   clampPlacement,
   defaultPlacement,
+  heldGuides,
   moveOverlay,
   outputFrame,
   overlayBox,
@@ -159,5 +160,24 @@ describe('overlayBox', () => {
       width: 270,
       height: 135
     })
+  })
+})
+
+describe('heldGuides', () => {
+  it('keeps a guide the placement really sits on, so the line matches the PNG', () => {
+    const { placement, guides } = moveOverlay({ x: 0.1, y: 0.1, width: 0.2 }, 0.29, 0, 1, square)
+    expect(heldGuides(placement, guides, 1, square)).toEqual(['centerX'])
+  })
+
+  it('drops a guide that clamping pushed the PNG off, so no line shows where the PNG is not', () => {
+    const tall = { x: 0.01, y: 0, width: 0.98 }
+    const { placement, guides } = moveOverlay(tall, 0, -0.01, 1, square)
+    expect(guides).toContain('bottom')
+    expect(heldGuides(placement, guides, 1, square)).not.toContain('bottom')
+  })
+
+  it('checks the top and bottom margins in the frame height, since margins are a share of the width', () => {
+    const marginY = (0.04 * 1080) / 1350
+    expect(heldGuides({ x: 0.3, y: marginY, width: 0.2 }, ['top', 'left'], 1, portrait)).toEqual(['top'])
   })
 })
