@@ -126,7 +126,7 @@ case "$TARGET" in
 
   windows)
     WINDOWS="--arch=x86_64 --target-os=mingw32 --enable-cross-compile --cross-prefix=x86_64-w64-mingw32- \
-      $COMMON --enable-mediafoundation --enable-d3d11va --extra-ldflags=-static"
+      $COMMON --enable-mediafoundation --enable-d3d11va --enable-zlib --extra-ldflags=-static"
     build windows "$WINDOWS"
 
     cp "$WORK/windows/ffmpeg-$VERSION/ffmpeg.exe" "$OUT/ffmpeg.exe"
