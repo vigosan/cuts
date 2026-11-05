@@ -8,12 +8,14 @@ public struct FrameJob: Codable, Sendable {
   public var framing: String
   public var cropX: Double
   public var cropY: Double
+  public var overlay: OverlaySpec?
 
-  public init(format: String, framing: String, cropX: Double, cropY: Double) {
+  public init(format: String, framing: String, cropX: Double, cropY: Double, overlay: OverlaySpec? = nil) {
     self.format = format
     self.framing = framing
     self.cropX = cropX
     self.cropY = cropY
+    self.overlay = overlay
   }
 }
 
@@ -34,8 +36,9 @@ public func frame(asset: AVAsset, at seconds: Double, job: FrameJob) async throw
   generator.requestedTimeToleranceAfter = .zero
   let image = CIImage(cgImage: try await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600)).image)
   let exportJob = ExportJob(start: 0, end: 1, format: job.format, framing: job.framing, cropX: job.cropX, cropY: job.cropY,
-                            videoFade: "none", audioFade: "none", fadeSeconds: 1, videoFadeIn: true, output: URL(fileURLWithPath: "/dev/null"))
-  let framed = Framer(job: exportJob, sourceSize: image.extent.size).render(image: image)
+                            videoFade: "none", audioFade: "none", fadeSeconds: 1, videoFadeIn: true, output: URL(fileURLWithPath: "/dev/null"), overlay: job.overlay)
+  let framer = Framer(job: exportJob, sourceSize: image.extent.size)
+  let framed = framer.overlay(image: framer.render(image: image))
   let context = CIContext()
   guard let cgImage = context.createCGImage(framed, from: framed.extent) else { throw CocoaError(.fileWriteUnknown) }
   let data = NSMutableData()

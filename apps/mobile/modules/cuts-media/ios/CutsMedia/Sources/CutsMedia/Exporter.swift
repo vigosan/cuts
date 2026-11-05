@@ -43,7 +43,7 @@ public final class Exporter: @unchecked Sendable {
 
     let composition = try await AVMutableVideoComposition.videoComposition(with: asset) { request in
       let seconds = request.compositionTime.seconds - job.start
-      let image = framer.fade(image: framer.render(image: request.sourceImage), at: seconds, clipLength: job.length)
+      let image = framer.fade(image: framer.overlay(image: framer.render(image: request.sourceImage)), at: seconds, clipLength: job.length)
       request.finish(with: image, context: nil)
     }
     composition.renderSize = framer.renderSize

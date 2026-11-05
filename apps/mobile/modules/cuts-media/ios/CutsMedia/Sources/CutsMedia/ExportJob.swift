@@ -1,5 +1,19 @@
 import Foundation
 
+public struct OverlaySpec: Codable, Sendable {
+  public var url: URL
+  public var x: Double
+  public var y: Double
+  public var width: Double
+
+  public init(url: URL, x: Double, y: Double, width: Double) {
+    self.url = url
+    self.x = x
+    self.y = y
+    self.width = width
+  }
+}
+
 public struct ExportJob: Codable, Sendable {
   public var start: Double
   public var end: Double
@@ -12,9 +26,10 @@ public struct ExportJob: Codable, Sendable {
   public var fadeSeconds: Double
   public var videoFadeIn: Bool
   public var output: URL
+  public var overlay: OverlaySpec?
 
   public init(start: Double, end: Double, format: String, framing: String, cropX: Double, cropY: Double, videoFade: String,
-              audioFade: String, fadeSeconds: Double, videoFadeIn: Bool, output: URL) {
+              audioFade: String, fadeSeconds: Double, videoFadeIn: Bool, output: URL, overlay: OverlaySpec? = nil) {
     self.start = start
     self.end = end
     self.format = format
@@ -26,6 +41,7 @@ public struct ExportJob: Codable, Sendable {
     self.fadeSeconds = fadeSeconds
     self.videoFadeIn = videoFadeIn
     self.output = output
+    self.overlay = overlay
   }
 
   public var length: Double { end - start }

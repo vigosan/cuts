@@ -9,6 +9,15 @@ private func job(_ name: String, start: Double = 30, end: Double = 89, format: S
             audioFade: audioFade, fadeSeconds: fadeSeconds, videoFadeIn: videoFadeIn, output: Inspect.output(name))
 }
 
+private let redOverlay = Fixtures.dir.appendingPathComponent("overlay-red.png")
+
+private func overlayJob(_ name: String, format: String = "4:5", framing: String = "crop", videoFade: String = "none",
+                        placement: (Double, Double, Double) = (0.5, 0.1, 0.25), start: Double = 30, end: Double = 33) -> ExportJob {
+  var result = job(name, start: start, end: end, format: format, framing: framing, videoFade: videoFade)
+  result.overlay = OverlaySpec(url: redOverlay, x: placement.0, y: placement.1, width: placement.2)
+  return result
+}
+
 private func export(_ source: String, _ job: ExportJob) async throws -> AVURLAsset {
   try await Exporter().export(asset: Fixtures.asset(source), job: job) { _ in }
   return AVURLAsset(url: job.output)
@@ -105,5 +114,33 @@ private func export(_ source: String, _ job: ExportJob) async throws -> AVURLAss
     }
     print("six 59 s 4:5 clips exported in \(elapsed)")
     #expect(elapsed < .seconds(600))
+  }
+
+  @Test func overlayLandsWhereTheMacPutsIt() async throws {
+    let clip = try await export("set.mp4", overlayJob("overlay.mp4"))
+    let image = try await Inspect.frameImage(clip, at: 1)
+    #expect(Inspect.isRed(Inspect.pixel(image, x: 675, y: 202)))
+    #expect(!Inspect.isRed(Inspect.pixel(image, x: 100, y: 100)))
+  }
+
+  @Test func overlaySitsOnTheBlurredBandInFit() async throws {
+    let clip = try await export("set.mp4", overlayJob("overlay-fit.mp4", framing: "fit", placement: (0.04, 0.032, 0.25)))
+    let image = try await Inspect.frameImage(clip, at: 1)
+    #expect(Inspect.isRed(Inspect.pixel(image, x: 178, y: 110)))
+  }
+
+  @Test func overlayFollowsTheUprightFrameOnRotatedVideo() async throws {
+    let clip = try await export("rotated.mp4", overlayJob("overlay-rotated.mp4", format: "original", start: 2, end: 5))
+    let image = try await Inspect.frameImage(clip, at: 1)
+    #expect(image.width == 360 && image.height == 640)
+    #expect(Inspect.isRed(Inspect.pixel(image, x: 225, y: 86)))
+    #expect(!Inspect.isRed(Inspect.pixel(image, x: 50, y: 50)))
+  }
+
+  @Test func overlayFadesWithTheClipSoTheFirstFrameIsBlack() async throws {
+    let clip = try await export("set.mp4", overlayJob("overlay-fade.mp4", videoFade: "black"))
+    #expect(try await Inspect.luma(clip, at: 0) < 0.05)
+    let image = try await Inspect.frameImage(clip, at: 1.5)
+    #expect(Inspect.isRed(Inspect.pixel(image, x: 675, y: 202)))
   }
 }

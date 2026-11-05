@@ -16,6 +16,10 @@ struct JobRecord: Record {
   @Field var fadeSeconds: Double = 1
   @Field var videoFadeIn: Bool = true
   @Field var fileName: String = "clip.mp4"
+  @Field var overlayPath: String = ""
+  @Field var overlayX: Double = 0
+  @Field var overlayY: Double = 0
+  @Field var overlayWidth: Double = 0.25
 }
 
 struct FrameRecord: Record {
@@ -23,6 +27,16 @@ struct FrameRecord: Record {
   @Field var framing: String = "crop"
   @Field var cropX: Double = 0.5
   @Field var cropY: Double = 0.5
+  @Field var overlayPath: String = ""
+  @Field var overlayX: Double = 0
+  @Field var overlayY: Double = 0
+  @Field var overlayWidth: Double = 0.25
+}
+
+private func overlaySpec(path: String, x: Double, y: Double, width: Double) -> OverlaySpec? {
+  guard !path.isEmpty else { return nil }
+  let url = path.hasPrefix("file://") ? URL(string: path) : URL(fileURLWithPath: path)
+  return url.map { OverlaySpec(url: $0, x: x, y: y, width: width) }
 }
 
 public final class CutsMediaModule: Module, @unchecked Sendable {
@@ -148,7 +162,8 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
       let output = Self.exportDir.appendingPathComponent(record.fileName)
       let job = ExportJob(start: record.start, end: record.end, format: record.format, framing: record.framing, cropX: record.cropX,
                           cropY: record.cropY, videoFade: record.videoFade, audioFade: record.audioFade, fadeSeconds: record.fadeSeconds,
-                          videoFadeIn: record.videoFadeIn, output: output)
+                          videoFadeIn: record.videoFadeIn, output: output,
+                          overlay: overlaySpec(path: record.overlayPath, x: record.overlayX, y: record.overlayY, width: record.overlayWidth))
       let exporter = Exporter()
       self.lock.withLock { self.exporter = exporter }
       defer { self.lock.withLock { self.exporter = nil } }
@@ -169,7 +184,8 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
     }
 
     AsyncFunction("saveFrame") { (id: String, time: Double, record: FrameRecord) in
-      let job = FrameJob(format: record.format, framing: record.framing, cropX: record.cropX, cropY: record.cropY)
+      let job = FrameJob(format: record.format, framing: record.framing, cropX: record.cropX, cropY: record.cropY,
+                         overlay: overlaySpec(path: record.overlayPath, x: record.overlayX, y: record.overlayY, width: record.overlayWidth))
       let data = try await frame(asset: try await self.asset(id), at: time, job: job)
       try await saveImageToAlbum(data: data, album: "Cuts")
     }

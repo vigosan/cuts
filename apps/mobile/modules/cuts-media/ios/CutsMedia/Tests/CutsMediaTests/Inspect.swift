@@ -30,6 +30,27 @@ enum Inspect {
     return (0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])) / 255
   }
 
+  static func frameImage(_ asset: AVAsset, at seconds: Double) async throws -> CGImage {
+    let generator = AVAssetImageGenerator(asset: asset)
+    generator.appliesPreferredTrackTransform = true
+    generator.requestedTimeToleranceBefore = .zero
+    generator.requestedTimeToleranceAfter = .zero
+    return try await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600)).image
+  }
+
+  static func pixel(_ image: CGImage, x: Int, y: Int) -> (UInt8, UInt8, UInt8) {
+    var bytes = [UInt8](repeating: 0, count: image.width * image.height * 4)
+    let context = CGContext(data: &bytes, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4,
+                            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+    context?.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    let offset = (y * image.width + x) * 4
+    return (bytes[offset], bytes[offset + 1], bytes[offset + 2])
+  }
+
+  static func isRed(_ pixel: (UInt8, UInt8, UInt8)) -> Bool {
+    pixel.0 > 200 && pixel.1 < 60 && pixel.2 < 60
+  }
+
   static func rms(_ asset: AVAsset, from: Double, length: Double) async throws -> Double {
     let tracks = try await asset.loadTracks(withMediaType: .audio)
     let reader = try AVAssetReader(asset: asset)

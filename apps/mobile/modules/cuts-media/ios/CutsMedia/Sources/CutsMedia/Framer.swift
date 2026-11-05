@@ -5,18 +5,31 @@ public struct Framer: Sendable {
   public let job: ExportJob
   public let sourceSize: CGSize
   public let renderSize: CGSize
+  private let overlayImage: CIImage?
 
   public init(job: ExportJob, sourceSize: CGSize) {
     self.job = job
     self.sourceSize = sourceSize
     let even = { (value: CGFloat) in CGFloat(Int(value.rounded()) / 2 * 2) }
     renderSize = formatSizes[job.format] ?? CGSize(width: even(sourceSize.width), height: even(sourceSize.height))
+    overlayImage = job.overlay.flatMap { CIImage(contentsOf: $0.url, options: [.applyOrientationProperty: true]) }
   }
 
   public func render(image: CIImage) -> CIImage {
     let source = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX, y: -image.extent.minY))
     guard formatSizes[job.format] != nil else { return source.cropped(to: CGRect(origin: .zero, size: renderSize)) }
     return job.framing == "fit" ? fit(source) : crop(source)
+  }
+
+  public func overlay(image: CIImage) -> CIImage {
+    guard let spec = job.overlay, let overlayImage else { return image }
+    let scale = spec.width * renderSize.width / overlayImage.extent.width
+    let height = overlayImage.extent.height * scale
+    let placed = overlayImage
+      .transformed(by: CGAffineTransform(translationX: -overlayImage.extent.minX, y: -overlayImage.extent.minY))
+      .transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+      .transformed(by: CGAffineTransform(translationX: spec.x * renderSize.width, y: renderSize.height - spec.y * renderSize.height - height))
+    return placed.composited(over: image).cropped(to: image.extent)
   }
 
   public func fade(image: CIImage, at seconds: Double, clipLength: Double) -> CIImage {
