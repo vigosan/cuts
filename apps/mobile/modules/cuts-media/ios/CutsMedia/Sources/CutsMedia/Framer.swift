@@ -12,7 +12,7 @@ public struct Framer: Sendable {
     self.sourceSize = sourceSize
     let even = { (value: CGFloat) in CGFloat(Int(value.rounded()) / 2 * 2) }
     renderSize = formatSizes[job.format] ?? CGSize(width: even(sourceSize.width), height: even(sourceSize.height))
-    overlayImage = job.overlay.flatMap { CIImage(contentsOf: $0.url, options: [.applyOrientationProperty: true]) }
+    overlayImage = job.overlay.flatMap { CIImage(contentsOf: $0.url) }
   }
 
   public func render(image: CIImage) -> CIImage {
