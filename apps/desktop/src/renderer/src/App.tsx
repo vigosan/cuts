@@ -11,6 +11,7 @@ import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
 import { FitPreview } from './components/FitPreview'
+import { OverlayLayer } from './components/OverlayLayer'
 import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
 import { Notice } from './components/Notice'
 import { RecentVideos } from './components/RecentVideos'
@@ -532,6 +533,17 @@ export function App() {
               )}
               {target && videoSize && shownSettings.framing === 'fit' && (
                 <FitPreview videoRef={videoRef} targetWidth={target.width} targetHeight={target.height} />
+              )}
+              {overlay && videoSize && videoSize.width > 0 && (
+                <OverlayLayer
+                  video={videoSize}
+                  target={target ?? null}
+                  framing={shownSettings.framing}
+                  zone={shownSettings}
+                  overlay={overlay}
+                  onChange={(placement) => setOverlay({ ...overlay, ...placement })}
+                  onMissing={() => setOverlay(null)}
+                />
               )}
               {videoError && (
                 <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">

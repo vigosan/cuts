@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Api, ExportResult } from '@shared/api'
+import { clampPlacement, moveOverlay, overlayBox, previewFrame, resizeOverlay } from '@cuts/core/overlay'
 import { App } from './App'
 import { t } from './i18n'
 
@@ -2182,6 +2183,114 @@ describe('App', () => {
       await userEvent.click(await inPanel('choose-folder'))
       await userEvent.click(screen.getByTestId('export'))
       expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ overlay: null }))
+    })
+
+    describe('placing', () => {
+      const placed = { ...LOGO, x: 0.1, y: 0.1, width: 0.25 }
+      const FRAME_4_5 = { width: 1080, height: 1350 }
+      const VIDEO_SIZE = { width: 1280, height: 720 }
+      const CONTAINER = { width: 1000, height: 88 }
+      const ZONE = { cropX: 0.5, cropY: 0.5 }
+
+      async function openPlaced(overlay: object = placed) {
+        localStorage.setItem('preferences', JSON.stringify({ overlay }))
+        render(<App />)
+        const video = await loadVideo()
+        await markClip(video, 100, 150)
+        await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+        return screen.getByTestId('overlay')
+      }
+
+      const frameBox = () => previewFrame(CONTAINER, VIDEO_SIZE, FRAME_4_5, 'crop', ZONE)
+      const storedOverlay = () => JSON.parse(localStorage.getItem('preferences')!).overlay
+
+      it('draws the overlay where the export will put it, so the preview can be trusted', async () => {
+        const logo = await openPlaced()
+        const box = overlayBox(frameBox(), placed, LOGO.aspect)
+        const px = (name: 'left' | 'top' | 'width' | 'height') => parseFloat(logo.style[name])
+        expect(px('left')).toBeCloseTo(box.left)
+        expect(px('top')).toBeCloseTo(box.top)
+        expect(px('width')).toBeCloseTo(box.width)
+        expect(px('height')).toBeCloseTo(box.height)
+        expect(within(logo).getByRole('presentation', { hidden: true })).toHaveAttribute('src', 'media://file/' + encodeURIComponent(LOGO.path))
+      })
+
+      it('moves the overlay with the pointer and keeps the crop frame still, since dragging the logo is not reframing the video', async () => {
+        const logo = await openPlaced()
+        const cropBefore = screen.getByTestId('crop-frame').getAttribute('style')
+        const frame = frameBox()
+        fireEvent.pointerDown(logo, { clientX: 100, clientY: 20 })
+        fireEvent.pointerMove(window, { clientX: 100 + frame.width * 0.1, clientY: 20 })
+        fireEvent.pointerUp(window, { clientX: 100 + frame.width * 0.1, clientY: 20 })
+        const moved = moveOverlay(placed, 0.1, 0, LOGO.aspect, FRAME_4_5).placement
+        expect(storedOverlay()).toMatchObject({ x: expect.closeTo(moved.x), y: expect.closeTo(moved.y), width: expect.closeTo(moved.width) })
+        expect(screen.getByTestId('crop-frame').getAttribute('style')).toBe(cropBefore)
+      })
+
+      it('does not play or pause the video when the overlay is pressed', async () => {
+        const logo = await openPlaced()
+        const video = screen.getByTestId('video') as HTMLVideoElement
+        const play = vi.spyOn(video, 'play').mockResolvedValue()
+        await userEvent.click(logo)
+        expect(play).not.toHaveBeenCalled()
+      })
+
+      it('resizes from a corner keeping the opposite corner fixed, so the logo grows toward the pointer', async () => {
+        const logo = await openPlaced()
+        await userEvent.hover(logo)
+        const frame = frameBox()
+        const handle = screen.getByTestId('overlay-handle-br')
+        fireEvent.pointerDown(handle, { clientX: 200, clientY: 40 })
+        fireEvent.pointerMove(window, { clientX: 200 + frame.width * 0.1, clientY: 40 })
+        fireEvent.pointerUp(window, { clientX: 200 + frame.width * 0.1, clientY: 40 })
+        const resized = resizeOverlay(placed, 'br', 0.1, LOGO.aspect, FRAME_4_5)
+        expect(resized.width).toBeGreaterThan(placed.width)
+        expect(storedOverlay()).toMatchObject({ x: expect.closeTo(placed.x), y: expect.closeTo(placed.y), width: expect.closeTo(resized.width) })
+      })
+
+      it('shows a guide only while a snap is active, so the user sees what the logo is locking to', async () => {
+        const logo = await openPlaced({ ...placed, x: 0.3, y: 0.1 })
+        const frame = frameBox()
+        const dx = (0.5 - 0.125 - 0.3 - 0.005) * frame.width
+        fireEvent.pointerDown(logo, { clientX: 100, clientY: 20 })
+        fireEvent.pointerMove(window, { clientX: 100 + dx, clientY: 20 })
+        expect(screen.getByTestId('overlay-guide-centerX')).toBeInTheDocument()
+        fireEvent.pointerUp(window, { clientX: 100 + dx, clientY: 20 })
+        expect(screen.queryByTestId('overlay-guide-centerX')).not.toBeInTheDocument()
+      })
+
+      it('hides the handles until the pointer is over the overlay, so the logo is seen clean', async () => {
+        const logo = await openPlaced()
+        expect(screen.queryByTestId('overlay-handle-tl')).not.toBeInTheDocument()
+        await userEvent.hover(logo)
+        for (const corner of ['tl', 'tr', 'bl', 'br']) expect(screen.getByTestId(`overlay-handle-${corner}`)).toBeInTheDocument()
+        await userEvent.unhover(logo)
+        expect(screen.queryByTestId('overlay-handle-tl')).not.toBeInTheDocument()
+      })
+
+      it('clears the overlay when its PNG is gone, so a missing file does not break every export', async () => {
+        const logo = await openPlaced()
+        fireEvent.error(within(logo).getByRole('presentation', { hidden: true }))
+        expect(screen.queryByTestId('overlay')).not.toBeInTheDocument()
+        expect(screen.getByTestId('overlay-add')).toBeInTheDocument()
+        expect(storedOverlay()).toBeNull()
+      })
+
+      it('draws the overlay inside the frame after a format change without rewriting the stored placement', async () => {
+        await openPlaced({ ...placed, x: 0.75, y: 0.9 })
+        const before = storedOverlay()
+        await userEvent.selectOptions(screen.getByTestId('format'), '1:1')
+        const square = { width: 1080, height: 1080 }
+        const clamped = clampPlacement({ x: 0.75, y: 0.9, width: 0.25 }, LOGO.aspect, square)
+        expect(clamped.y).toBeLessThan(0.9)
+        const box = overlayBox(previewFrame(CONTAINER, VIDEO_SIZE, square, 'crop', ZONE), clamped, LOGO.aspect)
+        const squareBox = previewFrame(CONTAINER, VIDEO_SIZE, square, 'crop', ZONE)
+        const drawn = screen.getByTestId('overlay')
+        expect(parseFloat(drawn.style.top)).toBeCloseTo(box.top)
+        expect(parseFloat(drawn.style.top) + parseFloat(drawn.style.height)).toBeLessThanOrEqual(squareBox.top + squareBox.height + 0.001)
+        await userEvent.selectOptions(screen.getByTestId('format'), '9:16')
+        expect(storedOverlay()).toEqual(before)
+      })
     })
   })
 })
