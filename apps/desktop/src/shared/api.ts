@@ -35,10 +35,14 @@ export type ExportProgress = { index: number; ratio: number }
 
 export type RecentVideo = { path: string; name: string; folder: string; openedAt: number; clips: number; poster: string | null }
 
+export type ImportedOverlay = { path: string; aspect: number }
+
 export type Api = {
   platform: NodeJS.Platform
   pathForFile(file: File): string
   openVideo(): Promise<string | null>
+  chooseOverlay(): Promise<ImportedOverlay | 'invalid' | null>
+  importOverlay(path: string): Promise<ImportedOverlay | 'invalid'>
   chooseFolder(current: string | null): Promise<string | null>
   moviesDir(): Promise<string>
   exportClips(request: ExportRequest): Promise<ExportResult>

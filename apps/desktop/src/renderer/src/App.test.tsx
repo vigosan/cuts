@@ -12,6 +12,8 @@ function makeApi(): Api {
     platform: 'darwin',
     pathForFile: vi.fn(() => VIDEO),
     openVideo: vi.fn(async () => VIDEO),
+    chooseOverlay: vi.fn(async () => null),
+    importOverlay: vi.fn(async () => 'invalid' as const),
     chooseFolder: vi.fn(async () => '/Users/vicent/Movies/Instagram'),
     moviesDir: vi.fn(async () => '/Users/vicent/Movies'),
     exportClips: vi.fn(async () => ({ ok: true as const, files: ['/Users/vicent/Movies/Instagram/x-1.mp4'] })),

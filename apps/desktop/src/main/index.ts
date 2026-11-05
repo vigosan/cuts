@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { mkdir, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
@@ -11,6 +11,7 @@ import { bundledFfmpegPath, findFfmpeg } from './ffmpeg-args'
 import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
+import { importOverlay, isOwnedOverlay, type OverlayDeps } from './overlay'
 import { existingAncestor } from './paths'
 import { forgetRecent, loadRecents, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
 import { loadSession, saveSession } from './sessions'
@@ -116,7 +117,8 @@ app.whenReady().then(() => {
     if (!openedVideos.has(path)) throw new Error('This video was not opened in Cuts')
     return path
   }
-  handleMediaProtocol((path) => openedVideos.has(path))
+  const overlaysDir = join(app.getPath('userData'), 'overlays')
+  handleMediaProtocol((path) => openedVideos.has(path) || isOwnedOverlay(path, overlaysDir))
   ipcMain.on('allow-video', (event, path: string) => {
     allowVideo(path)
     event.returnValue = null
@@ -133,6 +135,29 @@ app.whenReady().then(() => {
     allowVideo(result.filePaths[0], result.bookmarks?.[0])
     return result.filePaths[0]
   })
+
+  const overlayDeps: OverlayDeps = {
+    read: async (path) => new Uint8Array(await readFile(path)),
+    write: async (path, bytes) => {
+      await mkdir(overlaysDir, { recursive: true })
+      await writeFile(path, bytes)
+    },
+    list: (dir) => readdir(dir).catch(() => []),
+    remove: (path) => rm(path, { force: true }),
+    now: Date.now
+  }
+  const copyOverlay = async (source: string) => (await importOverlay(source, overlaysDir, overlayDeps)) ?? 'invalid'
+
+  ipcMain.handle('choose-overlay', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)!
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters: [{ name: t.overlayFilter, extensions: ['png'] }]
+    })
+    return result.canceled ? null : copyOverlay(result.filePaths[0])
+  })
+
+  ipcMain.handle('import-overlay', (_event, path: string) => copyOverlay(path))
 
   ipcMain.handle('choose-folder', async (event, current: string | null) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
