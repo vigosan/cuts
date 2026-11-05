@@ -57,6 +57,7 @@ function runningLabel(progress: number[]): string {
 export function ExportPanel(p: Props) {
   const folderName = p.folder?.split(/[\\/]/).filter(Boolean).slice(-2).join('/')
   const fileName = (index: number) => outputFileName(safeBaseName(p.baseName), index)
+  const exporting = p.state.status === 'running'
 
   return (
     <section data-testid="export-panel" className="flex flex-col gap-3 border-t border-line p-4">
@@ -107,7 +108,7 @@ export function ExportPanel(p: Props) {
             e.preventDefault()
             e.stopPropagation()
             const file = e.dataTransfer.files[0]
-            if (file) p.onDropOverlay(file)
+            if (file && !exporting) p.onDropOverlay(file)
           }}
         >
           {p.overlay ? (
@@ -115,6 +116,7 @@ export function ExportPanel(p: Props) {
               <button
                 data-testid="overlay-change"
                 className={`${field} flex min-w-0 flex-1 items-center gap-2 text-left`}
+                disabled={exporting}
                 onClick={p.onChooseOverlay}
               >
                 <img
@@ -132,13 +134,19 @@ export function ExportPanel(p: Props) {
                 aria-label={t.overlayRemove}
                 title={t.overlayRemove}
                 className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-3 transition duration-150 ease-out hover:bg-sunken hover:text-ink"
+                disabled={exporting}
                 onClick={p.onRemoveOverlay}
               >
                 <CloseIcon className="size-4" />
               </button>
             </>
           ) : (
-            <button data-testid="overlay-add" className={`${field} flex-1 text-left text-ink-3`} onClick={p.onChooseOverlay}>
+            <button
+              data-testid="overlay-add"
+              className={`${field} flex-1 text-left text-ink-3`}
+              disabled={exporting}
+              onClick={p.onChooseOverlay}
+            >
               {t.overlayAdd}
             </button>
           )}

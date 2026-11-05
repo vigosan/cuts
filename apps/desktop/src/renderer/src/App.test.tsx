@@ -2153,6 +2153,25 @@ describe('App', () => {
       expect(JSON.parse(localStorage.getItem('preferences')!).overlay).toMatchObject({ ...TALL, ...expected })
     })
 
+    it('locks the overlay row while clips export, so later clips still find the PNG they were started with', async () => {
+      localStorage.setItem('preferences', JSON.stringify({ overlay: stored }))
+      let finish: (result: ExportResult) => void = () => {}
+      vi.mocked(api.exportClips).mockReturnValue(new Promise((resolve) => (finish = resolve)))
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      await userEvent.click(await inPanel('choose-folder'))
+      await userEvent.click(screen.getByTestId('export'))
+      expect(screen.getByTestId('overlay-change')).toBeDisabled()
+      expect(screen.getByTestId('overlay-remove')).toBeDisabled()
+      fireEvent.drop(screen.getByTestId('overlay-row'), {
+        dataTransfer: { types: ['Files'], files: [{ name: 'logo.png' }] }
+      })
+      expect(api.importOverlayFile).not.toHaveBeenCalled()
+      await act(async () => finish({ ok: true, files: ['/Movies/Cuts/x/x-1.mp4'] }))
+      expect(screen.getByTestId('overlay-change')).toBeEnabled()
+    })
+
     it('sends the overlay clamped inside the current format, so switching format never pushes the logo off the frame', async () => {
       localStorage.setItem('preferences', JSON.stringify({ overlay: stored }))
       render(<App />)
