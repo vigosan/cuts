@@ -311,7 +311,9 @@ export function App() {
   }
   const takeOverlay = (chosen: ImportedOverlay | 'invalid' | null) => {
     if (chosen === 'invalid') return setSuggestNotice(t.overlayInvalid)
-    if (chosen) setOverlay({ ...chosen, ...defaultPlacement(chosen.aspect, overlayFrame()) })
+    if (!chosen) return
+    const frame = overlayFrame()
+    setOverlay({ ...chosen, ...(overlay ? clampPlacement(overlay, chosen.aspect, frame) : defaultPlacement(chosen.aspect, frame)) })
   }
 
   const runExport = async () => {

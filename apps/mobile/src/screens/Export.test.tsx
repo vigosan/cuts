@@ -8,7 +8,7 @@ import { loadPreferences, savePreferences } from '../editor/preferences'
 import { loadSession, saveSession } from '../editor/sessions'
 import { t } from '../i18n'
 import { CutHarness, pressMenuAction } from '../test-utils/CutHarness'
-import { defaultPlacement } from '@cuts/core/overlay'
+import { clampPlacement, defaultPlacement } from '@cuts/core/overlay'
 
 const native = jest.mocked(CutsMedia)
 const asset = { id: 'A1', name: 'set.mov', duration: 600, width: 1920, height: 1080, frameRate: 25, uri: 'file:///set.mov' }
@@ -252,6 +252,19 @@ it('a file that is not a PNG says so and keeps the previous overlay', async () =
   expect(await screen.findByText(t.overlayInvalid)).toBeTruthy()
   expect(screen.getByTestId('overlay-name')).toHaveTextContent('logo.png')
   expect(loadPreferences(store).overlay?.path).toBe(logo.path)
+})
+
+it('picking a new PNG keeps the place of the overlay, so swapping the logo does not undo the layout', async () => {
+  pickFrom(1)
+  const tall = { path: 'file:///overlays/overlay-2.png', aspect: 2, name: 'handle.png' }
+  const store = storeWith(twoClips, '4:5')
+  savePreferences(store, { overlay: { ...logo, x: 0.6, y: 0.6, width: 0.3 } })
+  native.pickOverlay.mockResolvedValueOnce(tall)
+  await renderCut(store)
+  await fireEvent.press(screen.getByTestId('export'))
+  await fireEvent.press(screen.getByTestId('overlay-change'))
+  expect(await screen.findByText('handle.png')).toBeTruthy()
+  expect(loadPreferences(store).overlay).toEqual({ ...tall, ...clampPlacement({ x: 0.6, y: 0.6, width: 0.3 }, 2, { width: 1080, height: 1350 }) })
 })
 
 it('✕ removes the overlay from the stage and from the preferences', async () => {

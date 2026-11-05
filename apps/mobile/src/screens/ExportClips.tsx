@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
-import { defaultPlacement, outputFrame } from '@cuts/core/overlay'
+import { clampPlacement, defaultPlacement, outputFrame } from '@cuts/core/overlay'
 import { ExportSheet } from '../components/ExportSheet'
 import { useEditor } from '../editor/session'
 import { t } from '../i18n'
@@ -17,7 +17,9 @@ export function ExportClips({ onClose, onlySelected = false }: { onClose: () => 
   const chooseOverlay = async (source: 'files' | 'photos') => {
     const chosen = await pickOverlay(source).catch(() => 'invalid' as const)
     setOverlayInvalid(chosen === 'invalid')
-    if (chosen && chosen !== 'invalid') setOverlay({ ...chosen, ...defaultPlacement(chosen.aspect, outputFrame(format, asset)) })
+    if (!chosen || chosen === 'invalid') return
+    const frame = outputFrame(format, asset)
+    setOverlay({ ...chosen, ...(overlay ? clampPlacement(overlay, chosen.aspect, frame) : defaultPlacement(chosen.aspect, frame)) })
   }
   return (
     <>

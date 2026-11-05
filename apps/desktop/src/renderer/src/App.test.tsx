@@ -2139,6 +2139,20 @@ describe('App', () => {
       expect(api.pathForFile).not.toHaveBeenCalled()
     })
 
+    it('keeps the place of the overlay when its PNG is replaced, so swapping the logo does not undo the layout', async () => {
+      localStorage.setItem('preferences', JSON.stringify({ overlay: { ...stored, x: 0.6, y: 0.6, width: 0.3 } }))
+      const TALL = { path: '/data/overlays/overlay-2.png', aspect: 2, name: 'handle.png' }
+      vi.mocked(api.chooseOverlay).mockResolvedValue(TALL)
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+      await userEvent.click(screen.getByTestId('overlay-change'))
+      await waitFor(() => expect(screen.getByTestId('overlay-name')).toHaveTextContent('handle.png'))
+      const expected = clampPlacement({ x: 0.6, y: 0.6, width: 0.3 }, 2, { width: 1080, height: 1350 })
+      expect(JSON.parse(localStorage.getItem('preferences')!).overlay).toMatchObject({ ...TALL, ...expected })
+    })
+
     it('sends the overlay clamped inside the current format, so switching format never pushes the logo off the frame', async () => {
       localStorage.setItem('preferences', JSON.stringify({ overlay: stored }))
       render(<App />)
