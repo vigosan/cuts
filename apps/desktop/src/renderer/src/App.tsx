@@ -709,7 +709,7 @@ export function App() {
               overlay={overlay}
               onChooseOverlay={() => void window.api.chooseOverlay().then(takeOverlay, () => takeOverlay('invalid'))}
               onDropOverlay={(file) =>
-                void window.api.importOverlay(window.api.pathForFile(file)).then(takeOverlay, () => takeOverlay('invalid'))
+                void window.api.importOverlayFile(file).then(takeOverlay, () => takeOverlay('invalid'))
               }
               onRemoveOverlay={() => setOverlay(null)}
               folder={folder}

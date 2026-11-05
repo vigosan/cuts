@@ -10,7 +10,7 @@ const api: Api = {
   },
   openVideo: () => ipcRenderer.invoke('open-video'),
   chooseOverlay: () => ipcRenderer.invoke('choose-overlay'),
-  importOverlay: (path) => ipcRenderer.invoke('import-overlay', path),
+  importOverlayFile: (file) => ipcRenderer.invoke('import-overlay', webUtils.getPathForFile(file)),
   chooseFolder: (current) => ipcRenderer.invoke('choose-folder', current),
   moviesDir: () => ipcRenderer.invoke('movies-dir'),
   exportClips: (request) => ipcRenderer.invoke('export-clips', request),

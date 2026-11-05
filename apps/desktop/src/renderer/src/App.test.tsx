@@ -14,7 +14,7 @@ function makeApi(): Api {
     pathForFile: vi.fn(() => VIDEO),
     openVideo: vi.fn(async () => VIDEO),
     chooseOverlay: vi.fn(async () => null),
-    importOverlay: vi.fn(async () => 'invalid' as const),
+    importOverlayFile: vi.fn(async () => 'invalid' as const),
     chooseFolder: vi.fn(async () => '/Users/vicent/Movies/Instagram'),
     moviesDir: vi.fn(async () => '/Users/vicent/Movies'),
     exportClips: vi.fn(async () => ({ ok: true as const, files: ['/Users/vicent/Movies/Instagram/x-1.mp4'] })),
@@ -2124,19 +2124,19 @@ describe('App', () => {
       expect(screen.getByTestId('overlay-add')).toBeInTheDocument()
     })
 
-    it('imports a PNG dropped on the row and does not open it as a video', async () => {
-      vi.mocked(api.importOverlay).mockResolvedValue(LOGO)
-      vi.mocked(api.pathForFile).mockReturnValue('/Users/vicent/Desktop/logo.png')
+    it('imports a PNG dropped on the row without allowing it as a video, so it never lands in the recent videos', async () => {
+      vi.mocked(api.importOverlayFile).mockResolvedValue(LOGO)
       render(<App />)
       await loadVideo()
       vi.mocked(api.pathForFile).mockClear()
+      const png = { name: 'logo.png' }
       fireEvent.drop(screen.getByTestId('overlay-row'), {
-        dataTransfer: { types: ['Files'], files: [{ name: 'logo.png' }] }
+        dataTransfer: { types: ['Files'], files: [png] }
       })
       await screen.findByTestId('overlay-thumb')
-      expect(api.importOverlay).toHaveBeenCalledWith('/Users/vicent/Desktop/logo.png')
+      expect(api.importOverlayFile).toHaveBeenCalledWith(png)
       expect(screen.queryByTestId('unsupported-video')).not.toBeInTheDocument()
-      expect(api.pathForFile).toHaveBeenCalledTimes(1)
+      expect(api.pathForFile).not.toHaveBeenCalled()
     })
 
     it('sends the overlay clamped inside the current format, so switching format never pushes the logo off the frame', async () => {

@@ -45,7 +45,7 @@ export type Api = {
   pathForFile(file: File): string
   openVideo(): Promise<string | null>
   chooseOverlay(): Promise<ImportedOverlay | 'invalid' | null>
-  importOverlay(path: string): Promise<ImportedOverlay | 'invalid'>
+  importOverlayFile(file: File): Promise<ImportedOverlay | 'invalid'>
   chooseFolder(current: string | null): Promise<string | null>
   moviesDir(): Promise<string>
   exportClips(request: ExportRequest): Promise<ExportResult>
