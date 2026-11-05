@@ -61,7 +61,7 @@ export function ExportPanel(p: Props) {
 
   return (
     <section data-testid="export-panel" className="flex flex-col gap-3 border-t border-line p-4">
-      <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-sm">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-sm">
         <label htmlFor="base-name" className="text-ink-2">
           {t.name}
         </label>
