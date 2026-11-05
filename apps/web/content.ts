@@ -106,7 +106,7 @@ export const content = {
             "Fades to black or white, and smooth audio fades, per clip.",
             "The audio fade is a volume line on the waveform: drag its handles from half a second to five.",
             "Original, or 4:5, 1:1 and 9:16 at 1080 px: drag the frame to choose the shot, or fit the whole video over a blurred background.",
-            "Put a PNG over every clip, like your logo or your handle: drag it on the video and pull a corner to resize it.",
+            "Put a PNG over every clip, like your logo or your handle: drag it on the video and pull a corner, or pinch on iPhone, to resize it.",
           ],
         },
         {
@@ -300,7 +300,7 @@ export const content = {
             "Fundidos a negro o a blanco, y fundidos de audio suaves, en cada clip.",
             "El fundido de audio es una línea de volumen sobre la onda: arrastra sus tiradores de medio segundo a cinco.",
             "Original, o 4:5, 1:1 y 9:16 a 1080 px: arrastra el recuadro para elegir el plano, o encaja el vídeo entero sobre un fondo desenfocado.",
-            "Pon un PNG encima de todos los clips, como tu logo o tu usuario: arrástralo sobre el vídeo y tira de una esquina para cambiar su tamaño.",
+            "Pon un PNG encima de todos los clips, como tu logo o tu usuario: arrástralo sobre el vídeo y tira de una esquina, o pellizca en el iPhone, para cambiar su tamaño.",
           ],
         },
         {
