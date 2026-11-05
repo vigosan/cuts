@@ -1,6 +1,7 @@
 import { posix, win32 } from 'node:path'
 import type { AudioFade, VideoFade } from '@cuts/core/fades'
 import type { ClipFraming } from '@cuts/core/framing'
+import type { ExportOverlay } from '@cuts/core/overlay'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 
 export type CutOptions = ClipFraming & {
@@ -13,6 +14,7 @@ export type CutOptions = ClipFraming & {
   fadeSeconds: number
   videoFadeIn: boolean
   format: OutputFormat
+  overlay?: ExportOverlay | null
 }
 
 const num = (n: number) => String(Number(n.toFixed(3)))
@@ -25,7 +27,7 @@ function fadeFilters(prefix: string, duration: number, seconds: number, options 
   ]
 }
 
-export type FrameOptions = ClipFraming & { input: string; output: string; time: number; format: OutputFormat }
+export type FrameOptions = ClipFraming & { input: string; output: string; time: number; format: OutputFormat; overlay?: ExportOverlay | null }
 
 const quarter = (size: number) => Math.round(size / 8) * 2
 
@@ -51,6 +53,23 @@ function framingFilters(o: ClipFraming & { format: OutputFormat }): string[] {
   ]
 }
 
+function overlayInput(overlay: ExportOverlay | null | undefined): string[] {
+  return overlay ? ['-i', overlay.path] : []
+}
+
+function videoOutputArgs(framing: string[], fades: string[], overlay: ExportOverlay | null | undefined): string[] {
+  if (!overlay) {
+    const video = [...framing, ...fades]
+    return video.length ? ['-vf', video.join(',')] : []
+  }
+  const graph =
+    `[0:v]${framing.length ? `${framing.join(',')},` : ''}split[base][ref];` +
+    `[1:v][ref]scale=w='rw*${num(overlay.width)}':h=-1[ov];` +
+    `[base][ov]overlay=x='main_w*${num(overlay.x)}':y='main_h*${num(overlay.y)}'` +
+    `${fades.map((f) => `,${f}`).join('')}[v]`
+  return ['-filter_complex', graph, '-map', '[v]']
+}
+
 const VIDEO_ENCODERS: Partial<Record<NodeJS.Platform, string[]>> = {
   darwin: ['-c:v', 'h264_videotoolbox', '-allow_sw', '1'],
   win32: ['-c:v', 'h264_mf'],
@@ -58,14 +77,14 @@ const VIDEO_ENCODERS: Partial<Record<NodeJS.Platform, string[]>> = {
 }
 
 export function buildFrameArgs(o: FrameOptions): string[] {
-  const video = framingFilters(o)
   return [
     '-hide_banner',
     '-y',
     '-ss', num(o.time),
     '-i', o.input,
+    ...overlayInput(o.overlay),
     '-frames:v', '1',
-    ...(video.length ? ['-vf', video.join(',')] : []),
+    ...videoOutputArgs(framingFilters(o), [], o.overlay),
     '-q:v', '1',
     '-progress', 'pipe:1',
     '-nostats',
@@ -79,7 +98,6 @@ export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = proce
     o.videoFade === 'none'
       ? []
       : fadeFilters('fade', duration, o.fadeSeconds, o.videoFade === 'white' ? ':color=white' : '').slice(o.videoFadeIn ? 0 : 1)
-  const video = [...framingFilters(o), ...videoFades]
   const audio =
     o.audioFade === 'none' ? [] : fadeFilters('afade', duration, o.fadeSeconds, o.audioFade === 'natural' ? ':curve=qsin' : '')
   return [
@@ -87,8 +105,10 @@ export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = proce
     '-y',
     '-ss', num(o.start),
     '-i', o.input,
+    ...overlayInput(o.overlay),
     '-t', num(duration),
-    ...(video.length ? ['-vf', video.join(',')] : []),
+    ...videoOutputArgs(framingFilters(o), videoFades, o.overlay),
+    ...(o.overlay ? ['-map', '0:a?'] : []),
     ...(audio.length ? ['-af', audio.join(',')] : []),
     ...VIDEO_ENCODERS[platform]!,
     '-b:v', '12M',

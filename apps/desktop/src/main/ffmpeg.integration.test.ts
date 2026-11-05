@@ -11,6 +11,16 @@ import { peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
 const ffmpeg = findFfmpeg(existsSync, join(__dirname, '../../resources/ffmpeg', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'))!
 const dir = mkdtempSync(join(tmpdir(), 'cuts-'))
 const input = join(dir, 'session with spaces.mov')
+const png = join(dir, 'red.png')
+
+function pixel(file: string, x: number, y: number) {
+  const bytes = execFileSync(ffmpeg, ['-v', 'error', '-i', file, '-vf', `format=rgb24,crop=1:1:${x}:${y}`, '-f', 'rawvideo', '-'], { stdio: 'pipe' })
+  return { r: bytes[0], g: bytes[1], b: bytes[2] }
+}
+
+function isRed({ r, g, b }: { r: number; g: number; b: number }) {
+  return r > 200 && g < 60 && b < 60
+}
 
 function probe(file: string) {
   let info = ''
@@ -35,6 +45,7 @@ describe('runFfmpeg with real ffmpeg', () => {
       '-f', 'lavfi', '-i', 'sine=frequency=440:duration=4',
       '-c:v', 'mpeg4', '-c:a', 'aac', '-shortest', input
     ], { stdio: 'ignore' })
+    execFileSync(ffmpeg, ['-y', '-f', 'lavfi', '-i', 'color=red:s=200x100', '-frames:v', '1', png], { stdio: 'ignore' })
   })
 
   it('exports the marked span at the chosen Instagram size with fades, reporting progress', async () => {
@@ -91,6 +102,32 @@ describe('runFfmpeg with real ffmpeg', () => {
     const peaks = peaksFromSamples(new Int16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2))
     expect(peaks.length).toBeGreaterThan(4 * PEAKS_PER_SECOND - 5)
     expect(Math.max(...peaks)).toBeGreaterThan(0.1)
+  })
+
+  it('the overlay lands where it was placed so the export matches the preview', async () => {
+    const output = join(dir, 'overlay-crop.jpg')
+    await runFfmpeg(ffmpeg, buildFrameArgs({ input, output, time: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, format: '4:5', overlay: { path: png, x: 0.5, y: 0.1, width: 0.25 } }), () => {})
+    expect(isRed(pixel(output, 675, 202))).toBe(true)
+    expect(isRed(pixel(output, 100, 100))).toBe(false)
+  })
+
+  it('in Fit the overlay sits on the blurred band too', async () => {
+    const output = join(dir, 'overlay-fit.jpg')
+    await runFfmpeg(ffmpeg, buildFrameArgs({ input, output, time: 1, framing: 'fit', cropX: 0.5, cropY: 0.5, format: '4:5', overlay: { path: png, x: 0.04, y: 0.032, width: 0.25 } }), () => {})
+    expect(isRed(pixel(output, Math.round(1080 * 0.165), Math.round(1350 * 0.032 + 67)))).toBe(true)
+  })
+
+  it('exports a clip with the overlay at the chosen size and keeps its audio', async () => {
+    const output = join(dir, 'overlay-clip.mp4')
+    await runFfmpeg(ffmpeg, buildFfmpegArgs({ input, output, start: 0, end: 2, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, videoFadeIn: true, framing: 'crop', cropX: 0.5, cropY: 0.5, format: '4:5', overlay: { path: png, x: 0.5, y: 0.1, width: 0.25 } }), () => {})
+    expect(probe(output)).toMatchObject({ width: 1080, height: 1350 })
+    let info = ''
+    try {
+      execFileSync(ffmpeg, ['-hide_banner', '-i', output], { stdio: 'pipe' })
+    } catch (error) {
+      info = String((error as { stderr: Buffer }).stderr)
+    }
+    expect(info).toMatch(/Audio: aac/)
   })
 
   it('cancels the running export, removes its half-written clip and still allows exporting again', async () => {

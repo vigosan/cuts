@@ -18,6 +18,61 @@ const base = {
 
 const valueAfter = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
 
+const overlay = { path: '/o.png', x: 0.5, y: 0.1, width: 0.25 }
+const overlayGraph = (framing: string, fades = '') =>
+  `[0:v]${framing}split[base][ref];[1:v][ref]scale=w='rw*0.25':h=-1[ov];[base][ov]overlay=x='main_w*0.5':y='main_h*0.1'${fades}[v]`
+
+describe('overlay in buildFfmpegArgs', () => {
+  it('reads the PNG right after the video so -t still limits the output, not the PNG', () => {
+    const args = buildFfmpegArgs({ ...base, overlay })
+    const inputs = args.flatMap((a, i) => (a === '-i' ? [i] : []))
+    expect(args[inputs[1] + 1]).toBe('/o.png')
+    expect(inputs[1]).toBeLessThan(args.indexOf('-t'))
+  })
+
+  it('composites after the framing and before the fades so the overlay fades with the clip', () => {
+    const args = buildFfmpegArgs({ ...base, format: '4:5', videoFade: 'black', overlay })
+    expect(args).not.toContain('-vf')
+    expect(valueAfter(args, '-filter_complex')).toBe(
+      overlayGraph(
+        "crop='min(iw,ih*1080/1350)':'min(ih,iw*1350/1080)':'(iw-ow)*0.5':'(ih-oh)*0.5',scale=1080:1350,setsar=1,",
+        ',fade=t=in:st=0:d=1,fade=t=out:st=58:d=1'
+      )
+    )
+    expect(args.slice(args.indexOf('-map'), args.indexOf('-map') + 4)).toEqual(['-map', '[v]', '-map', '0:a?'])
+  })
+
+  it('splits the original picture directly when there is no framing', () => {
+    expect(valueAfter(buildFfmpegArgs({ ...base, overlay }), '-filter_complex')).toBe(overlayGraph(''))
+  })
+
+  it('keeps the audio filter as it is', () => {
+    expect(valueAfter(buildFfmpegArgs({ ...base, audioFade: 'linear', overlay }), '-af')).toBe(
+      'afade=t=in:st=0:d=1,afade=t=out:st=58:d=1'
+    )
+  })
+
+  it('emits the same args as before when there is no overlay', () => {
+    expect(buildFfmpegArgs({ ...base, overlay: null })).toEqual(buildFfmpegArgs(base))
+  })
+})
+
+describe('overlay in buildFrameArgs', () => {
+  const frame = { input: '/in.mov', output: '/o.jpg', time: 5, framing: 'crop' as const, cropX: 0.5, cropY: 0.5, format: 'original' as const }
+
+  it('burns the overlay into the photo with the PNG as second input', () => {
+    const args = buildFrameArgs({ ...frame, overlay })
+    expect(args.slice(args.indexOf('-i'), args.indexOf('-i') + 4)).toEqual(['-i', '/in.mov', '-i', '/o.png'])
+    expect(args).not.toContain('-vf')
+    expect(valueAfter(args, '-filter_complex')).toBe(overlayGraph(''))
+    expect(valueAfter(args, '-map')).toBe('[v]')
+  })
+
+  it('emits the same args as before when there is no overlay', () => {
+    expect(buildFrameArgs({ ...frame, overlay: null })).toEqual(buildFrameArgs(frame))
+  })
+})
+
 describe('buildFfmpegArgs', () => {
   it('seeks before the input so an 80-minute file is not decoded from the start', () => {
     const args = buildFfmpegArgs(base)
