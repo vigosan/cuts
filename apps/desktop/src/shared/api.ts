@@ -2,6 +2,7 @@ import type { Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
 import type { ClipFraming } from '@cuts/core/framing'
 import type { OutputFormat } from '@cuts/core/formats'
+import type { ExportOverlay } from '@cuts/core/overlay'
 
 export type ExportClip = Clip & ClipSettings & { position: number }
 
@@ -19,6 +20,7 @@ export type ExportRequest = {
   baseName: string
   format: OutputFormat
   clips: ExportClip[]
+  overlay: ExportOverlay | null
 }
 
 export type FrameRequest = ClipFraming & {
@@ -27,6 +29,7 @@ export type FrameRequest = ClipFraming & {
   baseName: string
   format: OutputFormat
   time: number
+  overlay: ExportOverlay | null
 }
 
 export type ExportResult = { ok: true; files: string[] } | { ok: false; error: string }

@@ -417,7 +417,8 @@ describe('App', () => {
       clips: [
         expect.objectContaining({ start: 600, end: 650, videoFade: 'white', audioFade: 'natural', fadeSeconds: 2 }),
         expect.objectContaining({ start: 100, end: 140, videoFade: 'white', audioFade: 'natural', fadeSeconds: 2 })
-      ]
+      ],
+      overlay: null
     })
     expect(await screen.findByTestId('export-done')).toBeInTheDocument()
   })
@@ -1205,7 +1206,8 @@ describe('App', () => {
       time: 120,
       framing: 'fit',
       cropX: 0.5,
-      cropY: 0.5
+      cropY: 0.5,
+      overlay: null
     })
     expect(api.reveal).toHaveBeenCalledWith('/Users/vicent/Movies/Instagram/x-0.jpg')
   })
@@ -2039,5 +2041,147 @@ describe('App', () => {
     await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
     await act(async () => finish({ ok: true, files: ['/Movies/Cuts/x/x-1.mp4'] }))
     expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
+  })
+
+  describe('overlay', () => {
+    const LOGO = { path: '/data/overlays/overlay-1.png', aspect: 0.5 }
+    const stored = { ...LOGO, x: 0.9, y: 0.9, width: 0.25 }
+
+    it('starts without an overlay and offers to add one, so the logo is opt-in', async () => {
+      render(<App />)
+      await loadVideo()
+      expect(screen.getByTestId('overlay-add')).toBeInTheDocument()
+      expect(screen.queryByTestId('overlay-thumb')).not.toBeInTheDocument()
+    })
+
+    it('shows the chosen PNG and lets one click remove it again', async () => {
+      vi.mocked(api.chooseOverlay).mockResolvedValue(LOGO)
+      render(<App />)
+      await loadVideo()
+      await userEvent.click(screen.getByTestId('overlay-add'))
+      expect(await screen.findByTestId('overlay-thumb')).toHaveAttribute('src', 'media://file/' + encodeURIComponent(LOGO.path))
+      expect(screen.getByTestId('overlay-name')).toHaveTextContent('overlay-1.png')
+      await userEvent.click(screen.getByTestId('overlay-remove'))
+      expect(screen.getByTestId('overlay-add')).toBeInTheDocument()
+      expect(screen.queryByTestId('overlay-thumb')).not.toBeInTheDocument()
+    })
+
+    it('puts a new overlay at the margin of the output frame, so it starts tidy in any format', async () => {
+      vi.mocked(api.chooseOverlay).mockResolvedValue(LOGO)
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      await userEvent.selectOptions(screen.getByTestId('format'), '4:5')
+      await userEvent.click(screen.getByTestId('overlay-add'))
+      await screen.findByTestId('overlay-thumb')
+      await userEvent.click(await inPanel('choose-folder'))
+      await userEvent.click(screen.getByTestId('export'))
+      expect(api.exportClips).toHaveBeenCalledWith(
+        expect.objectContaining({
+          overlay: { path: LOGO.path, x: expect.closeTo(0.04), y: expect.closeTo(0.032), width: expect.closeTo(0.25) }
+        })
+      )
+    })
+
+    it('brings the overlay back on the next video, since it is a preference and not part of one video', async () => {
+      vi.mocked(api.chooseOverlay).mockResolvedValue(LOGO)
+      const first = render(<App />)
+      await loadVideo()
+      await userEvent.click(screen.getByTestId('overlay-add'))
+      await screen.findByTestId('overlay-thumb')
+      expect(JSON.parse(localStorage.getItem('preferences')!).overlay).toMatchObject({ path: LOGO.path, aspect: 0.5 })
+      first.unmount()
+      render(<App />)
+      await loadVideo()
+      expect(screen.getByTestId('overlay-thumb')).toBeInTheDocument()
+    })
+
+    it('forgets the overlay in preferences when it is removed', async () => {
+      localStorage.setItem('preferences', JSON.stringify({ overlay: stored }))
+      render(<App />)
+      await loadVideo()
+      await userEvent.click(screen.getByTestId('overlay-remove'))
+      expect(JSON.parse(localStorage.getItem('preferences')!).overlay).toBeNull()
+    })
+
+    it('tells the user a file is not a PNG and keeps the overlay they had', async () => {
+      localStorage.setItem('preferences', JSON.stringify({ overlay: stored }))
+      vi.mocked(api.chooseOverlay).mockResolvedValue('invalid')
+      render(<App />)
+      await loadVideo()
+      await userEvent.click(screen.getByTestId('overlay-thumb'))
+      expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.overlayInvalid)
+      expect(screen.getByTestId('overlay-name')).toHaveTextContent('overlay-1.png')
+    })
+
+    it('treats a failed import like an invalid file instead of leaving the row stuck', async () => {
+      vi.mocked(api.chooseOverlay).mockRejectedValue(new Error('boom'))
+      render(<App />)
+      await loadVideo()
+      await userEvent.click(screen.getByTestId('overlay-add'))
+      expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.overlayInvalid)
+      expect(screen.getByTestId('overlay-add')).toBeInTheDocument()
+    })
+
+    it('imports a PNG dropped on the row and does not open it as a video', async () => {
+      vi.mocked(api.importOverlay).mockResolvedValue(LOGO)
+      vi.mocked(api.pathForFile).mockReturnValue('/Users/vicent/Desktop/logo.png')
+      render(<App />)
+      await loadVideo()
+      vi.mocked(api.pathForFile).mockClear()
+      fireEvent.drop(screen.getByTestId('overlay-row'), {
+        dataTransfer: { types: ['Files'], files: [{ name: 'logo.png' }] }
+      })
+      await screen.findByTestId('overlay-thumb')
+      expect(api.importOverlay).toHaveBeenCalledWith('/Users/vicent/Desktop/logo.png')
+      expect(screen.queryByTestId('unsupported-video')).not.toBeInTheDocument()
+      expect(api.pathForFile).toHaveBeenCalledTimes(1)
+    })
+
+    it('sends the overlay clamped inside the current format, so switching format never pushes the logo off the frame', async () => {
+      localStorage.setItem('preferences', JSON.stringify({ overlay: stored }))
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      await userEvent.selectOptions(screen.getByTestId('format'), '1:1')
+      await userEvent.click(await inPanel('choose-folder'))
+      await userEvent.click(screen.getByTestId('export'))
+      expect(api.exportClips).toHaveBeenCalledWith(
+        expect.objectContaining({
+          overlay: { path: LOGO.path, x: expect.closeTo(0.75), y: expect.closeTo(0.875), width: expect.closeTo(0.25) }
+        })
+      )
+    })
+
+    it('puts the overlay on the saved frame photo too, so the cover matches the clips', async () => {
+      localStorage.setItem('preferences', JSON.stringify({ overlay: { ...stored, x: 0.1, y: 0.1 } }))
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      await userEvent.click(await inPanel('choose-folder'))
+      seek(video, 120)
+      await act(async () => menuExportFrame())
+      expect(api.exportFrame).toHaveBeenCalledWith(
+        expect.objectContaining({ overlay: { path: LOGO.path, x: 0.1, y: 0.1, width: 0.25 } })
+      )
+    })
+
+    it('keeps the overlay out of the per-video session, because it is global', async () => {
+      localStorage.setItem('preferences', JSON.stringify({ overlay: stored }))
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      await waitFor(() => expect(api.saveSession).toHaveBeenCalled())
+      for (const [, session] of vi.mocked(api.saveSession).mock.calls) expect(session).not.toHaveProperty('overlay')
+    })
+
+    it('sends no overlay when none is set', async () => {
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      await userEvent.click(await inPanel('choose-folder'))
+      await userEvent.click(screen.getByTestId('export'))
+      expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ overlay: null }))
+    })
   })
 })

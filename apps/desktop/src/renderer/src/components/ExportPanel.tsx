@@ -1,8 +1,10 @@
 import { MAX_CLIP_SECONDS, outputFileName, safeBaseName } from '@cuts/core/clips'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
+import type { Overlay } from '@cuts/core/overlay'
+import { mediaUrl } from '@shared/media-url'
 import { t } from '../i18n'
 import { field } from './field'
-import { FolderIcon, StopIcon } from './icons'
+import { CloseIcon, FolderIcon, StopIcon } from './icons'
 
 export type ExportState =
   | { status: 'idle' }
@@ -18,6 +20,10 @@ type Props = {
   baseName: string
   format: OutputFormat
   onFormat: (format: OutputFormat) => void
+  overlay: Overlay | null
+  onChooseOverlay: () => void
+  onDropOverlay: (file: File) => void
+  onRemoveOverlay: () => void
   folder: string | null
   destination: string | null
   state: ExportState
@@ -92,6 +98,51 @@ export function ExportPanel(p: Props) {
             </option>
           ))}
         </select>
+        <span className="text-ink-2">{t.overlay}</span>
+        <div
+          data-testid="overlay-row"
+          className="flex items-center gap-2"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            const file = e.dataTransfer.files[0]
+            if (file) p.onDropOverlay(file)
+          }}
+        >
+          {p.overlay ? (
+            <>
+              <button
+                data-testid="overlay-change"
+                className={`${field} flex min-w-0 flex-1 items-center gap-2 text-left`}
+                onClick={p.onChooseOverlay}
+              >
+                <img
+                  data-testid="overlay-thumb"
+                  src={mediaUrl(p.overlay.path)}
+                  alt=""
+                  className="size-5 shrink-0 rounded-sm object-contain [background:repeating-conic-gradient(#d4d4d8_0%_25%,#fff_0%_50%)_50%/8px_8px]"
+                />
+                <span data-testid="overlay-name" className="truncate">
+                  {p.overlay.path.split(/[\\/]/).pop()}
+                </span>
+              </button>
+              <button
+                data-testid="overlay-remove"
+                aria-label={t.overlayRemove}
+                title={t.overlayRemove}
+                className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-3 transition duration-150 ease-out hover:bg-sunken hover:text-ink"
+                onClick={p.onRemoveOverlay}
+              >
+                <CloseIcon className="size-4" />
+              </button>
+            </>
+          ) : (
+            <button data-testid="overlay-add" className={`${field} flex-1 text-left text-ink-3`} onClick={p.onChooseOverlay}>
+              {t.overlayAdd}
+            </button>
+          )}
+        </div>
       </div>
 
       {p.overLimit > 0 && (

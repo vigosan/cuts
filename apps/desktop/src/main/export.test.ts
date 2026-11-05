@@ -11,6 +11,7 @@ const request: ExportRequest = {
   folder: '/Movies/Instagram',
   baseName: 'sesion',
   format: 'original',
+  overlay: null,
   clips: [
     { id: 'a', start: 100, end: 150, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, position: 0 },
     { id: 'b', start: 300, end: 340, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, position: 1 }
@@ -51,6 +52,12 @@ describe('exportClips', () => {
     await exportClips({ ...request, clips: [{ ...request.clips[1], videoFade: 'black', position: 2 }] }, d)
     const args = vi.mocked(d.run).mock.calls[0][1]
     expect(args[args.indexOf('-vf') + 1]).toContain('fade=t=in')
+  })
+
+  it('puts the chosen PNG into every clip, so the logo is on the whole carousel', async () => {
+    const d = deps()
+    await exportClips({ ...request, overlay: { path: '/data/overlays/logo.png', x: 0.1, y: 0.2, width: 0.3 } }, d)
+    for (const [, args] of vi.mocked(d.run).mock.calls) expect(args).toContain('/data/overlays/logo.png')
   })
 
   it('reports progress per clip as a fraction of its length', async () => {
@@ -201,7 +208,13 @@ describe('exportClips', () => {
 })
 
 describe('exportFrame', () => {
-  const frame = { input: '/Movies/session.mov', folder: '/Movies/Instagram', baseName: 'sesion', format: '4:5' as const, time: 120, framing: 'crop' as const, cropX: 0.5, cropY: 0.5 }
+  const frame = { input: '/Movies/session.mov', folder: '/Movies/Instagram', baseName: 'sesion', format: '4:5' as const, time: 120, framing: 'crop' as const, cropX: 0.5, cropY: 0.5, overlay: null }
+
+  it('puts the chosen PNG on the saved frame, so the cover matches the clips', async () => {
+    const d = deps()
+    await exportFrame({ ...frame, overlay: { path: '/data/overlays/logo.png', x: 0.1, y: 0.2, width: 0.3 } }, d)
+    expect(vi.mocked(d.run).mock.calls[0][1]).toContain('/data/overlays/logo.png')
+  })
 
   it('writes the still as name-0.jpg next to the clips', async () => {
     const d = deps()

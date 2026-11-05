@@ -1,8 +1,9 @@
 import { useEffect, useEffectEvent, useMemo, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
-import type { ExportResult, RecentVideo } from '@shared/api'
+import type { ExportResult, ImportedOverlay, RecentVideo } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
+import { clampPlacement, defaultPlacement, outputFrame, type Overlay } from '@cuts/core/overlay'
 import { mediaUrl } from '@shared/media-url'
 import { isSupportedVideo } from '@shared/video-formats'
 import { ClipList, type SelectMode } from './components/ClipList'
@@ -76,6 +77,11 @@ export function App() {
     }
   }
   const [format, setFormat] = useState<OutputFormat>(() => loadPreferences().format)
+  const [overlay, setOverlayState] = useState<Overlay | null>(() => loadPreferences().overlay)
+  const setOverlay = (next: Overlay | null) => {
+    setOverlayState(next)
+    savePreferences({ overlay: next })
+  }
   const [restoredFor, setRestoredFor] = useState<string | null>(null)
   const openedPath = useRef<string | null>(null)
   const [fps, setFps] = useState(DEFAULT_FPS)
@@ -296,6 +302,17 @@ export function App() {
     })
   }
 
+  const overlayFrame = () => outputFrame(format, videoSize ?? { width: 1920, height: 1080 })
+  const exportOverlay = () => {
+    if (!overlay) return null
+    const { x, y, width } = clampPlacement(overlay, overlay.aspect, overlayFrame())
+    return { path: overlay.path, x, y, width }
+  }
+  const takeOverlay = (chosen: ImportedOverlay | 'invalid' | null) => {
+    if (chosen === 'invalid') return setSuggestNotice(t.overlayInvalid)
+    if (chosen) setOverlay({ ...chosen, ...defaultPlacement(chosen.aspect, overlayFrame()) })
+  }
+
   const runExport = async () => {
     if (!videoPath || !destination) return
     setExportedWith(exportInputs)
@@ -307,7 +324,8 @@ export function App() {
         folder: destination,
         baseName,
         format,
-        clips: exported.map((clip) => ({ ...clip, ...settingsOf(clip), position: clips.indexOf(clip) }))
+        clips: exported.map((clip) => ({ ...clip, ...settingsOf(clip), position: clips.indexOf(clip) })),
+        overlay: exportOverlay()
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
@@ -317,7 +335,7 @@ export function App() {
     if (!videoPath || !destination || exporting) return
     const { framing, cropX, cropY } = shownSettings
     const result = await window.api
-      .exportFrame({ input: videoPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY })
+      .exportFrame({ input: videoPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY, overlay: exportOverlay() })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     if (result.ok) return window.api.reveal(result.files[0])
     setExportedWith(exportInputs)
@@ -676,6 +694,12 @@ export function App() {
                 setFormat(chosen)
                 savePreferences({ format: chosen })
               }}
+              overlay={overlay}
+              onChooseOverlay={() => void window.api.chooseOverlay().then(takeOverlay, () => takeOverlay('invalid'))}
+              onDropOverlay={(file) =>
+                void window.api.importOverlay(window.api.pathForFile(file)).then(takeOverlay, () => takeOverlay('invalid'))
+              }
+              onRemoveOverlay={() => setOverlay(null)}
               folder={folder}
               destination={destination}
               state={exportState}

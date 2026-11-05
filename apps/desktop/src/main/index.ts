@@ -6,6 +6,7 @@ import electronUpdater from 'electron-updater'
 import type { ExportRequest, FrameRequest, Session } from '../shared/api'
 import { VIDEO_EXTENSIONS } from '../shared/video-formats'
 import { messagesFor, resolveLocale } from '@cuts/core/i18n'
+import type { ExportOverlay } from '@cuts/core/overlay'
 import { exportClips, exportFrame, type ExportDeps } from './export'
 import { bundledFfmpegPath, findFfmpeg } from './ffmpeg-args'
 import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg } from './ffmpeg'
@@ -201,12 +202,14 @@ app.whenReady().then(() => {
     }
   }
 
+  const ownedOverlay = (overlay: ExportOverlay | null) => (overlay && isOwnedOverlay(overlay.path, overlaysDir) ? overlay : null)
+
   ipcMain.handle('export-clips', (event, request: ExportRequest) => {
     cancelled = false
-    return exportClips(request, exportDeps(event))
+    return exportClips({ ...request, overlay: ownedOverlay(request.overlay) }, exportDeps(event))
   })
 
-  ipcMain.handle('export-frame', (event, request: FrameRequest) => exportFrame({ ...request, input: opened(request.input) }, exportDeps(event)))
+  ipcMain.handle('export-frame', (event, request: FrameRequest) => exportFrame({ ...request, input: opened(request.input), overlay: ownedOverlay(request.overlay) }, exportDeps(event)))
 
   const bundledFfmpeg = () => findFfmpeg(existsSync, bundledFfmpegPath(process.platform, process.resourcesPath, process.execPath), !process.mas)
 
