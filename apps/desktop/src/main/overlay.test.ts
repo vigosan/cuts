@@ -52,7 +52,7 @@ describe('importOverlay', () => {
     await writeFile(source, png(200, 100))
     const first = await importOverlay(source, dir, realDeps(1))
     const second = await importOverlay(source, dir, realDeps(2))
-    expect(second).toEqual({ path: join(dir, 'overlay-2.png'), aspect: 0.5 })
+    expect(second).toEqual({ path: join(dir, 'overlay-2.png'), aspect: 0.5, name: 'logo.png' })
     expect(first?.path).toBe(join(dir, 'overlay-1.png'))
     expect(await readdir(dir)).toEqual(['overlay-2.png'])
   })

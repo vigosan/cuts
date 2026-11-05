@@ -2044,7 +2044,7 @@ describe('App', () => {
   })
 
   describe('overlay', () => {
-    const LOGO = { path: '/data/overlays/overlay-1.png', aspect: 0.5 }
+    const LOGO = { path: '/data/overlays/overlay-1.png', aspect: 0.5, name: 'home-sessions.png' }
     const stored = { ...LOGO, x: 0.9, y: 0.9, width: 0.25 }
 
     it('starts without an overlay and offers to add one, so the logo is opt-in', async () => {
@@ -2060,7 +2060,7 @@ describe('App', () => {
       await loadVideo()
       await userEvent.click(screen.getByTestId('overlay-add'))
       expect(await screen.findByTestId('overlay-thumb')).toHaveAttribute('src', 'media://file/' + encodeURIComponent(LOGO.path))
-      expect(screen.getByTestId('overlay-name')).toHaveTextContent('overlay-1.png')
+      expect(screen.getByTestId('overlay-name')).toHaveTextContent('home-sessions.png')
       await userEvent.click(screen.getByTestId('overlay-remove'))
       expect(screen.getByTestId('overlay-add')).toBeInTheDocument()
       expect(screen.queryByTestId('overlay-thumb')).not.toBeInTheDocument()
@@ -2089,7 +2089,7 @@ describe('App', () => {
       await loadVideo()
       await userEvent.click(screen.getByTestId('overlay-add'))
       await screen.findByTestId('overlay-thumb')
-      expect(JSON.parse(localStorage.getItem('preferences')!).overlay).toMatchObject({ path: LOGO.path, aspect: 0.5 })
+      expect(JSON.parse(localStorage.getItem('preferences')!).overlay).toMatchObject({ path: LOGO.path, aspect: 0.5, name: 'home-sessions.png' })
       first.unmount()
       render(<App />)
       await loadVideo()
@@ -2111,7 +2111,7 @@ describe('App', () => {
       await loadVideo()
       await userEvent.click(screen.getByTestId('overlay-thumb'))
       expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.overlayInvalid)
-      expect(screen.getByTestId('overlay-name')).toHaveTextContent('overlay-1.png')
+      expect(screen.getByTestId('overlay-name')).toHaveTextContent('home-sessions.png')
     })
 
     it('treats a failed import like an invalid file instead of leaving the row stuck', async () => {

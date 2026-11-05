@@ -1,4 +1,4 @@
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import type { Size } from '@cuts/core/overlay'
 import type { ImportedOverlay } from '../shared/api'
 
@@ -29,7 +29,7 @@ export async function importOverlay(source: string, dir: string, deps: OverlayDe
   await deps.write(path, bytes)
   const previous = (await deps.list(dir)).filter((name) => join(dir, name) !== path)
   await Promise.all(previous.map((name) => deps.remove(join(dir, name))))
-  return { path, aspect: size.height / size.width }
+  return { path, aspect: size.height / size.width, name: basename(source) }
 }
 
 export function isOwnedOverlay(path: string, dir: string): boolean {

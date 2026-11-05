@@ -3,7 +3,7 @@ import { formatSize, type OutputFormat } from './formats'
 import type { Framing } from './framing'
 
 export type OverlayPlacement = { x: number; y: number; width: number }
-export type Overlay = OverlayPlacement & { path: string; aspect: number }
+export type Overlay = OverlayPlacement & { path: string; aspect: number; name: string }
 export type ExportOverlay = OverlayPlacement & { path: string }
 export type Size = { width: number; height: number }
 export type Guide = 'centerX' | 'centerY' | 'left' | 'right' | 'top' | 'bottom'

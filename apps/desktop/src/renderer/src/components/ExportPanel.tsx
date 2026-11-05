@@ -124,7 +124,7 @@ export function ExportPanel(p: Props) {
                   className="size-5 shrink-0 rounded-sm object-contain [background:repeating-conic-gradient(#d4d4d8_0%_25%,#fff_0%_50%)_50%/8px_8px]"
                 />
                 <span data-testid="overlay-name" className="truncate">
-                  {p.overlay.path.split(/[\\/]/).pop()}
+                  {p.overlay.name}
                 </span>
               </button>
               <button

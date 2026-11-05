@@ -38,7 +38,7 @@ export type ExportProgress = { index: number; ratio: number }
 
 export type RecentVideo = { path: string; name: string; folder: string; openedAt: number; clips: number; poster: string | null }
 
-export type ImportedOverlay = { path: string; aspect: number }
+export type ImportedOverlay = { path: string; aspect: number; name: string }
 
 export type Api = {
   platform: NodeJS.Platform
