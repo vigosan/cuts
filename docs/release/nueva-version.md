@@ -92,6 +92,22 @@ Cuts remembers your work: open a video again and its clips and settings are righ
 - Open videos from the Finder with Open With, by dragging them onto the Dock icon or from File › Open Recent.
 - Clearer notices when a video can't be shown, has no sound to suggest from, or an export fails.
 
+## Novedades de la 1.8
+
+### Español
+
+- Pon un PNG encima de todos los clips, como tu logo o tu usuario: elígelo o suéltalo en la nueva fila Superposición, bajo Formato.
+- Arrástralo sobre el vídeo y tira de una esquina para cambiar su tamaño. Las guías te ayudan a centrarlo o pegarlo a los bordes.
+- Se queda en el mismo sitio relativo al cambiar de formato, se funde con el clip y también sale en la foto de portada.
+- Cuts recuerda la superposición para el siguiente vídeo.
+
+### English
+
+- Put a PNG over every clip, like your logo or your handle: choose it or drop it on the new Overlay row, under Format.
+- Drag it on the video and pull a corner to resize it. Guides help you centre it or line it up with the edges.
+- It keeps its relative place when you change format, fades with the clip and also shows on the cover photo.
+- Cuts remembers the overlay for your next video.
+
 ## Novedades de la 1.7
 
 ### Español
