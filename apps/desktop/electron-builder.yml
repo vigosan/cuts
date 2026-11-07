@@ -21,6 +21,8 @@ mac:
       to: Helpers/ffmpeg
   x64ArchFiles: Contents/Helpers/ffmpeg
   category: public.app-category.video
+  extendInfo:
+    ITSAppUsesNonExemptEncryption: false
   fileAssociations:
     - ext: [mov, mp4, m4v, mkv, webm]
       name: Video
@@ -78,8 +80,6 @@ mas:
   entitlements: build/entitlements.mas.plist
   entitlementsInherit: build/entitlements.mas.inherit.plist
   provisioningProfile: build/embedded.provisionprofile
-  extendInfo:
-    ITSAppUsesNonExemptEncryption: false
 publish:
   provider: github
   owner: vigosan
