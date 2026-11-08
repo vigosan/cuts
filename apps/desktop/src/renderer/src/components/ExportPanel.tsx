@@ -5,7 +5,7 @@ import { WAVE_OPACITIES, type AudioExtras, type ImportedBackground } from '@shar
 import { mediaUrl } from '@shared/media-url'
 import { t } from '../i18n'
 import { field } from './field'
-import { CheckIcon, CloseIcon, FolderIcon, StopIcon } from './icons'
+import { CloseIcon, FolderIcon, StopIcon } from './icons'
 
 export type ExportState =
   | { status: 'idle' }
@@ -123,10 +123,10 @@ export function ExportPanel(p: Props) {
           }}
         >
           {p.overlay ? (
-            <>
+            <div className="relative min-w-0 flex-1">
               <button
                 data-testid="overlay-change"
-                className={`${field} flex min-w-0 flex-1 items-center gap-2 text-left`}
+                className={`${field} flex items-center gap-2 pr-9 text-left`}
                 disabled={exporting}
                 onClick={p.onChooseOverlay}
               >
@@ -140,17 +140,8 @@ export function ExportPanel(p: Props) {
                   {p.overlay.name}
                 </span>
               </button>
-              <button
-                data-testid="overlay-remove"
-                aria-label={t.overlayRemove}
-                title={t.overlayRemove}
-                className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-3 transition duration-150 ease-out hover:bg-sunken hover:text-ink"
-                disabled={exporting}
-                onClick={p.onRemoveOverlay}
-              >
-                <CloseIcon className="size-4" />
-              </button>
-            </>
+              <RemoveButton testId="overlay-remove" label={t.overlayRemove} disabled={exporting} onClick={p.onRemoveOverlay} />
+            </div>
           ) : (
             <button
               data-testid="overlay-add"
@@ -274,10 +265,10 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
         }}
       >
         {audio.background ? (
-          <>
+          <div className="relative min-w-0 flex-1">
             <button
               data-testid="background-change"
-              className={`${field} flex min-w-0 flex-1 items-center gap-2 text-left`}
+              className={`${field} flex items-center gap-2 pr-9 text-left`}
               disabled={disabled}
               onClick={audio.onChooseBackground}
             >
@@ -285,17 +276,8 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
                 {audio.background.name}
               </span>
             </button>
-            <button
-              data-testid="background-remove"
-              aria-label={t.backgroundRemove}
-              title={t.backgroundRemove}
-              className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-3 transition duration-150 ease-out hover:bg-sunken hover:text-ink"
-              disabled={disabled}
-              onClick={audio.onRemoveBackground}
-            >
-              <CloseIcon className="size-4" />
-            </button>
-          </>
+            <RemoveButton testId="background-remove" label={t.backgroundRemove} disabled={disabled} onClick={audio.onRemoveBackground} />
+          </div>
         ) : (
           <button
             data-testid="background-add"
@@ -307,15 +289,10 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
           </button>
         )}
       </div>
-      <div className="col-span-2 flex flex-wrap items-center gap-2">
-        <Chip testId="extras-waveform" pressed={audio.extras.waveform} disabled={disabled} onClick={() => toggle('waveform')}>
-          {t.extrasWaveform}
-        </Chip>
-        <Chip testId="extras-progress" pressed={audio.extras.progressBar} disabled={disabled} onClick={() => toggle('progressBar')}>
-          {t.extrasProgress}
-        </Chip>
-        {(audio.extras.waveform || audio.extras.progressBar) && (
-          <div className="ml-auto flex h-8 items-center rounded-lg bg-sunken pl-1 transition-colors hover:bg-sunken/80">
+      <span className="text-ink-2">{t.extrasWaveform}</span>
+      <div className="flex h-8 items-center justify-end gap-3">
+        {audio.extras.waveform && (
+          <div className="flex h-8 items-center rounded-lg bg-sunken pl-1 transition-colors hover:bg-sunken/80">
             <label title={t.extrasColor} className="relative grid size-6 shrink-0 cursor-pointer place-items-center rounded-md">
               <span
                 data-testid="extras-swatch"
@@ -349,34 +326,58 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
             </select>
           </div>
         )}
+        <Switch testId="extras-waveform" label={t.extrasWaveform} on={audio.extras.waveform} disabled={disabled} onChange={() => toggle('waveform')} />
+      </div>
+      <span className="text-ink-2">{t.extrasProgress}</span>
+      <div className="flex h-8 items-center justify-end">
+        <Switch testId="extras-progress" label={t.extrasProgress} on={audio.extras.progressBar} disabled={disabled} onChange={() => toggle('progressBar')} />
       </div>
     </>
   )
 }
 
-function Chip({
+function Switch({
   testId,
-  pressed,
+  label,
+  on,
   disabled,
-  onClick,
-  children
+  onChange
 }: {
   testId: string
-  pressed: boolean
+  label: string
+  on: boolean
   disabled: boolean
-  onClick: () => void
-  children: string
+  onChange: () => void
 }) {
   return (
     <button
+      type="button"
+      role="switch"
       data-testid={testId}
-      aria-pressed={pressed}
+      aria-checked={on}
+      aria-label={label}
       disabled={disabled}
-      className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.97] ${pressed ? 'bg-accent text-on-accent hover:bg-accent-hover' : 'bg-sunken text-ink-2 hover:text-ink'}`}
+      className={`relative h-5 w-8 shrink-0 rounded-full transition-colors duration-200 ease-out ${on ? 'bg-accent' : 'bg-ink-3/30'}`}
+      onClick={onChange}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 size-4 rounded-full shadow-sm transition-transform duration-200 ease-out ${on ? 'translate-x-3 bg-on-accent' : 'bg-white'}`}
+      />
+    </button>
+  )
+}
+
+function RemoveButton({ testId, label, disabled, onClick }: { testId: string; label: string; disabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      data-testid={testId}
+      aria-label={label}
+      title={label}
+      className="absolute top-1 right-1 grid size-6 place-items-center rounded-md text-ink-3 transition duration-150 ease-out hover:bg-ink-3/15 hover:text-ink"
+      disabled={disabled}
       onClick={onClick}
     >
-      {pressed && <CheckIcon className="size-3.5" />}
-      {children}
+      <CloseIcon className="size-3.5" />
     </button>
   )
 }

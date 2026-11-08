@@ -2410,8 +2410,8 @@ describe('audio recordings', () => {
   it('remembers the progress bar choice for the next export', async () => {
     const video = await loadAudio()
     await addLoop()
-    expect(screen.getByTestId('extras-waveform')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByTestId('extras-progress')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('switch', { name: t.extrasWaveform })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('switch', { name: t.extrasProgress })).toHaveAttribute('aria-checked', 'false')
     await userEvent.click(screen.getByTestId('extras-progress'))
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))
