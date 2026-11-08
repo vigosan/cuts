@@ -359,6 +359,28 @@ export function App() {
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
   }
 
+  const runExportFull = async () => {
+    if (!videoPath || !destination) return
+    setExportedWith(exportInputs)
+    setExportState({ status: 'running', progress: [0] })
+    setExportIds([])
+    const result = await window.api
+      .exportClips({
+        input: videoPath,
+        folder: destination,
+        baseName,
+        format,
+        clips: [{ id: 'full', start: 0, end: duration, ...defaultSettings, position: 0 }],
+        overlay: exportOverlay(),
+        kind: 'full',
+        background: exportBackground(),
+        extras: isAudio ? extras : { waveform: false, progressBar: false },
+        frame: videoSize ?? { width: 1920, height: 1080 }
+      })
+      .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
+    setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
+  }
+
   const runExportFrame = async () => {
     if (!videoPath || !destination || exporting) return
     const { framing, cropX, cropY } = shownSettings
@@ -425,8 +447,9 @@ export function App() {
     []
   )
 
-  const canExport =
-    clips.length > 0 && folder !== null && baseName.trim() !== '' && (!isAudio || (background !== null && videoSize !== null))
+  const hasPicture = !isAudio || (background !== null && videoSize !== null)
+  const canExport = clips.length > 0 && folder !== null && baseName.trim() !== '' && hasPicture
+  const canExportFull = duration > 0 && folder !== null && baseName.trim() !== '' && hasPicture
 
   const fileName = videoPath?.split(/[\\/]/).pop()
 
@@ -802,6 +825,8 @@ export function App() {
                 savePreferences({ folder: chosen })
               }}
               onExport={runExport}
+              canExportFull={canExportFull}
+              onExportFull={runExportFull}
               onCancel={window.api.cancelExport}
               onReveal={window.api.reveal}
               onShare={window.api.share}

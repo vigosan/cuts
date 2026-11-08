@@ -11,6 +11,8 @@ Website: [cuts.vicent.io](https://cuts.vicent.io)
 - Fine-tune from the keyboard: <kbd>,</kbd> <kbd>.</kbd> one frame (with <kbd>⇧</kbd>, one second) and <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd>.
 - ✦ Suggest moments: detects the drops in a set (the mix dipping and coming back) and proposes up to 10 clips spread across the set.
 - Per-clip video and audio fades, and per-clip framing in 4:5, 1:1 and 9:16.
+- Open an audio-only recording too: give it a looping video or a still image as background, with an optional real waveform and progress bar.
+- Export the full recording as one file, also in 16:9 for YouTube.
 - Listen to the whole carousel on a loop and share the exported clips to Photos or AirDrop.
 - Remembers the work for each video, with undo and redo.
 - In English and Spanish. Everything happens on the Mac: no accounts, no uploads, no analytics.

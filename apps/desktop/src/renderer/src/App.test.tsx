@@ -2448,3 +2448,39 @@ describe('audio recordings', () => {
     expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.backgroundTooBig)
   })
 })
+
+describe('export full recording', () => {
+  it('exports the whole video as one file even with no clips marked, fading in and out like the default settings', async () => {
+    render(<App />)
+    await loadVideo()
+    const button = await screen.findByTestId('export-full')
+    expect(button).toBeEnabled()
+    await act(async () => userEvent.click(button))
+    expect(api.exportClips).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'full',
+        clips: [expect.objectContaining({ start: 0, end: 4880, position: 0, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1 })]
+      })
+    )
+  })
+
+  it('cannot start a second export while one is running', async () => {
+    let finish: (result: ExportResult) => void = () => {}
+    vi.mocked(api.exportClips).mockImplementation(() => new Promise((resolve) => (finish = resolve)))
+    render(<App />)
+    await loadVideo()
+    await act(async () => userEvent.click(screen.getByTestId('export-full')))
+    expect(screen.getByTestId('export-full')).toBeDisabled()
+    await act(async () => finish({ ok: true, files: ['/x/sesion-full.mp4'] }))
+  })
+
+  it('waits for a background before exporting a whole audio recording', async () => {
+    vi.mocked(api.openVideo).mockResolvedValue('/Users/vicent/Downloads/set.wav')
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    const video = screen.getByTestId('video') as HTMLVideoElement
+    Object.defineProperty(video, 'duration', { configurable: true, value: 4880 })
+    fireEvent(video, new Event('loadedmetadata'))
+    expect(screen.getByTestId('export-full')).toBeDisabled()
+  })
+})

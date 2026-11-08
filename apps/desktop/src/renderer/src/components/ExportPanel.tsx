@@ -39,6 +39,8 @@ type Props = {
   onBaseName: (value: string) => void
   onChooseFolder: () => void
   onExport: () => void
+  canExportFull: boolean
+  onExportFull: () => void
   onCancel: () => void
   onReveal: (path: string) => void
   onShare: (files: string[]) => void
@@ -222,6 +224,15 @@ export function ExportPanel(p: Props) {
           )}
         </button>
       </div>
+
+      <button
+        data-testid="export-full"
+        className="h-8 rounded-lg text-sm font-medium text-ink-2 transition duration-150 ease-out hover:bg-sunken hover:text-ink disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent"
+        disabled={!p.canExportFull || exporting}
+        onClick={p.onExportFull}
+      >
+        {t.exportFull}
+      </button>
 
       <p data-testid="export-status" className={`min-h-4 text-center text-xs leading-4 text-ink-3 ${p.state.status === 'error' ? '' : 'h-4 truncate'}`}>
         {p.state.status === 'done' && (
