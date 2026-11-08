@@ -40,12 +40,20 @@ export type RecentVideo = { path: string; name: string; folder: string; openedAt
 
 export type ImportedOverlay = { path: string; aspect: number; name: string }
 
+export type BackgroundKind = 'video' | 'image'
+
+export type ImportedBackground = { path: string; kind: BackgroundKind; name: string }
+
+export type ExportBackground = { path: string; kind: BackgroundKind }
+
 export type Api = {
   platform: NodeJS.Platform
   pathForFile(file: File): string
   openVideo(): Promise<string | null>
   chooseOverlay(): Promise<ImportedOverlay | 'invalid' | null>
   importOverlayFile(file: File): Promise<ImportedOverlay | 'invalid'>
+  chooseBackground(): Promise<ImportedBackground | 'invalid' | 'too-big' | null>
+  importBackgroundFile(file: File): Promise<ImportedBackground | 'invalid' | 'too-big'>
   chooseFolder(current: string | null): Promise<string | null>
   moviesDir(): Promise<string>
   exportClips(request: ExportRequest): Promise<ExportResult>

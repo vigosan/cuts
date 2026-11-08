@@ -15,6 +15,8 @@ function makeApi(): Api {
     openVideo: vi.fn(async () => VIDEO),
     chooseOverlay: vi.fn(async () => null),
     importOverlayFile: vi.fn(async () => 'invalid' as const),
+    chooseBackground: vi.fn(async () => null),
+    importBackgroundFile: vi.fn(async () => 'invalid' as const),
     chooseFolder: vi.fn(async () => '/Users/vicent/Movies/Instagram'),
     moviesDir: vi.fn(async () => '/Users/vicent/Movies'),
     exportClips: vi.fn(async () => ({ ok: true as const, files: ['/Users/vicent/Movies/Instagram/x-1.mp4'] })),

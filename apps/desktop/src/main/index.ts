@@ -1,10 +1,11 @@
 import { existsSync } from 'node:fs'
-import { mkdir, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
 import type { ExportRequest, FrameRequest, Session } from '../shared/api'
-import { AUDIO_EXTENSIONS, VIDEO_EXTENSIONS, mediaKind } from '../shared/video-formats'
+import { AUDIO_EXTENSIONS, BACKGROUND_EXTENSIONS, VIDEO_EXTENSIONS, mediaKind } from '../shared/video-formats'
+import { importBackground, isOwnedBackground, type BackgroundDeps } from './background'
 import { messagesFor, resolveLocale } from '@cuts/core/i18n'
 import type { ExportOverlay } from '@cuts/core/overlay'
 import { exportClips, exportFrame, type ExportDeps } from './export'
@@ -120,7 +121,8 @@ app.whenReady().then(() => {
     return path
   }
   const overlaysDir = join(app.getPath('userData'), 'overlays')
-  handleMediaProtocol((path) => openedVideos.has(path) || isOwnedOverlay(path, overlaysDir))
+  const backgroundsDir = join(app.getPath('userData'), 'backgrounds')
+  handleMediaProtocol((path) => openedVideos.has(path) || isOwnedOverlay(path, overlaysDir) || isOwnedBackground(path, backgroundsDir))
   ipcMain.on('allow-video', (event, path: string) => {
     allowVideo(path)
     event.returnValue = null
@@ -160,6 +162,29 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('import-overlay', (_event, path: string) => copyOverlay(path))
+
+  const backgroundDeps: BackgroundDeps = {
+    size: async (path) => (await stat(path)).size,
+    copy: async (from, to) => {
+      await mkdir(backgroundsDir, { recursive: true })
+      await copyFile(from, to)
+    },
+    list: (dir) => readdir(dir).catch(() => []),
+    remove: (path) => rm(path, { force: true }),
+    now: Date.now
+  }
+  const copyBackground = (source: string) => importBackground(source, backgroundsDir, backgroundDeps)
+
+  ipcMain.handle('choose-background', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)!
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters: [{ name: t.backgroundFilter, extensions: BACKGROUND_EXTENSIONS }]
+    })
+    return result.canceled ? null : copyBackground(result.filePaths[0])
+  })
+
+  ipcMain.handle('import-background', (_event, path: string) => copyBackground(path))
 
   ipcMain.handle('choose-folder', async (event, current: string | null) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
