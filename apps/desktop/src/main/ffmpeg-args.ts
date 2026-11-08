@@ -2,7 +2,7 @@ import { posix, win32 } from 'node:path'
 import type { AudioFade, VideoFade } from '@cuts/core/fades'
 import type { ClipFraming } from '@cuts/core/framing'
 import type { ExportOverlay, Size } from '@cuts/core/overlay'
-import type { ExportBackground } from '../shared/api'
+import type { AudioExtras, ExportBackground } from '../shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 
 export type CutOptions = ClipFraming & {
@@ -19,7 +19,7 @@ export type CutOptions = ClipFraming & {
   bitrate?: string
 }
 
-export type AudioExtras = { waveform: boolean; progressBar: boolean }
+export type { AudioExtras }
 
 export type AudioCutOptions = CutOptions & { background: ExportBackground; extras: AudioExtras; bitrate: string; frame: Size }
 

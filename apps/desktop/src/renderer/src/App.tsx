@@ -328,7 +328,11 @@ export function App() {
         baseName,
         format,
         clips: exported.map((clip) => ({ ...clip, ...settingsOf(clip), position: clips.indexOf(clip) })),
-        overlay: exportOverlay()
+        overlay: exportOverlay(),
+        kind: 'clips',
+        background: null,
+        extras: { waveform: false, progressBar: false },
+        frame: videoSize ?? { width: 1920, height: 1080 }
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
@@ -338,7 +342,7 @@ export function App() {
     if (!videoPath || !destination || exporting) return
     const { framing, cropX, cropY } = shownSettings
     const result = await window.api
-      .exportFrame({ input: videoPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY, overlay: exportOverlay() })
+      .exportFrame({ input: videoPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY, overlay: exportOverlay(), background: null })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     if (result.ok) return window.api.reveal(result.files[0])
     setExportedWith(exportInputs)

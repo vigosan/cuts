@@ -123,6 +123,7 @@ function english(locale: Locale) {
     cancel: 'Cancel',
     ffmpegMissing: 'FFmpeg is missing from the app. Reinstall Cuts to fix it.',
     exportCancelled: 'Export cancelled.',
+    backgroundMissing: 'Add a background to export this recording.',
     exportCancelledKept: (n: number) =>
       isOne(locale, n) ? `Export cancelled. ${n} clip was saved.` : `Export cancelled. ${n} clips were saved.`,
     clipFailed: (n: number, reason: string) => `Clip ${n} failed: ${reason}`,
@@ -350,6 +351,7 @@ function spanish(locale: Locale): Messages {
     cancel: 'Cancelar',
     ffmpegMissing: 'Falta FFmpeg dentro de la app. Reinstala Cuts para solucionarlo.',
     exportCancelled: 'Exportación cancelada.',
+    backgroundMissing: 'Añade un fondo para exportar esta grabación.',
     exportCancelledKept: (n) =>
       isOne(locale, n) ? `Exportación cancelada. Se guardó ${n} clip.` : `Exportación cancelada. Se guardaron ${n} clips.`,
     clipFailed: (n, reason) => `Falló el clip ${n}: ${reason}`,

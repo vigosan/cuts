@@ -1,8 +1,9 @@
 import { join } from 'node:path'
 import type { ExportProgress, ExportRequest, ExportResult, FrameRequest } from '../shared/api'
-import { clipDuration, frameFileName, outputFileName, safeBaseName } from '@cuts/core/clips'
+import { clipDuration, frameFileName, fullFileName, outputFileName, safeBaseName } from '@cuts/core/clips'
 import type { Messages } from '@cuts/core/i18n'
-import { buildFfmpegArgs, buildFrameArgs } from './ffmpeg-args'
+import { mediaKind } from '../shared/video-formats'
+import { buildAudioArgs, buildFfmpegArgs, buildFrameArgs } from './ffmpeg-args'
 
 export type ExportDeps = {
   ffmpeg: string | null
@@ -32,13 +33,16 @@ function folderProblem(error: Error & { code?: string }, folder: string, deps: E
 export async function exportClips(request: ExportRequest, deps: ExportDeps): Promise<ExportResult> {
   const { ffmpeg, t } = deps
   if (!ffmpeg) return { ok: false, error: t.ffmpegMissing }
+  const { background } = request
+  if (!background && mediaKind(request.input) === 'audio') return { ok: false, error: t.backgroundMissing }
 
   try {
     await deps.ensureDir(request.folder)
   } catch (error) {
     return { ok: false, error: folderProblem(error as Error, request.folder, deps) ?? t.folderFailed((error as Error).message) }
   }
-  const names = request.clips.map((clip) => outputFileName(safeBaseName(request.baseName), clip.position))
+  const base = safeBaseName(request.baseName)
+  const names = request.clips.map((clip) => (request.kind === 'full' ? fullFileName(base) : outputFileName(base, clip.position)))
   const files = names.map((name) => join(request.folder, name))
   const existing = names.filter((_, index) => deps.exists(files[index]))
   if (existing.length > 0 && !(await deps.confirmOverwrite(existing))) {
@@ -46,7 +50,8 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
   }
 
   for (const [index, clip] of request.clips.entries()) {
-    const args = buildFfmpegArgs({ ...request, ...clip, videoFadeIn: clip.position > 0, output: files[index] })
+    const cut = { ...request, ...clip, videoFadeIn: request.kind === 'full' || clip.position > 0, output: files[index] }
+    const args = background ? buildAudioArgs({ ...cut, background, bitrate: '4M' }) : buildFfmpegArgs(cut)
     const length = clipDuration(clip)
     try {
       await deps.run(ffmpeg, args, (seconds) => deps.onProgress({ index, ratio: Math.min(1, seconds / length) }))
@@ -77,7 +82,8 @@ export async function exportFrame(request: FrameRequest, deps: ExportDeps): Prom
   if (deps.exists(file) && !(await deps.confirmOverwrite([name]))) return { ok: false, error: t.exportCancelled }
 
   try {
-    await deps.run(ffmpeg, buildFrameArgs({ ...request, output: file }), () => {})
+    const source = request.background ? { input: request.background.path, time: 0 } : {}
+    await deps.run(ffmpeg, buildFrameArgs({ ...request, ...source, output: file }), () => {})
   } catch (error) {
     await deps.remove(file).catch(() => {})
     return { ok: false, error: folderProblem(error as Error, request.folder, deps) ?? (error as Error).message }

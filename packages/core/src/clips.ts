@@ -37,6 +37,10 @@ export function outputFileName(base: string, index: number): string {
   return `${base}-${index + 1}.mp4`
 }
 
+export function fullFileName(base: string): string {
+  return `${base}-full.mp4`
+}
+
 export function frameFileName(base: string): string {
   return `${base}-0.jpg`
 }

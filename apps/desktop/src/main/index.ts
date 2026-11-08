@@ -3,7 +3,7 @@ import { copyFile, mkdir, readdir, readFile, realpath, rm, stat, writeFile } fro
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
-import type { ExportRequest, FrameRequest, Session } from '../shared/api'
+import type { ExportBackground, ExportRequest, FrameRequest, Session } from '../shared/api'
 import { AUDIO_EXTENSIONS, BACKGROUND_EXTENSIONS, VIDEO_EXTENSIONS, mediaKind } from '../shared/video-formats'
 import { importBackground, isOwnedBackground, type BackgroundDeps } from './background'
 import { messagesFor, resolveLocale } from '@cuts/core/i18n'
@@ -229,13 +229,15 @@ app.whenReady().then(() => {
   }
 
   const ownedOverlay = (overlay: ExportOverlay | null) => (overlay && isOwnedOverlay(overlay.path, overlaysDir) ? overlay : null)
+  const ownedBackground = (background: ExportBackground | null) =>
+    background && isOwnedBackground(background.path, backgroundsDir) ? background : null
 
   ipcMain.handle('export-clips', (event, request: ExportRequest) => {
     cancelled = false
-    return exportClips({ ...request, overlay: ownedOverlay(request.overlay) }, exportDeps(event))
+    return exportClips({ ...request, overlay: ownedOverlay(request.overlay), background: ownedBackground(request.background) }, exportDeps(event))
   })
 
-  ipcMain.handle('export-frame', (event, request: FrameRequest) => exportFrame({ ...request, input: opened(request.input), overlay: ownedOverlay(request.overlay) }, exportDeps(event)))
+  ipcMain.handle('export-frame', (event, request: FrameRequest) => exportFrame({ ...request, input: opened(request.input), overlay: ownedOverlay(request.overlay), background: ownedBackground(request.background) }, exportDeps(event)))
 
   const bundledFfmpeg = () => findFfmpeg(existsSync, bundledFfmpegPath(process.platform, process.resourcesPath, process.execPath), !process.mas)
 

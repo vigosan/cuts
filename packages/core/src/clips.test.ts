@@ -7,6 +7,7 @@ import {
   isOverLimit,
   isPastCarousel,
   frameFileName,
+  fullFileName,
   outputFileName,
   safeBaseName
 } from './clips'
@@ -56,6 +57,10 @@ describe('output naming', () => {
   it('numbers clips from 1 so they upload in carousel order', () => {
     expect(outputFileName('sesion', 0)).toBe('sesion-1.mp4')
     expect(outputFileName('sesion', 5)).toBe('sesion-6.mp4')
+  })
+
+  it('names the full recording apart so it never replaces a carousel clip', () => {
+    expect(fullFileName('sesion')).toBe('sesion-full.mp4')
   })
 
   it('numbers the still frame 0, so it sorts before clip 1 and opens the carousel', () => {

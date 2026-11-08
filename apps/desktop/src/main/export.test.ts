@@ -12,6 +12,10 @@ const request: ExportRequest = {
   baseName: 'sesion',
   format: 'original',
   overlay: null,
+  kind: 'clips',
+  background: null,
+  extras: { waveform: false, progressBar: false },
+  frame: { width: 1920, height: 1080 },
   clips: [
     { id: 'a', start: 100, end: 150, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, position: 0 },
     { id: 'b', start: 300, end: 340, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, position: 1 }
@@ -207,8 +211,77 @@ describe('exportClips', () => {
   })
 })
 
+const frameRequest = { input: '/Movies/session.mov', folder: '/Movies/Instagram', baseName: 'sesion', format: '4:5' as const, time: 120, framing: 'crop' as const, cropX: 0.5, cropY: 0.5, overlay: null, background: null }
+
+describe('audio recordings and full recordings', () => {
+  const audioRequest: ExportRequest = {
+    ...request,
+    input: '/Downloads/set.wav',
+    background: { path: '/data/backgrounds/background-1.mp4', kind: 'video' },
+    extras: { waveform: true, progressBar: false }
+  }
+  const full = (r: ExportRequest, end: number): ExportRequest => ({ ...r, kind: 'full', clips: [{ ...r.clips[0], start: 0, end, position: 0 }] })
+
+  it('writes the full recording as name-full.mp4 so it never replaces carousel clip 1', async () => {
+    const d = deps()
+    const result = await exportClips(full(request, 7200), d)
+    expect(result).toEqual({ ok: true, files: [join('/Movies/Instagram', 'sesion-full.mp4')] })
+  })
+
+  it('asks before replacing a full recording exported earlier', async () => {
+    const d = deps({ exists: (p) => p.endsWith('sesion-full.mp4'), confirmOverwrite: vi.fn(async () => false) })
+    await exportClips(full(request, 7200), d)
+    expect(d.confirmOverwrite).toHaveBeenCalledWith(['sesion-full.mp4'])
+  })
+
+  it('exports an audio recording over its looping background at 4 Mb/s', async () => {
+    const d = deps()
+    await exportClips(audioRequest, d)
+    const args = vi.mocked(d.run).mock.calls[0][1]
+    expect(args).toContain('-stream_loop')
+    expect(args[args.indexOf('-b:v') + 1]).toBe('4M')
+    expect(args.join(' ')).toContain('showwaves')
+  })
+
+  it('keeps video clips exactly as before when there is no background', async () => {
+    const d = deps()
+    await exportClips(request, d)
+    const args = vi.mocked(d.run).mock.calls[0][1]
+    expect(args).not.toContain('-stream_loop')
+    expect(args[args.indexOf('-b:v') + 1]).toBe('12M')
+  })
+
+  it('reports progress of a two hour set against its whole length', async () => {
+    const d = deps({ run: vi.fn(async (_f: string, _a: string[], onSeconds: (s: number) => void) => onSeconds(3600)) })
+    await exportClips(full(audioRequest, 7200), d)
+    expect(d.onProgress).toHaveBeenCalledWith({ index: 0, ratio: 0.5 })
+  })
+
+  it('removes the half-written full recording when cancelled', async () => {
+    const d = deps({ cancelled: () => true, run: vi.fn(async () => Promise.reject(new Error('killed'))) })
+    const result = await exportClips(full(audioRequest, 7200), d)
+    expect(d.remove).toHaveBeenCalledWith(join('/Movies/Instagram', 'sesion-full.mp4'))
+    expect(result).toEqual({ ok: false, error: t.exportCancelled })
+  })
+
+  it('refuses an audio recording without background instead of handing ffmpeg a file with no picture', async () => {
+    const d = deps()
+    const result = await exportClips({ ...audioRequest, background: null }, d)
+    expect(result).toEqual({ ok: false, error: t.backgroundMissing })
+    expect(d.run).not.toHaveBeenCalled()
+  })
+
+  it('saves the still of an audio recording from its background', async () => {
+    const d = deps()
+    await exportFrame({ ...frameRequest, input: '/Downloads/set.wav', background: { path: '/data/backgrounds/background-1.png', kind: 'image' } }, d)
+    const args = vi.mocked(d.run).mock.calls[0][1]
+    expect(args).toContain('/data/backgrounds/background-1.png')
+    expect(args).not.toContain('/Downloads/set.wav')
+  })
+})
+
 describe('exportFrame', () => {
-  const frame = { input: '/Movies/session.mov', folder: '/Movies/Instagram', baseName: 'sesion', format: '4:5' as const, time: 120, framing: 'crop' as const, cropX: 0.5, cropY: 0.5, overlay: null }
+  const frame = { input: '/Movies/session.mov', folder: '/Movies/Instagram', baseName: 'sesion', format: '4:5' as const, time: 120, framing: 'crop' as const, cropX: 0.5, cropY: 0.5, overlay: null, background: null }
 
   it('puts the chosen PNG on the saved frame, so the cover matches the clips', async () => {
     const d = deps()

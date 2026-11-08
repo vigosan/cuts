@@ -2,7 +2,7 @@ import type { Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
 import type { ClipFraming } from '@cuts/core/framing'
 import type { OutputFormat } from '@cuts/core/formats'
-import type { ExportOverlay } from '@cuts/core/overlay'
+import type { ExportOverlay, Size } from '@cuts/core/overlay'
 
 export type ExportClip = Clip & ClipSettings & { position: number }
 
@@ -21,6 +21,10 @@ export type ExportRequest = {
   format: OutputFormat
   clips: ExportClip[]
   overlay: ExportOverlay | null
+  kind: 'clips' | 'full'
+  background: ExportBackground | null
+  extras: AudioExtras
+  frame: Size
 }
 
 export type FrameRequest = ClipFraming & {
@@ -30,6 +34,7 @@ export type FrameRequest = ClipFraming & {
   format: OutputFormat
   time: number
   overlay: ExportOverlay | null
+  background: ExportBackground | null
 }
 
 export type ExportResult = { ok: true; files: string[] } | { ok: false; error: string }
@@ -45,6 +50,8 @@ export type BackgroundKind = 'video' | 'image'
 export type ImportedBackground = { path: string; kind: BackgroundKind; name: string }
 
 export type ExportBackground = { path: string; kind: BackgroundKind }
+
+export type AudioExtras = { waveform: boolean; progressBar: boolean }
 
 export type Api = {
   platform: NodeJS.Platform

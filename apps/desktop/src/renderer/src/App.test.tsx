@@ -421,7 +421,11 @@ describe('App', () => {
         expect.objectContaining({ start: 600, end: 650, videoFade: 'white', audioFade: 'natural', fadeSeconds: 2 }),
         expect.objectContaining({ start: 100, end: 140, videoFade: 'white', audioFade: 'natural', fadeSeconds: 2 })
       ],
-      overlay: null
+      overlay: null,
+      kind: 'clips',
+      background: null,
+      extras: { waveform: false, progressBar: false },
+      frame: expect.anything()
     })
     expect(await screen.findByTestId('export-done')).toBeInTheDocument()
   })
@@ -1210,7 +1214,8 @@ describe('App', () => {
       framing: 'fit',
       cropX: 0.5,
       cropY: 0.5,
-      overlay: null
+      overlay: null,
+      background: null
     })
     expect(api.reveal).toHaveBeenCalledWith('/Users/vicent/Movies/Instagram/x-0.jpg')
   })
