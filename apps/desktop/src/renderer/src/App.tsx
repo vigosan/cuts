@@ -12,6 +12,8 @@ import { ClipControls } from './components/ClipControls'
 import { CropFrame } from './components/CropFrame'
 import { FitPreview } from './components/FitPreview'
 import { OverlayLayer } from './components/OverlayLayer'
+import { BarPreview, WavePreview } from './components/AudioLayers'
+import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement } from '@cuts/core/audio-layers'
 import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
 import { Notice } from './components/Notice'
 import { RecentVideos } from './components/RecentVideos'
@@ -643,6 +645,34 @@ export function App() {
                     className="size-full select-none"
                     onError={() => setOverlay(null)}
                   />
+                </OverlayLayer>
+              )}
+              {isAudio && background && videoSize && videoSize.width > 0 && extras.waveform && (
+                <OverlayLayer
+                  video={videoSize}
+                  target={target ?? null}
+                  framing={shownSettings.framing}
+                  zone={shownSettings}
+                  placement={extras.wave ?? defaultWavePlacement(outputFrame(format, videoSize))}
+                  aspect={WAVE_ASPECT}
+                  testId="wave"
+                  onChange={(wave) => setExtras({ ...extras, wave })}
+                >
+                  <WavePreview color={extras.color} opacity={extras.opacity} />
+                </OverlayLayer>
+              )}
+              {isAudio && background && videoSize && videoSize.width > 0 && extras.progressBar && (
+                <OverlayLayer
+                  video={videoSize}
+                  target={target ?? null}
+                  framing={shownSettings.framing}
+                  zone={shownSettings}
+                  placement={extras.bar ?? defaultBarPlacement(outputFrame(format, videoSize))}
+                  aspect={BAR_ASPECT}
+                  testId="bar"
+                  onChange={(bar) => setExtras({ ...extras, bar })}
+                >
+                  <BarPreview color={extras.color} progress={duration > 0 ? time / duration : 0} />
                 </OverlayLayer>
               )}
               {videoError && (

@@ -308,53 +308,81 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
         )}
       </div>
       <span />
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-ink-2">
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            data-testid="extras-waveform"
-            checked={audio.extras.waveform}
-            disabled={disabled}
-            onChange={() => toggle('waveform')}
-          />
+      <div className="flex flex-wrap items-center gap-2">
+        <Chip testId="extras-waveform" pressed={audio.extras.waveform} disabled={disabled} onClick={() => toggle('waveform')}>
           {t.extrasWaveform}
-        </label>
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            data-testid="extras-progress"
-            checked={audio.extras.progressBar}
-            disabled={disabled}
-            onChange={() => toggle('progressBar')}
-          />
+        </Chip>
+        <Chip testId="extras-progress" pressed={audio.extras.progressBar} disabled={disabled} onClick={() => toggle('progressBar')}>
           {t.extrasProgress}
-        </label>
-        <input
-          type="color"
-          data-testid="extras-color"
-          aria-label={t.extrasColor}
-          title={t.extrasColor}
-          className="size-6 cursor-pointer rounded border border-line bg-transparent"
-          value={audio.extras.color}
-          disabled={disabled}
-          onChange={(e) => audio.onExtras({ ...audio.extras, color: e.target.value })}
-        />
-        <select
-          data-testid="extras-opacity"
-          aria-label={t.extrasOpacity}
-          title={t.extrasOpacity}
-          className={field}
-          value={audio.extras.opacity}
-          disabled={disabled}
-          onChange={(e) => audio.onExtras({ ...audio.extras, opacity: Number(e.target.value) })}
-        >
-          {WAVE_OPACITIES.map((opacity) => (
-            <option key={opacity} value={opacity}>
-              {Math.round(opacity * 100)} %
-            </option>
-          ))}
-        </select>
+        </Chip>
       </div>
+      {(audio.extras.waveform || audio.extras.progressBar) && (
+        <>
+          <span />
+          <div className="flex items-center gap-2">
+            <label
+              title={t.extrasColor}
+              className="relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg bg-sunken transition-colors hover:bg-accent-soft"
+            >
+              <span
+                data-testid="extras-swatch"
+                className="size-4 rounded-full ring-1 ring-ink-3/40"
+                style={{ backgroundColor: audio.extras.color }}
+              />
+              <input
+                type="color"
+                data-testid="extras-color"
+                aria-label={t.extrasColor}
+                className="absolute inset-0 cursor-pointer opacity-0"
+                value={audio.extras.color}
+                disabled={disabled}
+                onChange={(e) => audio.onExtras({ ...audio.extras, color: e.target.value })}
+              />
+            </label>
+            <select
+              data-testid="extras-opacity"
+              aria-label={t.extrasOpacity}
+              title={t.extrasOpacity}
+              className={`${field} w-24`}
+              value={audio.extras.opacity}
+              disabled={disabled}
+              onChange={(e) => audio.onExtras({ ...audio.extras, opacity: Number(e.target.value) })}
+            >
+              {WAVE_OPACITIES.map((opacity) => (
+                <option key={opacity} value={opacity}>
+                  {Math.round(opacity * 100)} %
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
     </>
+  )
+}
+
+function Chip({
+  testId,
+  pressed,
+  disabled,
+  onClick,
+  children
+}: {
+  testId: string
+  pressed: boolean
+  disabled: boolean
+  onClick: () => void
+  children: string
+}) {
+  return (
+    <button
+      data-testid={testId}
+      aria-pressed={pressed}
+      disabled={disabled}
+      className={`h-8 rounded-lg px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.97] ${pressed ? 'bg-accent-soft text-accent' : 'bg-sunken text-ink-2 hover:text-ink'}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
   )
 }

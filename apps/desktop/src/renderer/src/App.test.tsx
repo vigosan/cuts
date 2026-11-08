@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Api, ExportResult } from '@shared/api'
 import { clampPlacement, moveOverlay, overlayBox, previewFrame, resizeOverlay } from '@cuts/core/overlay'
+import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement } from '@cuts/core/audio-layers'
 import { App } from './App'
 import { t } from './i18n'
 
@@ -2409,8 +2410,8 @@ describe('audio recordings', () => {
   it('remembers the progress bar choice for the next export', async () => {
     const video = await loadAudio()
     await addLoop()
-    expect(screen.getByTestId('extras-waveform')).toBeChecked()
-    expect(screen.getByTestId('extras-progress')).not.toBeChecked()
+    expect(screen.getByTestId('extras-waveform')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('extras-progress')).toHaveAttribute('aria-pressed', 'false')
     await userEvent.click(screen.getByTestId('extras-progress'))
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))
@@ -2425,6 +2426,68 @@ describe('audio recordings', () => {
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))
     expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: false, color: '#4da8ff', opacity: 0.5, wave: null, bar: null } }))
+  })
+
+  it('shows the chosen colour in the swatch, so white is not mistaken for an empty box', async () => {
+    await loadAudio()
+    await addLoop()
+    fireEvent.input(screen.getByTestId('extras-color'), { target: { value: '#4da8ff' } })
+    expect(screen.getByTestId('extras-swatch')).toHaveStyle({ backgroundColor: '#4da8ff' })
+  })
+
+  describe('placing the waveform and the progress bar', () => {
+    const HD = { width: 1920, height: 1080 }
+    const frameBox = () => previewFrame({ width: 1000, height: 88 }, HD, null, 'crop', { cropX: 0.5, cropY: 0.5 })
+    const stored = () => JSON.parse(localStorage.getItem('preferences')!).extras
+
+    it('shows the waveform on the preview where the export will draw it', async () => {
+      await loadAudio()
+      await addLoop()
+      const wave = screen.getByTestId('wave')
+      const box = overlayBox(frameBox(), defaultWavePlacement(HD), WAVE_ASPECT)
+      expect(parseFloat(wave.style.left)).toBeCloseTo(box.left)
+      expect(parseFloat(wave.style.top)).toBeCloseTo(box.top)
+      expect(parseFloat(wave.style.width)).toBeCloseTo(box.width)
+      await userEvent.click(screen.getByTestId('extras-waveform'))
+      expect(screen.queryByTestId('wave')).not.toBeInTheDocument()
+    })
+
+    it('moves the waveform with the pointer and exports it there', async () => {
+      const video = await loadAudio()
+      await addLoop()
+      const frame = frameBox()
+      fireEvent.pointerDown(screen.getByTestId('wave'), { clientX: 500, clientY: 70 })
+      fireEvent.pointerMove(window, { clientX: 500 - frame.width * 0.1, clientY: 70 })
+      fireEvent.pointerUp(window, { clientX: 500 - frame.width * 0.1, clientY: 70 })
+      const moved = moveOverlay(defaultWavePlacement(HD), -0.1, 0, WAVE_ASPECT, HD).placement
+      expect(stored().wave).toMatchObject({ x: expect.closeTo(moved.x), y: expect.closeTo(moved.y) })
+      await markClip(video, 600, 650)
+      await act(async () => userEvent.click(screen.getByTestId('export')))
+      expect(vi.mocked(api.exportClips).mock.calls[0][0].extras.wave).toMatchObject({ x: expect.closeTo(moved.x) })
+    })
+
+    it('resizes the waveform from a corner keeping its shape', async () => {
+      await loadAudio()
+      await addLoop()
+      await userEvent.hover(screen.getByTestId('wave'))
+      const frame = frameBox()
+      fireEvent.pointerDown(screen.getByTestId('wave-handle-br'), { clientX: 700, clientY: 80 })
+      fireEvent.pointerMove(window, { clientX: 700 - frame.width * 0.1, clientY: 80 })
+      fireEvent.pointerUp(window, { clientX: 700 - frame.width * 0.1, clientY: 80 })
+      const resized = resizeOverlay(defaultWavePlacement(HD), 'br', -0.1, WAVE_ASPECT, HD)
+      expect(stored().wave.width).toBeCloseTo(resized.width)
+    })
+
+    it('shows the progress bar where it will be, filled as far as playback has gone', async () => {
+      const video = await loadAudio()
+      await addLoop()
+      await userEvent.click(screen.getByTestId('extras-progress'))
+      const bar = screen.getByTestId('bar')
+      const box = overlayBox(frameBox(), defaultBarPlacement(HD), BAR_ASPECT)
+      expect(parseFloat(bar.style.top)).toBeCloseTo(box.top)
+      seek(video, 1220)
+      expect(screen.getByTestId('bar-fill')).toHaveStyle({ width: '25%' })
+    })
   })
 
   it('never asks ffmpeg for filmstrip frames of an audio file', async () => {
