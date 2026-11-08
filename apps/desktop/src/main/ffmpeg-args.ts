@@ -1,7 +1,8 @@
 import { posix, win32 } from 'node:path'
 import type { AudioFade, VideoFade } from '@cuts/core/fades'
 import type { ClipFraming } from '@cuts/core/framing'
-import type { ExportOverlay } from '@cuts/core/overlay'
+import type { ExportOverlay, Size } from '@cuts/core/overlay'
+import type { ExportBackground } from '../shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 
 export type CutOptions = ClipFraming & {
@@ -15,7 +16,12 @@ export type CutOptions = ClipFraming & {
   videoFadeIn: boolean
   format: OutputFormat
   overlay?: ExportOverlay | null
+  bitrate?: string
 }
+
+export type AudioExtras = { waveform: boolean; progressBar: boolean }
+
+export type AudioCutOptions = CutOptions & { background: ExportBackground; extras: AudioExtras; bitrate: string; frame: Size }
 
 const num = (n: number) => String(Number(n.toFixed(3)))
 
@@ -111,7 +117,74 @@ export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = proce
     ...(o.overlay ? ['-map', '0:a?'] : []),
     ...(audio.length ? ['-af', audio.join(',')] : []),
     ...VIDEO_ENCODERS[platform]!,
-    '-b:v', '12M',
+    '-b:v', o.bitrate ?? '12M',
+    '-c:a', 'aac',
+    '-b:a', '320k',
+    '-movflags', '+faststart',
+    '-progress', 'pipe:1',
+    '-nostats',
+    o.output
+  ]
+}
+
+const even = (n: number) => Math.round(n / 2) * 2
+
+function backgroundInput(background: ExportBackground): string[] {
+  return background.kind === 'image'
+    ? ['-loop', '1', '-framerate', '30', '-i', background.path]
+    : ['-stream_loop', '-1', '-i', background.path]
+}
+
+export function buildAudioArgs(o: AudioCutOptions, platform: NodeJS.Platform = process.platform): string[] {
+  const duration = o.end - o.start
+  const { width, height } = formatSize(o.format) ?? o.frame
+  const framing = framingFilters(o)
+  const videoFades =
+    o.videoFade === 'none'
+      ? []
+      : fadeFilters('fade', duration, o.fadeSeconds, o.videoFade === 'white' ? ':color=white' : '').slice(o.videoFadeIn ? 0 : 1)
+  const audioFades =
+    o.audioFade === 'none' ? [] : fadeFilters('afade', duration, o.fadeSeconds, o.audioFade === 'natural' ? ':curve=qsin' : '')
+  const parts = [`[0:v]${[...framing, 'fps=30'].join(',')}[c0]`]
+  let current = 'c0'
+  const next = (label: string, chain: string) => {
+    parts.push(chain.replace('$in', `[${current}]`).replace('$out', `[${label}]`))
+    current = label
+  }
+  if (o.overlay) {
+    next(
+      'c1',
+      `$insplit[base][ref];[2:v][ref]scale=w='rw*${num(o.overlay.width)}':h=-1[ov];[base][ov]overlay=x='main_w*${num(o.overlay.x)}':y='main_h*${num(o.overlay.y)}'$out`
+    )
+  }
+  const audio = audioFades.length ? audioFades.join(',') : 'anull'
+  if (o.extras.waveform) {
+    parts.push(
+      `[1:a]${audio},asplit[a][aw]`,
+      `[aw]aformat=channel_layouts=mono,showwaves=s=${even(width * 0.52)}x${even(height * 0.074)}:mode=cline:rate=30:scale=sqrt:draw=full:colors=white,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*0.3*min(1,min(X,W-X)/(0.22*W))'[w]`
+    )
+    next('c2', '$in[w]overlay=x=(W-w)/2:y=0.86*H-h$out')
+  } else {
+    parts.push(`[1:a]${audio}[a]`)
+  }
+  if (o.extras.progressBar) {
+    parts.push(`color=c=white@0.8:s=${width}x${Math.max(2, Math.round(height * 0.0037))}:r=30[p]`)
+    next('c3', `$in[p]overlay=x='-w+w*t/${num(duration)}':y=H-h:eval=frame:shortest=0$out`)
+  }
+  next('v', `$in${[...videoFades, 'format=yuv420p'].join(',')}$out`)
+  return [
+    '-hide_banner',
+    '-y',
+    ...backgroundInput(o.background),
+    '-ss', num(o.start),
+    '-i', o.input,
+    ...overlayInput(o.overlay),
+    '-t', num(duration),
+    '-filter_complex', parts.join(';'),
+    '-map', '[v]',
+    '-map', '[a]',
+    ...VIDEO_ENCODERS[platform]!,
+    '-b:v', o.bitrate,
     '-c:a', 'aac',
     '-b:a', '320k',
     '-movflags', '+faststart',
