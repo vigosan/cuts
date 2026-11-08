@@ -2380,9 +2380,19 @@ describe('audio recordings', () => {
     expect(screen.getByTestId('export')).toBeDisabled()
   })
 
+  it('starts with waveform and progress bar off, so nothing is drawn over the background until asked for', async () => {
+    await loadAudio()
+    await addLoop()
+    expect(screen.getByRole('switch', { name: t.extrasWaveform })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('switch', { name: t.extrasProgress })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.queryByTestId('wave')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('bar')).not.toBeInTheDocument()
+  })
+
   it('plays the chosen loop muted behind the audio and exports every clip over it with the waveform', async () => {
     const video = await loadAudio()
     const background = await addLoop()
+    await userEvent.click(screen.getByTestId('extras-waveform'))
     expect(screen.getByTestId('background-name')).toHaveTextContent('xtv loop.mp4')
     expect(background.muted).toBe(true)
     expect(background.loop).toBe(true)
@@ -2410,17 +2420,16 @@ describe('audio recordings', () => {
   it('remembers the progress bar choice for the next export', async () => {
     const video = await loadAudio()
     await addLoop()
-    expect(screen.getByRole('switch', { name: t.extrasWaveform })).toHaveAttribute('aria-checked', 'true')
-    expect(screen.getByRole('switch', { name: t.extrasProgress })).toHaveAttribute('aria-checked', 'false')
     await userEvent.click(screen.getByTestId('extras-progress'))
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))
-    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: true, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 } }))
+    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: false, progressBar: true, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 } }))
   })
 
   it('exports the waveform in the colour and opacity picked for it', async () => {
     const video = await loadAudio()
     await addLoop()
+    await userEvent.click(screen.getByTestId('extras-waveform'))
     fireEvent.input(screen.getByTestId('extras-color'), { target: { value: '#4da8ff' } })
     await userEvent.selectOptions(screen.getByTestId('extras-opacity'), '0.5')
     await markClip(video, 600, 650)
@@ -2431,6 +2440,7 @@ describe('audio recordings', () => {
   it('shows the chosen colour in the swatch, so white is not mistaken for an empty box', async () => {
     await loadAudio()
     await addLoop()
+    await userEvent.click(screen.getByTestId('extras-waveform'))
     fireEvent.input(screen.getByTestId('extras-color'), { target: { value: '#4da8ff' } })
     expect(screen.getByTestId('extras-swatch')).toHaveStyle({ backgroundColor: '#4da8ff' })
   })
@@ -2443,6 +2453,7 @@ describe('audio recordings', () => {
     it('shows the waveform on the preview where the export will draw it', async () => {
       await loadAudio()
       await addLoop()
+      await userEvent.click(screen.getByTestId('extras-waveform'))
       const wave = screen.getByTestId('wave')
       const box = overlayBox(frameBox(), defaultWavePlacement(HD), WAVE_ASPECT)
       expect(parseFloat(wave.style.left)).toBeCloseTo(box.left)
@@ -2455,6 +2466,7 @@ describe('audio recordings', () => {
     it('moves the waveform with the pointer and exports it there', async () => {
       const video = await loadAudio()
       await addLoop()
+      await userEvent.click(screen.getByTestId('extras-waveform'))
       const frame = frameBox()
       fireEvent.pointerDown(screen.getByTestId('wave'), { clientX: 500, clientY: 70 })
       fireEvent.pointerMove(window, { clientX: 500 - frame.width * 0.1, clientY: 70 })
@@ -2469,6 +2481,7 @@ describe('audio recordings', () => {
     it('resizes the waveform from a corner keeping its shape', async () => {
       await loadAudio()
       await addLoop()
+      await userEvent.click(screen.getByTestId('extras-waveform'))
       await userEvent.hover(screen.getByTestId('wave'))
       const frame = frameBox()
       fireEvent.pointerDown(screen.getByTestId('wave-handle-br'), { clientX: 700, clientY: 80 })
