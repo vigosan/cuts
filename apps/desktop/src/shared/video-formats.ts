@@ -1,6 +1,6 @@
 export const VIDEO_EXTENSIONS = ['mov', 'mp4', 'm4v', 'mkv', 'webm']
 
-export const AUDIO_EXTENSIONS = ['wav', 'mp3', 'm4a', 'aac', 'flac', 'aif', 'aiff']
+export const AUDIO_EXTENSIONS = ['wav', 'mp3', 'm4a', 'aac', 'flac']
 
 export const BACKGROUND_EXTENSIONS = ['mov', 'mp4', 'm4v', 'png', 'jpg', 'jpeg']
 

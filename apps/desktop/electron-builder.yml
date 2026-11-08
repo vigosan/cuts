@@ -28,7 +28,7 @@ mac:
       name: Video
       role: Viewer
       rank: Alternate
-    - ext: [wav, mp3, m4a, aac, flac, aif, aiff]
+    - ext: [wav, mp3, m4a, aac, flac]
       name: Audio
       role: Viewer
       rank: Alternate

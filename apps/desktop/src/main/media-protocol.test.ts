@@ -30,8 +30,6 @@ describe('mediaResponse', () => {
     ['set.m4a', 'audio/mp4'],
     ['set.aac', 'audio/aac'],
     ['set.flac', 'audio/flac'],
-    ['set.aif', 'audio/aiff'],
-    ['set.aiff', 'audio/aiff'],
     ['loop.jpg', 'image/jpeg'],
     ['loop.jpeg', 'image/jpeg']
   ])('serves %s as %s so the preview can play audio recordings and still backgrounds', async (name, type) => {

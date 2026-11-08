@@ -578,7 +578,10 @@ export function App() {
                   className={`max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none ${target && shownSettings.framing === 'fit' ? 'opacity-0' : ''}`}
                   onClick={togglePlay}
                   onLoadedMetadata={(e) => setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })}
-                  onError={() => setBackground(null)}
+                  onError={() => {
+                    setBackground(null)
+                    setSuggestNotice(t.backgroundUnplayable)
+                  }}
                 />
               )}
               {isAudio && background?.kind === 'image' && (

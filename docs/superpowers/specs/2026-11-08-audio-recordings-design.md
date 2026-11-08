@@ -23,7 +23,8 @@ Many sets are recorded as audio only (a WAV from the mixer). Vicent wants the sa
 ## Behaviour
 
 ### Opening
-- Audio extensions: `wav`, `mp3`, `m4a`, `aac`, `flac`, `aif`, `aiff`. The open dialog lists video and audio together.
+- Audio extensions: `wav`, `mp3`, `m4a`, `aac`, `flac`. AIFF is left out because the preview (Chromium) cannot play it.
+- A background the preview cannot play (e.g. ProRes) is cleared with a notice asking for an H.264 MP4 or an image. The open dialog lists video and audio together.
 - Recents work the same; audio recordings have no poster.
 
 ### Background

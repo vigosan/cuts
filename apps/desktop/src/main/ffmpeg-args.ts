@@ -129,6 +129,16 @@ export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = proce
 
 const even = (n: number) => Math.round(n / 2) * 2
 
+const positive = (value: number, fallback: number) => {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : fallback
+}
+
+const waveOpacity = (value: number) => {
+  const n = Number(value)
+  return Number.isFinite(n) ? Math.min(1, Math.max(0.1, n)) : 0.3
+}
+
 const waveColor = (color: string) => (/^#[0-9a-f]{6}$/i.test(color) ? `0x${color.slice(1).toLowerCase()}` : '0xffffff')
 
 function backgroundInput(background: ExportBackground): string[] {
@@ -139,7 +149,9 @@ function backgroundInput(background: ExportBackground): string[] {
 
 export function buildAudioArgs(o: AudioCutOptions, platform: NodeJS.Platform = process.platform): string[] {
   const duration = o.end - o.start
-  const { width, height } = formatSize(o.format) ?? o.frame
+  const size = formatSize(o.format) ?? o.frame
+  const width = positive(size.width, 1920)
+  const height = positive(size.height, 1080)
   const framing = framingFilters(o)
   const videoFades =
     o.videoFade === 'none'
@@ -161,7 +173,7 @@ export function buildAudioArgs(o: AudioCutOptions, platform: NodeJS.Platform = p
   }
   const audio = audioFades.length ? audioFades.join(',') : 'anull'
   const color = waveColor(o.extras.color)
-  const opacity = num(Math.min(1, Math.max(0.1, o.extras.opacity)))
+  const opacity = num(waveOpacity(o.extras.opacity))
   if (o.extras.waveform) {
     parts.push(
       `[1:a]${audio},asplit[a][aw]`,

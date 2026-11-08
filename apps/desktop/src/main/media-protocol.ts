@@ -19,9 +19,7 @@ const CONTENT_TYPES: Record<string, string> = {
   '.mp3': 'audio/mpeg',
   '.m4a': 'audio/mp4',
   '.aac': 'audio/aac',
-  '.flac': 'audio/flac',
-  '.aif': 'audio/aiff',
-  '.aiff': 'audio/aiff'
+  '.flac': 'audio/flac'
 }
 
 export function registerMediaScheme(): void {

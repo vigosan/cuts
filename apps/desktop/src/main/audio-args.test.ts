@@ -115,6 +115,20 @@ describe('waveform colour and opacity', () => {
   })
 })
 
+describe('values that come from the renderer', () => {
+  it('never lets a forged frame size reach the filter graph', () => {
+    const forged = { width: "2[p];movie=/etc/passwd" as unknown as number, height: 720 }
+    const g = graph(buildAudioArgs({ ...audio, format: 'original', frame: forged, extras: { ...audio.extras, waveform: true, progressBar: true } }))
+    expect(g).not.toContain('movie')
+    expect(g).not.toContain('NaN')
+  })
+
+  it('uses the default opacity when the renderer sends something that is not a number', () => {
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, waveform: true, opacity: 'x' as unknown as number } }))
+    expect(g).toContain("a='alpha(X,Y)*0.3*")
+  })
+})
+
 describe('bitrate in buildFfmpegArgs', () => {
   it('keeps 12 Mb/s for video clips unless told otherwise', () => {
     const { background: _b, extras: _e, frame: _f, bitrate: _r, ...video } = audio

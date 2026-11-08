@@ -2430,6 +2430,7 @@ describe('audio recordings', () => {
     fireEvent(background, new Event('error'))
     expect(await screen.findByTestId('background-empty')).toBeInTheDocument()
     expect(screen.getByTestId('background-add')).toBeInTheDocument()
+    expect(screen.getByTestId('suggest-notice')).toHaveTextContent(t.backgroundUnplayable)
   })
 
   it('leaves videos exactly as before even with a background chosen', async () => {
