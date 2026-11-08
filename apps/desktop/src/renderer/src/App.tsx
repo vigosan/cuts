@@ -189,7 +189,7 @@ export function App() {
     return () => clearTimeout(timer)
   }, [videoPath, restoredFor, clips, clipSettings, defaultSettings, format, baseName])
 
-  const exportInputs = [clips, clipSettings, defaultSettings, format, baseName, folder, selectedIds]
+  const exportInputs = [clips, clipSettings, defaultSettings, format, baseName, folder, selectedIds, overlay, background, extras]
   const [exportedWith, setExportedWith] = useState(exportInputs)
   const outdated = exportedWith.some((input, index) => input !== exportInputs[index])
   const exportState: ExportState =

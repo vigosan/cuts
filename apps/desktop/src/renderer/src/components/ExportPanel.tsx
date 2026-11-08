@@ -216,34 +216,39 @@ export function ExportPanel(p: Props) {
         </button>
       </div>
 
-      <button
-        data-testid="export-full"
-        className="h-8 rounded-lg text-sm font-medium text-ink-2 transition duration-150 ease-out hover:bg-sunken hover:text-ink disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent"
-        disabled={!p.canExportFull || exporting}
-        onClick={p.onExportFull}
-      >
-        {t.exportFull}
-      </button>
-
-      <p data-testid="export-status" className={`min-h-4 text-center text-xs leading-4 text-ink-3 ${p.state.status === 'error' ? '' : 'h-4 truncate'}`}>
-        {p.state.status === 'done' && (
-          <span data-testid="export-done" className="text-ok">
-            {t.exportedClips(p.state.files.length)}
-          </span>
+      <div className="flex min-h-6 items-center justify-between gap-3 text-xs">
+        <button
+          data-testid="export-full"
+          className="-ml-1.5 h-6 shrink-0 rounded-md px-1.5 font-medium text-ink-2 transition duration-150 ease-out hover:bg-sunken hover:text-ink disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent"
+          disabled={!p.canExportFull || exporting}
+          onClick={p.onExportFull}
+        >
+          {t.exportFull}
+        </button>
+        {p.state.status !== 'error' && (
+          <p data-testid="export-status" className="min-w-0 truncate text-right text-ink-3">
+            {p.state.status === 'done' && (
+              <span data-testid="export-done" className="text-ok">
+                {t.exportedClips(p.state.files.length)}
+              </span>
+            )}
+            {p.state.status === 'idle' && p.baseName && p.positions.length > 0 && p.destination && (
+              <span data-testid="export-preview" title={`${p.destination}/${fileName(p.positions[0])}`}>
+                {p.partial
+                  ? p.positions.map(fileName).join(', ')
+                  : `${fileName(0)}${p.positions.length > 1 ? ` … ${fileName(p.positions.length - 1)}` : ''}`}
+              </span>
+            )}
+          </p>
         )}
-        {p.state.status === 'error' && (
-          <span data-testid="export-error" className="text-warn [overflow-wrap:anywhere]" title={p.state.error}>
+      </div>
+      {p.state.status === 'error' && (
+        <p data-testid="export-status" className="text-xs text-warn [overflow-wrap:anywhere]">
+          <span data-testid="export-error" title={p.state.error}>
             {p.state.error}
           </span>
-        )}
-        {p.state.status === 'idle' && p.baseName && p.positions.length > 0 && p.destination && (
-          <span data-testid="export-preview" title={`${p.destination}/${fileName(p.positions[0])}`}>
-            {p.partial
-              ? p.positions.map(fileName).join(', ')
-              : `${fileName(0)}${p.positions.length > 1 ? ` … ${fileName(p.positions.length - 1)}` : ''}`}
-          </span>
-        )}
-      </p>
+        </p>
+      )}
     </section>
   )
 }

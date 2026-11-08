@@ -2062,6 +2062,17 @@ describe('App', () => {
     expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
   })
 
+  it('offers Export again after the overlay changes, so the shared clips carry the new logo', async () => {
+    vi.mocked(api.chooseOverlay).mockResolvedValue({ path: '/data/overlays/overlay-1.png', aspect: 0.5, name: 'logo.png' })
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await act(async () => userEvent.click(await inPanel('export')))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.share)
+    await act(async () => userEvent.click(screen.getByTestId('overlay-add')))
+    expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
+  })
+
   describe('overlay', () => {
     const LOGO = { path: '/data/overlays/overlay-1.png', aspect: 0.5, name: 'home-sessions.png' }
     const stored = { ...LOGO, x: 0.9, y: 0.9, width: 0.25 }
@@ -2514,6 +2525,26 @@ describe('audio recordings', () => {
       seek(video, 1220)
       expect(screen.getByTestId('bar-fill')).toHaveStyle({ width: '25%' })
     })
+  })
+
+  it('offers Export again after turning on the progress bar, so the new look is not lost', async () => {
+    const video = await loadAudio()
+    await addLoop()
+    await markClip(video, 600, 650)
+    await act(async () => userEvent.click(screen.getByTestId('export')))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.share)
+    await userEvent.click(screen.getByTestId('extras-progress'))
+    expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
+  })
+
+  it('offers Export again after changing the background', async () => {
+    const video = await loadAudio()
+    await addLoop()
+    await markClip(video, 600, 650)
+    await act(async () => userEvent.click(screen.getByTestId('export')))
+    vi.mocked(api.chooseBackground).mockResolvedValue({ path: '/data/backgrounds/background-9.png', kind: 'image', name: 'cover.png' })
+    await act(async () => userEvent.click(screen.getByTestId('background-change')))
+    expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
   })
 
   it('never asks ffmpeg for filmstrip frames of an audio file', async () => {
