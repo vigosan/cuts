@@ -438,7 +438,7 @@ describe('App', () => {
       extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 },
       frame: expect.anything()
     })
-    expect(await screen.findByTestId('export-done')).toBeInTheDocument()
+    expect(await screen.findByTestId('reveal')).toBeInTheDocument()
   })
 
   it('shows export errors instead of failing silently', async () => {
@@ -1004,7 +1004,7 @@ describe('App', () => {
     await markClip(video, 200, 250)
     await userEvent.click(await inPanel('choose-folder'))
     await act(async () => userEvent.click(await inPanel('export')))
-    expect(await screen.findByTestId('export-done')).toBeInTheDocument()
+    expect(await screen.findByTestId('reveal')).toBeInTheDocument()
     await userEvent.click(screen.getByTestId('clip-row-2'))
     expect(screen.getByTestId('export')).toHaveTextContent(t.exportClip(2))
   })
@@ -1114,15 +1114,11 @@ describe('App', () => {
     )
   })
 
-  it('previews the exact file names and folder the export will write, so what is promised is what lands on disk', async () => {
+  it('shows no file name under the export button, since the name is already in the form above', async () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
-    await userEvent.clear(await inPanel('base-name'))
-    await userEvent.type(await inPanel('base-name'), 'set 22:30')
-    const preview = await screen.findByTestId('export-preview')
-    expect(preview).toHaveTextContent('set 22-30-1.mp4')
-    expect(preview).toHaveAttribute('title', '/Users/vicent/Movies/Cuts/2026-10-22 22-33-13/set 22-30-1.mp4')
+    expect(screen.queryByTestId('export-preview')).not.toBeInTheDocument()
   })
 
   it('names the clips and the default folder after the video on Windows, whose paths use backslashes', async () => {
@@ -1452,10 +1448,11 @@ describe('App', () => {
     expect(api.waveform).toHaveBeenCalledWith(VIDEO)
   })
 
-  it('labels the button just Export while there is nothing to export, instead of Export 0 clips', async () => {
+  it('labels the button Export full recording while no clip is marked, never Export 0 clips', async () => {
     render(<App />)
     await loadVideo()
-    expect(screen.getByTestId('export')).toHaveTextContent(/^Export$/)
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportFull)
+    expect(screen.getByTestId('export')).not.toHaveTextContent('0')
   })
 
   it('stops a running export from the Export button that shows its progress, so stopping never needs a second control', async () => {
@@ -1958,7 +1955,6 @@ describe('App', () => {
     await markClip(video, 100, 150)
     await act(async () => userEvent.click(await inPanel('export')))
     expect(screen.getByTestId('export')).toHaveTextContent(t.share)
-    expect(screen.getByTestId('export-status')).toHaveTextContent(t.exportedClips(1))
     await userEvent.click(await inPanel('export'))
     expect(api.share).toHaveBeenCalledWith(['/Movies/Cuts/x/x-1.mp4'])
     expect(api.exportClips).toHaveBeenCalledTimes(1)
@@ -1974,8 +1970,6 @@ describe('App', () => {
     await act(async () => userEvent.click(await inPanel('export')))
     const reveal = screen.getByRole('button', { name: t.showInFinder })
     expect(reveal).toHaveAttribute('data-testid', 'reveal')
-    expect(screen.getByTestId('export-status')).not.toContainElement(reveal)
-    expect(screen.getByTestId('export-status')).toHaveTextContent(t.exportedClips(1))
     await userEvent.click(reveal)
     expect(api.reveal).toHaveBeenCalledWith('/Movies/Cuts/x/x-1.mp4')
   })
@@ -2000,7 +1994,7 @@ describe('App', () => {
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
     const panel = screen.getByTestId('carousel-pane')
-    for (const id of ['base-name', 'choose-folder', 'export', 'export-status']) expect(panel).toContainElement(screen.getByTestId(id))
+    for (const id of ['base-name', 'choose-folder', 'export']) expect(panel).toContainElement(screen.getByTestId(id))
     expect(screen.getByTestId('toolbar')).toContainElement(screen.getByTestId('suggest'))
     expect(screen.getByTestId('toolbar')).not.toContainElement(screen.getByTestId('export'))
     expect(screen.getByTestId('export')).toHaveTextContent(t.exportClips(2))
@@ -2598,11 +2592,11 @@ describe('audio recordings', () => {
 })
 
 describe('export full recording', () => {
-  it('exports the whole video as one file even with no clips marked, fading in and out like the default settings', async () => {
+  it('turns the export button into Export full recording when no clip is marked, so a whole set is one click', async () => {
     render(<App />)
     await loadVideo()
-    const button = await screen.findByTestId('export-full')
-    expect(button).toBeEnabled()
+    const button = screen.getByTestId('export')
+    expect(button).toHaveTextContent(t.exportFull)
     await act(async () => userEvent.click(button))
     expect(api.exportClips).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -2612,13 +2606,35 @@ describe('export full recording', () => {
     )
   })
 
-  it('cannot start a second export while one is running', async () => {
+  it('offers the clips and the full recording from the one export button', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportClips(1))
+    await userEvent.click(screen.getByTestId('export-menu'))
+    expect(screen.getByTestId('export-option-clips')).toHaveTextContent(t.exportClips(1))
+    await act(async () => userEvent.click(screen.getByTestId('export-full')))
+    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ kind: 'full' }))
+    expect(screen.queryByTestId('export-full')).not.toBeInTheDocument()
+  })
+
+  it('closes the export menu with Escape without exporting', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.click(screen.getByTestId('export-menu'))
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByTestId('export-full')).not.toBeInTheDocument()
+    expect(api.exportClips).not.toHaveBeenCalled()
+  })
+
+  it('hides the export options while an export runs, so a second one cannot start', async () => {
     let finish: (result: ExportResult) => void = () => {}
     vi.mocked(api.exportClips).mockImplementation(() => new Promise((resolve) => (finish = resolve)))
     render(<App />)
     await loadVideo()
-    await act(async () => userEvent.click(screen.getByTestId('export-full')))
-    expect(screen.getByTestId('export-full')).toBeDisabled()
+    await act(async () => userEvent.click(screen.getByTestId('export')))
+    expect(screen.queryByTestId('export-menu')).not.toBeInTheDocument()
     await act(async () => finish({ ok: true, files: ['/x/sesion-full.mp4'] }))
   })
 
@@ -2629,6 +2645,7 @@ describe('export full recording', () => {
     const video = screen.getByTestId('video') as HTMLVideoElement
     Object.defineProperty(video, 'duration', { configurable: true, value: 4880 })
     fireEvent(video, new Event('loadedmetadata'))
-    expect(screen.getByTestId('export-full')).toBeDisabled()
+    expect(screen.getByTestId('export')).toBeDisabled()
+    expect(screen.getByTestId('export-menu')).toBeDisabled()
   })
 })

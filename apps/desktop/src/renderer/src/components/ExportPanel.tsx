@@ -1,11 +1,12 @@
-import { MAX_CLIP_SECONDS, outputFileName, safeBaseName } from '@cuts/core/clips'
+import { useEffect, useState } from 'react'
+import { MAX_CLIP_SECONDS } from '@cuts/core/clips'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import type { Overlay } from '@cuts/core/overlay'
 import { WAVE_OPACITIES, type AudioExtras, type ImportedBackground } from '@shared/api'
 import { mediaUrl } from '@shared/media-url'
 import { t } from '../i18n'
 import { field } from './field'
-import { CloseIcon, FolderIcon, StopIcon } from './icons'
+import { ChevronIcon, CloseIcon, FolderIcon, StopIcon } from './icons'
 
 export type ExportState =
   | { status: 'idle' }
@@ -67,8 +68,26 @@ function runningLabel(progress: number[]): string {
 
 export function ExportPanel(p: Props) {
   const folderName = p.folder?.split(/[\\/]/).filter(Boolean).slice(-2).join('/')
-  const fileName = (index: number) => outputFileName(safeBaseName(p.baseName), index)
   const exporting = p.state.status === 'running'
+  const [menuOpen, setMenuOpen] = useState(false)
+  const clipsMode = p.positions.length > 0
+  const primaryEnabled = clipsMode ? p.canExport : p.canExportFull
+  const choosing = p.state.status === 'idle' || p.state.status === 'error'
+  const choose = (action: () => void) => {
+    setMenuOpen(false)
+    action()
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [menuOpen])
 
   return (
     <section data-testid="export-panel" className="flex flex-col gap-3 border-t border-line p-4">
@@ -173,75 +192,83 @@ export function ExportPanel(p: Props) {
             {t.showInFinder}
           </button>
         )}
-        <button
-          data-testid="export"
-          aria-label={p.state.status === 'running' ? `${t.stopExport} (${runningLabel(p.state.progress)})` : undefined}
-          className="group relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3"
-          disabled={!p.canExport && p.state.status !== 'running'}
-          onClick={() =>
-            p.state.status === 'running'
-              ? p.onCancel()
-              : p.state.status === 'done'
-                ? p.canShare
-                  ? p.onShare(p.state.files)
-                  : p.onReveal(p.state.files[0])
-                : p.onExport()
-          }
-        >
+        <div className="relative flex flex-1">
+          <button
+            data-testid="export"
+            aria-label={p.state.status === 'running' ? `${t.stopExport} (${runningLabel(p.state.progress)})` : undefined}
+            className={`group relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3 ${choosing ? 'rounded-r-none' : ''}`}
+            disabled={!primaryEnabled && p.state.status !== 'running'}
+            onClick={() =>
+              p.state.status === 'running'
+                ? p.onCancel()
+                : p.state.status === 'done'
+                  ? p.canShare
+                    ? p.onShare(p.state.files)
+                    : p.onReveal(p.state.files[0])
+                  : clipsMode
+                    ? p.onExport()
+                    : p.onExportFull()
+            }
+          >
           {p.state.status === 'running' ? (
-            <>
-              <span
-                data-testid="export-progress"
-                className="absolute inset-0 origin-left bg-on-accent/20 transition-transform group-hover:opacity-0 group-focus-visible:opacity-0"
-                style={{ transform: `scaleX(${exportProgress(p.state).overall})` }}
-              />
-              <span className="relative grid">
-                <span className="col-start-1 row-start-1 group-hover:invisible group-focus-visible:invisible">
-                  {runningLabel(p.state.progress)}
-                </span>
+              <>
                 <span
-                  data-testid="export-stop-label"
-                  className="invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 group-hover:visible group-focus-visible:visible"
-                >
-                  <StopIcon data-testid="export-stop-icon" />
-                  {t.stopExport}
+                  data-testid="export-progress"
+                  className="absolute inset-0 origin-left bg-on-accent/20 transition-transform group-hover:opacity-0 group-focus-visible:opacity-0"
+                  style={{ transform: `scaleX(${exportProgress(p.state).overall})` }}
+                />
+                <span className="relative grid">
+                  <span className="col-start-1 row-start-1 group-hover:invisible group-focus-visible:invisible">
+                    {runningLabel(p.state.progress)}
+                  </span>
+                  <span
+                    data-testid="export-stop-label"
+                    className="invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 group-hover:visible group-focus-visible:visible"
+                  >
+                    <StopIcon data-testid="export-stop-icon" />
+                    {t.stopExport}
+                  </span>
                 </span>
+              </>
+            ) : (
+              <span className="relative">
+                {p.state.status === 'done' ? (p.canShare ? t.share : t.showInFolder) : clipsMode ? exportLabel(p.positions, p.partial) : t.exportFull}
               </span>
-            </>
-          ) : (
-            <span className="relative">
-              {p.state.status === 'done' ? (p.canShare ? t.share : t.showInFolder) : exportLabel(p.positions, p.partial)}
-            </span>
+            )}
+          </button>
+          {choosing && (
+            <button
+              data-testid="export-menu"
+              aria-label={t.exportOptions}
+              title={t.exportOptions}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="grid h-10 w-9 place-items-center rounded-r-xl border-l border-on-accent/20 bg-accent text-on-accent transition-colors duration-150 ease-out hover:bg-accent-hover disabled:cursor-not-allowed disabled:border-ink-3/20 disabled:bg-sunken disabled:text-ink-3"
+              disabled={!p.canExport && !p.canExportFull}
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <ChevronIcon className="size-3.5" />
+            </button>
           )}
-        </button>
+          {choosing && menuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              <div
+                role="menu"
+                className="absolute right-0 bottom-full z-50 mb-2 flex w-64 origin-bottom-right flex-col rounded-xl bg-surface p-1 text-sm shadow-lg ring-1 ring-ink-3/20 transition duration-150 ease-out starting:scale-95 starting:opacity-0 motion-reduce:starting:scale-100"
+              >
+                <MenuItem testId="export-option-clips" disabled={!p.canExport} onClick={() => choose(p.onExport)}>
+                  {exportLabel(p.positions, p.partial)}
+                </MenuItem>
+                <MenuItem testId="export-full" disabled={!p.canExportFull} onClick={() => choose(p.onExportFull)}>
+                  {t.exportFull}
+                </MenuItem>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="flex min-h-6 items-center justify-between gap-3 text-xs">
-        <button
-          data-testid="export-full"
-          className="-ml-1.5 h-6 shrink-0 rounded-md px-1.5 font-medium text-ink-2 transition duration-150 ease-out hover:bg-sunken hover:text-ink disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent"
-          disabled={!p.canExportFull || exporting}
-          onClick={p.onExportFull}
-        >
-          {t.exportFull}
-        </button>
-        {p.state.status !== 'error' && (
-          <p data-testid="export-status" className="min-w-0 truncate text-right text-ink-3">
-            {p.state.status === 'done' && (
-              <span data-testid="export-done" className="text-ok">
-                {t.exportedClips(p.state.files.length)}
-              </span>
-            )}
-            {p.state.status === 'idle' && p.baseName && p.positions.length > 0 && p.destination && (
-              <span data-testid="export-preview" title={`${p.destination}/${fileName(p.positions[0])}`}>
-                {p.partial
-                  ? p.positions.map(fileName).join(', ')
-                  : `${fileName(0)}${p.positions.length > 1 ? ` … ${fileName(p.positions.length - 1)}` : ''}`}
-              </span>
-            )}
-          </p>
-        )}
-      </div>
       {p.state.status === 'error' && (
         <p data-testid="export-status" className="text-xs text-warn [overflow-wrap:anywhere]">
           <span data-testid="export-error" title={p.state.error}>
@@ -325,6 +352,20 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
         <Switch testId="extras-progress" label={t.extrasProgress} on={audio.extras.progressBar} disabled={disabled} onChange={() => toggle('progressBar')} />
       </div>
     </>
+  )
+}
+
+function MenuItem({ testId, disabled, onClick, children }: { testId: string; disabled: boolean; onClick: () => void; children: string }) {
+  return (
+    <button
+      role="menuitem"
+      data-testid={testId}
+      disabled={disabled}
+      className="rounded-lg px-3 py-2 text-left text-ink transition-colors hover:bg-sunken disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent"
+      onClick={onClick}
+    >
+      {children}
+    </button>
   )
 }
 

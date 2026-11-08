@@ -116,6 +116,14 @@ export function WaveIcon({ className = 'size-4', 'data-testid': testId }: IconPr
   )
 }
 
+export function ChevronIcon({ className = 'size-3.5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
+      <path d="m4 6 4 4 4-4" />
+    </svg>
+  )
+}
+
 export function SparkleIcon({ className = 'size-4' }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={`${base} ${className}`}>
