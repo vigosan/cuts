@@ -5,7 +5,7 @@ import { WAVE_OPACITIES, type AudioExtras, type ImportedBackground } from '@shar
 import { mediaUrl } from '@shared/media-url'
 import { t } from '../i18n'
 import { field } from './field'
-import { CloseIcon, FolderIcon, StopIcon } from './icons'
+import { CheckIcon, CloseIcon, FolderIcon, StopIcon } from './icons'
 
 export type ExportState =
   | { status: 'idle' }
@@ -307,23 +307,16 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
           </button>
         )}
       </div>
-      <span />
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="col-span-2 flex flex-wrap items-center gap-2">
         <Chip testId="extras-waveform" pressed={audio.extras.waveform} disabled={disabled} onClick={() => toggle('waveform')}>
           {t.extrasWaveform}
         </Chip>
         <Chip testId="extras-progress" pressed={audio.extras.progressBar} disabled={disabled} onClick={() => toggle('progressBar')}>
           {t.extrasProgress}
         </Chip>
-      </div>
-      {(audio.extras.waveform || audio.extras.progressBar) && (
-        <>
-          <span />
-          <div className="flex items-center gap-2">
-            <label
-              title={t.extrasColor}
-              className="relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg bg-sunken transition-colors hover:bg-accent-soft"
-            >
+        {(audio.extras.waveform || audio.extras.progressBar) && (
+          <div className="ml-auto flex h-8 items-center rounded-lg bg-sunken pl-1 transition-colors hover:bg-sunken/80">
+            <label title={t.extrasColor} className="relative grid size-6 shrink-0 cursor-pointer place-items-center rounded-md">
               <span
                 data-testid="extras-swatch"
                 className="size-4 rounded-full ring-1 ring-ink-3/40"
@@ -343,7 +336,7 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
               data-testid="extras-opacity"
               aria-label={t.extrasOpacity}
               title={t.extrasOpacity}
-              className={`${field} w-24`}
+              className="h-8 cursor-pointer appearance-none bg-transparent pr-2.5 pl-1.5 text-sm tabular-nums text-ink outline-none"
               value={audio.extras.opacity}
               disabled={disabled}
               onChange={(e) => audio.onExtras({ ...audio.extras, opacity: Number(e.target.value) })}
@@ -355,8 +348,8 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
               ))}
             </select>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </>
   )
 }
@@ -379,9 +372,10 @@ function Chip({
       data-testid={testId}
       aria-pressed={pressed}
       disabled={disabled}
-      className={`h-8 rounded-lg px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.97] ${pressed ? 'bg-accent-soft text-accent' : 'bg-sunken text-ink-2 hover:text-ink'}`}
+      className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.97] ${pressed ? 'bg-accent text-on-accent hover:bg-accent-hover' : 'bg-sunken text-ink-2 hover:text-ink'}`}
       onClick={onClick}
     >
+      {pressed && <CheckIcon className="size-3.5" />}
       {children}
     </button>
   )
