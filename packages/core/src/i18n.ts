@@ -91,7 +91,8 @@ function english(locale: Locale) {
       original: 'Original',
       '4:5': '4:5 portrait · 1080×1350',
       '1:1': '1:1 square · 1080×1080',
-      '9:16': '9:16 reels · 1080×1920'
+      '9:16': '9:16 reels · 1080×1920',
+      '16:9': '16:9 YouTube · 1920×1080'
     } satisfies Record<OutputFormat, string>,
     name: 'Name',
     fileNamePlaceholder: 'File name',
@@ -316,7 +317,8 @@ function spanish(locale: Locale): Messages {
       original: 'Original',
       '4:5': '4:5 vertical · 1080×1350',
       '1:1': '1:1 cuadrado · 1080×1080',
-      '9:16': '9:16 reels · 1080×1920'
+      '9:16': '9:16 reels · 1080×1920',
+      '16:9': '16:9 YouTube · 1920×1080'
     },
     name: 'Nombre',
     fileNamePlaceholder: 'Nombre de los archivos',

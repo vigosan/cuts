@@ -1,4 +1,4 @@
-export type OutputFormat = 'original' | '4:5' | '1:1' | '9:16'
+export type OutputFormat = 'original' | '4:5' | '1:1' | '9:16' | '16:9'
 
 export type FormatOption = { id: OutputFormat; size?: { width: number; height: number } }
 
@@ -6,7 +6,8 @@ export const FORMATS: FormatOption[] = [
   { id: 'original' },
   { id: '4:5', size: { width: 1080, height: 1350 } },
   { id: '1:1', size: { width: 1080, height: 1080 } },
-  { id: '9:16', size: { width: 1080, height: 1920 } }
+  { id: '9:16', size: { width: 1080, height: 1920 } },
+  { id: '16:9', size: { width: 1920, height: 1080 } }
 ]
 
 export function formatSize(id: OutputFormat): { width: number; height: number } | undefined {

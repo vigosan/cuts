@@ -50,7 +50,8 @@ public struct ExportJob: Codable, Sendable {
 let formatSizes: [String: CGSize] = [
   "4:5": CGSize(width: 1080, height: 1350),
   "1:1": CGSize(width: 1080, height: 1080),
-  "9:16": CGSize(width: 1080, height: 1920)
+  "9:16": CGSize(width: 1080, height: 1920),
+  "16:9": CGSize(width: 1920, height: 1080)
 ]
 
 func fadeLength(_ seconds: Double, clipLength: Double) -> Double {

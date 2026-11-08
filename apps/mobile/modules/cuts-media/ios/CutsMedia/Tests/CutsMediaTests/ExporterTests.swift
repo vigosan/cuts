@@ -44,6 +44,12 @@ private func export(_ source: String, _ job: ExportJob) async throws -> AVURLAss
     #expect(CMFormatDescriptionGetMediaSubType(audioFormat) == kAudioFormatMPEG4AAC)
   }
 
+  @Test func wideFormatGivesFullHdForYouTube() async throws {
+    let clip = try await export("set.mp4", job("wide.mp4", start: 30, end: 32, format: "16:9"))
+    let video = try await clip.loadTracks(withMediaType: .video)[0]
+    #expect(try await video.load(.naturalSize) == CGSize(width: 1920, height: 1080))
+  }
+
   @Test func originalKeepsPortraitVideoUpright() async throws {
     let clip = try await export("rotated.mp4", job("rotated.mp4", start: 2, end: 8, format: "original"))
     #expect(try await Inspect.uprightSize(clip) == CGSize(width: 360, height: 640))
