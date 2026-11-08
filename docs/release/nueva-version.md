@@ -92,6 +92,24 @@ Cuts remembers your work: open a video again and its clips and settings are righ
 - Open videos from the Finder with Open With, by dragging them onto the Dock icon or from File › Open Recent.
 - Clearer notices when a video can't be shown, has no sound to suggest from, or an export fails.
 
+## Novedades de la 1.9
+
+### Español
+
+- Abre también grabaciones de solo audio (WAV, MP3, M4A, AAC o FLAC): elige un fondo, un vídeo que se repite en bucle o una imagen, y Cuts hace el vídeo.
+- Añade la onda real del audio y una barra de progreso, cada una con su color y su opacidad. Colócalas y cambia su tamaño sobre el vídeo, como la superposición.
+- Exporta la grabación completa en un solo archivo, con fundido al principio y al final, desde el mismo botón de exportar.
+- Nuevo formato 16:9 a 1920×1080, para YouTube.
+- Si cambias la superposición, el fondo, la onda o la barra después de exportar, el botón vuelve a ofrecer "Exportar".
+
+### English
+
+- Open audio-only recordings too (WAV, MP3, M4A, AAC or FLAC): pick a background, a looping video or an image, and Cuts makes the video.
+- Add the real waveform of the audio and a progress bar, each with its own colour and opacity. Place and resize them on the video, like the overlay.
+- Export the full recording as one file, fading in and out, from the same export button.
+- New 16:9 format at 1920×1080, for YouTube.
+- If you change the overlay, background, waveform or progress bar after exporting, the button offers Export again.
+
 ## Novedades de la 1.8
 
 ### Español
