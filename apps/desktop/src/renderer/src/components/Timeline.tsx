@@ -30,6 +30,7 @@ function volumePoints(fade: ClipFade, clipLength: number): string {
 
 type Props = {
   videoPath: string
+  thumbnails: boolean
   peaks: Float32Array | null
   analysingAudio: boolean
   onBeat: (time: number) => number
@@ -53,6 +54,7 @@ type Props = {
 
 export function Timeline({
   videoPath,
+  thumbnails,
   peaks,
   analysingAudio,
   onBeat,
@@ -77,7 +79,7 @@ export function Timeline({
   const barRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [width, setWidth] = useState(0)
-  const tiles = filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration)
+  const tiles = thumbnails ? filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration) : []
   const frames = useThumbnails(
     videoPath,
     tiles.map((tile) => tile.time)

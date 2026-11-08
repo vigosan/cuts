@@ -1,11 +1,11 @@
 import { useEffect, useEffectEvent, useMemo, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
-import type { ExportResult, ImportedOverlay, RecentVideo } from '@shared/api'
+import type { AudioExtras, ExportResult, ImportedBackground, ImportedOverlay, RecentVideo } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { clampPlacement, defaultPlacement, outputFrame, type Overlay } from '@cuts/core/overlay'
 import { mediaUrl } from '@shared/media-url'
-import { isSupportedMedia } from '@shared/video-formats'
+import { isSupportedMedia, mediaKind } from '@shared/video-formats'
 import { ClipList, type SelectMode } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
@@ -83,6 +83,13 @@ export function App() {
     setOverlayState(next)
     savePreferences({ overlay: next })
   }
+  const [background, setBackgroundState] = useState<ImportedBackground | null>(() => loadPreferences().background)
+  const [extras, setExtrasState] = useState<AudioExtras>(() => loadPreferences().extras)
+  const backgroundRef = useRef<HTMLVideoElement>(null)
+  const setExtras = (next: AudioExtras) => {
+    setExtrasState(next)
+    savePreferences({ extras: next })
+  }
   const [restoredFor, setRestoredFor] = useState<string | null>(null)
   const openedPath = useRef<string | null>(null)
   const [fps, setFps] = useState(DEFAULT_FPS)
@@ -96,6 +103,12 @@ export function App() {
     ])
   ) as Record<keyof ClipSettings, boolean>
   const target = formatSize(format)
+  const isAudio = videoPath !== null && mediaKind(videoPath) === 'audio'
+  const setBackground = (next: ImportedBackground | null) => {
+    setBackgroundState(next)
+    savePreferences({ background: next })
+    if (isAudio) setVideoSize(null)
+  }
   const [lastExport, setExportState] = useState<ExportState>({ status: 'idle' })
   const [zoom, setZoom] = useState<Zoom>(null)
   const [viewStart, setViewStart] = useState(0)
@@ -316,6 +329,14 @@ export function App() {
     setOverlay({ ...chosen, ...(overlay ? clampPlacement(overlay, chosen.aspect, frame) : defaultPlacement(chosen.aspect, frame)) })
   }
 
+  const takeBackground = (chosen: ImportedBackground | 'invalid' | 'too-big' | null) => {
+    if (chosen === 'invalid') return setSuggestNotice(t.backgroundInvalid)
+    if (chosen === 'too-big') return setSuggestNotice(t.backgroundTooBig)
+    if (chosen) setBackground(chosen)
+  }
+  const chooseBackground = () => void window.api.chooseBackground().then(takeBackground, () => takeBackground('invalid'))
+  const exportBackground = () => (isAudio && background ? { path: background.path, kind: background.kind } : null)
+
   const runExport = async () => {
     if (!videoPath || !destination) return
     setExportedWith(exportInputs)
@@ -330,8 +351,8 @@ export function App() {
         clips: exported.map((clip) => ({ ...clip, ...settingsOf(clip), position: clips.indexOf(clip) })),
         overlay: exportOverlay(),
         kind: 'clips',
-        background: null,
-        extras: { waveform: false, progressBar: false },
+        background: exportBackground(),
+        extras: isAudio ? extras : { waveform: false, progressBar: false },
         frame: videoSize ?? { width: 1920, height: 1080 }
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
@@ -342,7 +363,7 @@ export function App() {
     if (!videoPath || !destination || exporting) return
     const { framing, cropX, cropY } = shownSettings
     const result = await window.api
-      .exportFrame({ input: videoPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY, overlay: exportOverlay(), background: null })
+      .exportFrame({ input: videoPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY, overlay: exportOverlay(), background: exportBackground() })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     if (result.ok) return window.api.reveal(result.files[0])
     setExportedWith(exportInputs)
@@ -405,7 +426,7 @@ export function App() {
   )
 
   const canExport =
-    clips.length > 0 && folder !== null && baseName.trim() !== ''
+    clips.length > 0 && folder !== null && baseName.trim() !== '' && (!isAudio || (background !== null && videoSize !== null))
 
   const fileName = videoPath?.split(/[\\/]/).pop()
 
@@ -504,7 +525,7 @@ export function App() {
                 ref={videoRef}
                 data-testid="video"
                 src={mediaUrl(videoPath)}
-                className={`max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none ${target && shownSettings.framing === 'fit' ? 'opacity-0' : ''}`}
+                className={`max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none ${isAudio ? 'hidden' : ''} ${target && shownSettings.framing === 'fit' ? 'opacity-0' : ''}`}
                 onClick={togglePlay}
                 onTimeUpdate={(e) => {
                   keepLooping(e.currentTarget)
@@ -512,7 +533,7 @@ export function App() {
                 }}
                 onLoadedMetadata={(e) => {
                   setDuration(e.currentTarget.duration)
-                  setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })
+                  if (!isAudio) setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })
                 }}
                 onPlay={() => setPlaying(true)}
                 onPause={() => {
@@ -521,6 +542,44 @@ export function App() {
                 }}
                 onError={() => setVideoError(true)}
               />
+              {isAudio && background?.kind === 'video' && (
+                <video
+                  key={background.path}
+                  ref={backgroundRef}
+                  data-testid="background-video"
+                  src={mediaUrl(background.path)}
+                  muted
+                  loop
+                  autoPlay
+                  playsInline
+                  className={`max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none ${target && shownSettings.framing === 'fit' ? 'opacity-0' : ''}`}
+                  onClick={togglePlay}
+                  onLoadedMetadata={(e) => setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })}
+                  onError={() => setBackground(null)}
+                />
+              )}
+              {isAudio && background?.kind === 'image' && (
+                <img
+                  key={background.path}
+                  data-testid="background-image"
+                  src={mediaUrl(background.path)}
+                  alt=""
+                  draggable={false}
+                  className="max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none"
+                  onClick={togglePlay}
+                  onLoad={(e) => setVideoSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
+                  onError={() => setBackground(null)}
+                />
+              )}
+              {isAudio && !background && (
+                <button
+                  data-testid="background-empty"
+                  className="absolute rounded-lg px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  onClick={chooseBackground}
+                >
+                  {t.backgroundEmpty}
+                </button>
+              )}
               {target && videoSize && shownSettings.framing === 'crop' && (
                 <CropFrame
                   videoWidth={videoSize.width}
@@ -531,14 +590,14 @@ export function App() {
                   onChange={changeSettings}
                 />
               )}
-              {duration === 0 && !videoError && (
+              {duration === 0 && !videoError && !(isAudio && !background) && (
                 <p data-testid="video-loading" className="absolute flex items-center gap-2 text-sm text-white/70">
                   <SpinnerIcon className="size-4" />
                   {t.loadingVideo}
                 </p>
               )}
-              {target && videoSize && shownSettings.framing === 'fit' && (
-                <FitPreview videoRef={videoRef} targetWidth={target.width} targetHeight={target.height} />
+              {target && videoSize && shownSettings.framing === 'fit' && (!isAudio || background?.kind === 'video') && (
+                <FitPreview videoRef={isAudio ? backgroundRef : videoRef} targetWidth={target.width} targetHeight={target.height} />
               )}
               {overlay && videoSize && videoSize.width > 0 && (
                 <OverlayLayer
@@ -556,7 +615,7 @@ export function App() {
                   {t.videoUnplayable}
                 </p>
               )}
-              {!videoError && videoSize?.width === 0 && (
+              {!videoError && !isAudio && videoSize?.width === 0 && (
                 <p data-testid="video-no-picture" className="absolute mx-6 max-w-md rounded-lg bg-black/70 px-3 py-2 text-center text-sm text-white">
                   {t.videoNoPicture}
                 </p>
@@ -619,6 +678,7 @@ export function App() {
 
               <Timeline
                 videoPath={videoPath}
+                thumbnails={!isAudio}
                 peaks={peaks}
                 analysingAudio={analysing}
                 onBeat={onBeat}
@@ -718,6 +778,19 @@ export function App() {
                 void window.api.importOverlayFile(file).then(takeOverlay, () => takeOverlay('invalid'))
               }
               onRemoveOverlay={() => setOverlay(null)}
+              audio={
+                isAudio
+                  ? {
+                      background,
+                      extras,
+                      onChooseBackground: chooseBackground,
+                      onDropBackground: (file) =>
+                        void window.api.importBackgroundFile(file).then(takeBackground, () => takeBackground('invalid')),
+                      onRemoveBackground: () => setBackground(null),
+                      onExtras: setExtras
+                    }
+                  : null
+              }
               folder={folder}
               destination={destination}
               state={exportState}

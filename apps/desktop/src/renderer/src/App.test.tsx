@@ -2334,3 +2334,117 @@ describe('App', () => {
     })
   })
 })
+
+describe('audio recordings', () => {
+  const AUDIO = '/Users/vicent/Downloads/el-pitxeret.wav'
+  const LOOP = { path: '/data/backgrounds/background-1.mp4', kind: 'video' as const, name: 'xtv loop.mp4' }
+
+  async function loadAudio() {
+    vi.mocked(api.openVideo).mockResolvedValue(AUDIO)
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    const video = screen.getByTestId('video') as HTMLVideoElement
+    Object.defineProperty(video, 'duration', { configurable: true, value: 4880 })
+    Object.defineProperty(video, 'videoWidth', { configurable: true, value: 0 })
+    Object.defineProperty(video, 'videoHeight', { configurable: true, value: 0 })
+    fireEvent(video, new Event('loadedmetadata'))
+    return video
+  }
+
+  async function addLoop() {
+    vi.mocked(api.chooseBackground).mockResolvedValue(LOOP)
+    await act(async () => userEvent.click(screen.getByTestId('background-add')))
+    const background = await screen.findByTestId('background-video')
+    Object.defineProperty(background, 'videoWidth', { configurable: true, value: 1920 })
+    Object.defineProperty(background, 'videoHeight', { configurable: true, value: 1080 })
+    fireEvent(background, new Event('loadedmetadata'))
+    return background as HTMLVideoElement
+  }
+
+  it('asks for a background before anything can be exported, since an audio file has no picture', async () => {
+    const video = await loadAudio()
+    await markClip(video, 600, 650)
+    expect(screen.getByTestId('background-empty')).toBeInTheDocument()
+    expect(screen.queryByTestId('video-no-picture')).not.toBeInTheDocument()
+    expect(screen.getByTestId('export')).toBeDisabled()
+  })
+
+  it('plays the chosen loop muted behind the audio and exports every clip over it with the waveform', async () => {
+    const video = await loadAudio()
+    const background = await addLoop()
+    expect(screen.getByTestId('background-name')).toHaveTextContent('xtv loop.mp4')
+    expect(background.muted).toBe(true)
+    expect(background.loop).toBe(true)
+    expect(screen.queryByTestId('background-empty')).not.toBeInTheDocument()
+    await markClip(video, 600, 650)
+    await act(async () => userEvent.click(screen.getByTestId('export')))
+    expect(api.exportClips).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: AUDIO,
+        kind: 'clips',
+        background: { path: LOOP.path, kind: 'video' },
+        extras: { waveform: true, progressBar: false },
+        frame: { width: 1920, height: 1080 }
+      })
+    )
+  })
+
+  it('shows a still image background as an image', async () => {
+    await loadAudio()
+    vi.mocked(api.chooseBackground).mockResolvedValue({ path: '/data/backgrounds/background-2.jpg', kind: 'image', name: 'cover.jpg' })
+    await act(async () => userEvent.click(screen.getByTestId('background-add')))
+    expect(await screen.findByTestId('background-image')).toBeInTheDocument()
+  })
+
+  it('remembers the progress bar choice for the next export', async () => {
+    const video = await loadAudio()
+    await addLoop()
+    expect(screen.getByTestId('extras-waveform')).toBeChecked()
+    expect(screen.getByTestId('extras-progress')).not.toBeChecked()
+    await userEvent.click(screen.getByTestId('extras-progress'))
+    await markClip(video, 600, 650)
+    await act(async () => userEvent.click(screen.getByTestId('export')))
+    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: true } }))
+  })
+
+  it('never asks ffmpeg for filmstrip frames of an audio file', async () => {
+    await loadAudio()
+    await addLoop()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(api.thumbnail).not.toHaveBeenCalled()
+  })
+
+  it('goes back to asking for a background when its copy cannot be loaded, instead of failing every export', async () => {
+    await loadAudio()
+    const background = await addLoop()
+    fireEvent(background, new Event('error'))
+    expect(await screen.findByTestId('background-empty')).toBeInTheDocument()
+    expect(screen.getByTestId('background-add')).toBeInTheDocument()
+  })
+
+  it('leaves videos exactly as before even with a background chosen', async () => {
+    await loadAudio()
+    await addLoop()
+    vi.mocked(api.openVideo).mockResolvedValue(VIDEO)
+    await act(async () => menuOpenVideo())
+    const video = screen.getByTestId('video') as HTMLVideoElement
+    Object.defineProperty(video, 'duration', { configurable: true, value: 4880 })
+    Object.defineProperty(video, 'videoWidth', { configurable: true, value: 1280 })
+    Object.defineProperty(video, 'videoHeight', { configurable: true, value: 720 })
+    fireEvent(video, new Event('loadedmetadata'))
+    expect(screen.queryByTestId('background-add')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('background-name')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('extras-waveform')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('background-video')).not.toBeInTheDocument()
+    await markClip(video, 600, 650)
+    await act(async () => userEvent.click(screen.getByTestId('export')))
+    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ input: VIDEO, background: null, frame: { width: 1280, height: 720 } }))
+  })
+
+  it('explains a background over 500 MB instead of silently ignoring it', async () => {
+    await loadAudio()
+    vi.mocked(api.chooseBackground).mockResolvedValue('too-big')
+    await act(async () => userEvent.click(screen.getByTestId('background-add')))
+    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.backgroundTooBig)
+  })
+})

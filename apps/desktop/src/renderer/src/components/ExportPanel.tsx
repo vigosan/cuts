@@ -1,6 +1,7 @@
 import { MAX_CLIP_SECONDS, outputFileName, safeBaseName } from '@cuts/core/clips'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import type { Overlay } from '@cuts/core/overlay'
+import type { AudioExtras, ImportedBackground } from '@shared/api'
 import { mediaUrl } from '@shared/media-url'
 import { t } from '../i18n'
 import { field } from './field'
@@ -24,6 +25,14 @@ type Props = {
   onChooseOverlay: () => void
   onDropOverlay: (file: File) => void
   onRemoveOverlay: () => void
+  audio: {
+    background: ImportedBackground | null
+    extras: AudioExtras
+    onChooseBackground: () => void
+    onDropBackground: (file: File) => void
+    onRemoveBackground: () => void
+    onExtras: (extras: AudioExtras) => void
+  } | null
   folder: string | null
   destination: string | null
   state: ExportState
@@ -151,6 +160,7 @@ export function ExportPanel(p: Props) {
             </button>
           )}
         </div>
+        {p.audio && <AudioRows audio={p.audio} disabled={exporting} />}
       </div>
 
       {p.overLimit > 0 && (
@@ -233,5 +243,82 @@ export function ExportPanel(p: Props) {
         )}
       </p>
     </section>
+  )
+}
+
+function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; disabled: boolean }) {
+  const toggle = (key: keyof AudioExtras) => audio.onExtras({ ...audio.extras, [key]: !audio.extras[key] })
+  return (
+    <>
+      <span className="text-ink-2">{t.background}</span>
+      <div
+        data-testid="background-row"
+        className="flex items-center gap-2"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          const file = e.dataTransfer.files[0]
+          if (file && !disabled) audio.onDropBackground(file)
+        }}
+      >
+        {audio.background ? (
+          <>
+            <button
+              data-testid="background-change"
+              className={`${field} flex min-w-0 flex-1 items-center gap-2 text-left`}
+              disabled={disabled}
+              onClick={audio.onChooseBackground}
+            >
+              <span data-testid="background-name" className="truncate">
+                {audio.background.name}
+              </span>
+            </button>
+            <button
+              data-testid="background-remove"
+              aria-label={t.backgroundRemove}
+              title={t.backgroundRemove}
+              className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-3 transition duration-150 ease-out hover:bg-sunken hover:text-ink"
+              disabled={disabled}
+              onClick={audio.onRemoveBackground}
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </>
+        ) : (
+          <button
+            data-testid="background-add"
+            className={`${field} flex-1 text-left text-ink-3`}
+            disabled={disabled}
+            onClick={audio.onChooseBackground}
+          >
+            {t.overlayAdd}
+          </button>
+        )}
+      </div>
+      <span />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-ink-2">
+        <label className="flex items-center gap-1.5">
+          <input
+            type="checkbox"
+            data-testid="extras-waveform"
+            checked={audio.extras.waveform}
+            disabled={disabled}
+            onChange={() => toggle('waveform')}
+          />
+          {t.extrasWaveform}
+        </label>
+        <label className="flex items-center gap-1.5">
+          <input
+            type="checkbox"
+            data-testid="extras-progress"
+            checked={audio.extras.progressBar}
+            disabled={disabled}
+            onChange={() => toggle('progressBar')}
+          />
+          {t.extrasProgress}
+        </label>
+      </div>
+    </>
   )
 }
