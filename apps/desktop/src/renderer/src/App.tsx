@@ -5,7 +5,7 @@ import type { ExportResult, ImportedOverlay, RecentVideo } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { clampPlacement, defaultPlacement, outputFrame, type Overlay } from '@cuts/core/overlay'
 import { mediaUrl } from '@shared/media-url'
-import { isSupportedVideo } from '@shared/video-formats'
+import { isSupportedMedia } from '@shared/video-formats'
 import { ClipList, type SelectMode } from './components/ClipList'
 import { ExportPanel, type ExportState } from './components/ExportPanel'
 import { ClipControls } from './components/ClipControls'
@@ -425,7 +425,7 @@ export function App() {
         setDragDepth(0)
         const file = e.dataTransfer.files[0]
         if (!file || exporting) return
-        if (!isSupportedVideo(file.name)) {
+        if (!isSupportedMedia(file.name)) {
           setUnsupportedDrops((count) => count + 1)
           return
         }

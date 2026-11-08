@@ -28,6 +28,10 @@ mac:
       name: Video
       role: Viewer
       rank: Alternate
+    - ext: [wav, mp3, m4a, aac, flac, aif, aiff]
+      name: Audio
+      role: Viewer
+      rank: Alternate
   electronLanguages:
     - en
     - en_FEMININE

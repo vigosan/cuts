@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
 import type { ExportRequest, FrameRequest, Session } from '../shared/api'
-import { VIDEO_EXTENSIONS } from '../shared/video-formats'
+import { AUDIO_EXTENSIONS, VIDEO_EXTENSIONS, mediaKind } from '../shared/video-formats'
 import { messagesFor, resolveLocale } from '@cuts/core/i18n'
 import type { ExportOverlay } from '@cuts/core/overlay'
 import { exportClips, exportFrame, type ExportDeps } from './export'
@@ -98,6 +98,7 @@ app.whenReady().then(() => {
   const sessionsDir = join(app.getPath('userData'), 'sessions')
   const postersDir = join(app.getPath('userData'), 'posters')
   const savePoster = async (path: string) => {
+    if (mediaKind(path) === 'audio') return
     const ffmpeg = bundledFfmpeg()
     if (!ffmpeg) return
     const session = await loadSession(sessionsDir, path)
@@ -129,7 +130,7 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
-      filters: [{ name: t.videoFilter, extensions: VIDEO_EXTENSIONS }],
+      filters: [{ name: t.videoFilter, extensions: [...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS] }],
       securityScopedBookmarks: process.mas === true
     })
     if (result.canceled) return null

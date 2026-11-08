@@ -12,7 +12,16 @@ const CONTENT_TYPES: Record<string, string> = {
   '.m4v': 'video/mp4',
   '.webm': 'video/webm',
   '.mkv': 'video/x-matroska',
-  '.png': 'image/png'
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.wav': 'audio/wav',
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.flac': 'audio/flac',
+  '.aif': 'audio/aiff',
+  '.aiff': 'audio/aiff'
 }
 
 export function registerMediaScheme(): void {

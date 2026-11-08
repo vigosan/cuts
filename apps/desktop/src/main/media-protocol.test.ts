@@ -23,4 +23,21 @@ describe('mediaResponse', () => {
     expect(response.status).toBe(403)
     expect(await response.text()).toBe('')
   })
+
+  it.each([
+    ['set.wav', 'audio/wav'],
+    ['set.mp3', 'audio/mpeg'],
+    ['set.m4a', 'audio/mp4'],
+    ['set.aac', 'audio/aac'],
+    ['set.flac', 'audio/flac'],
+    ['set.aif', 'audio/aiff'],
+    ['set.aiff', 'audio/aiff'],
+    ['loop.jpg', 'image/jpeg'],
+    ['loop.jpeg', 'image/jpeg']
+  ])('serves %s as %s so the preview can play audio recordings and still backgrounds', async (name, type) => {
+    const path = join(dir, name)
+    writeFileSync(path, 'bytes')
+    const response = await mediaResponse(new Request(mediaUrl(path)), (allowed) => allowed === path)
+    expect(response.headers.get('Content-Type')).toBe(type)
+  })
 })
