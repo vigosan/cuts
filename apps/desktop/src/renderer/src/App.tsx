@@ -631,10 +631,19 @@ export function App() {
                   target={target ?? null}
                   framing={shownSettings.framing}
                   zone={shownSettings}
-                  overlay={overlay}
+                  placement={overlay}
+                  aspect={overlay.aspect}
+                  testId="overlay"
                   onChange={(placement) => setOverlay({ ...overlay, ...placement })}
-                  onMissing={() => setOverlay(null)}
-                />
+                >
+                  <img
+                    src={mediaUrl(overlay.path)}
+                    alt=""
+                    draggable={false}
+                    className="size-full select-none"
+                    onError={() => setOverlay(null)}
+                  />
+                </OverlayLayer>
               )}
               {videoError && (
                 <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">

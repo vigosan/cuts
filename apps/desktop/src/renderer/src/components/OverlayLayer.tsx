@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import type { Box } from '@cuts/core/crop'
 import type { Framing } from '@cuts/core/framing'
 import {
@@ -11,20 +11,20 @@ import {
   resizeOverlay,
   type Corner,
   type Guide,
-  type Overlay,
   type OverlayPlacement,
   type Size
 } from '@cuts/core/overlay'
-import { mediaUrl } from '@shared/media-url'
 
 type Props = {
   video: Size
   target: Size | null
   framing: Framing
   zone: { cropX: number; cropY: number }
-  overlay: Overlay
+  placement: OverlayPlacement
+  aspect: number
+  testId: string
   onChange: (placement: OverlayPlacement) => void
-  onMissing: () => void
+  children: ReactNode
 }
 
 const CORNERS: Corner[] = ['tl', 'tr', 'bl', 'br']
@@ -53,7 +53,7 @@ function guideStyle(guide: Guide, frame: Box) {
   }
 }
 
-export function OverlayLayer({ video, target, framing, zone, overlay, onChange, onMissing }: Props) {
+export function OverlayLayer({ video, target, framing, zone, placement: wanted, aspect, testId, onChange, children }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [hovered, setHovered] = useState(false)
@@ -70,8 +70,8 @@ export function OverlayLayer({ video, target, framing, zone, overlay, onChange, 
 
   const outputSize = target ?? video
   const frameBox = previewFrame(size, video, target, framing, zone)
-  const placement = clampPlacement(overlay, overlay.aspect, outputSize)
-  const box = overlayBox(frameBox, placement, overlay.aspect)
+  const placement = clampPlacement(wanted, aspect, outputSize)
+  const box = overlayBox(frameBox, placement, aspect)
 
   const track = (e: ReactPointerEvent, update: (dx: number, dy: number) => void) => {
     e.preventDefault()
@@ -93,15 +93,15 @@ export function OverlayLayer({ video, target, framing, zone, overlay, onChange, 
   const startMove = (e: ReactPointerEvent) => {
     const start = placement
     track(e, (dx, dy) => {
-      const moved = moveOverlay(start, dx, dy, overlay.aspect, outputSize)
-      setGuides(heldGuides(moved.placement, moved.guides, overlay.aspect, outputSize))
+      const moved = moveOverlay(start, dx, dy, aspect, outputSize)
+      setGuides(heldGuides(moved.placement, moved.guides, aspect, outputSize))
       onChange(moved.placement)
     })
   }
 
   const startResize = (corner: Corner) => (e: ReactPointerEvent) => {
     const start = placement
-    track(e, (dx) => onChange(resizeOverlay(start, corner, dx, overlay.aspect, outputSize)))
+    track(e, (dx) => onChange(resizeOverlay(start, corner, dx, aspect, outputSize)))
   }
 
   return (
@@ -111,13 +111,13 @@ export function OverlayLayer({ video, target, framing, zone, overlay, onChange, 
           {guides.map((guide) => (
             <div
               key={guide}
-              data-testid={`overlay-guide-${guide}`}
+              data-testid={`${testId}-guide-${guide}`}
               className="absolute bg-accent"
               style={guideStyle(guide, frameBox)}
             />
           ))}
           <div
-            data-testid="overlay"
+            data-testid={testId}
             className="pointer-events-auto absolute cursor-move touch-none"
             style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
             onPointerDown={startMove}
@@ -125,18 +125,12 @@ export function OverlayLayer({ video, target, framing, zone, overlay, onChange, 
             onPointerLeave={() => setHovered(false)}
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={mediaUrl(overlay.path)}
-              alt=""
-              draggable={false}
-              className="size-full select-none"
-              onError={onMissing}
-            />
+            {children}
             {(hovered || dragging) &&
               CORNERS.map((corner) => (
                 <div
                   key={corner}
-                  data-testid={`overlay-handle-${corner}`}
+                  data-testid={`${testId}-handle-${corner}`}
                   className={`absolute size-3 rounded-full border border-black/40 bg-white ${CORNER_STYLE[corner]}`}
                   onPointerDown={startResize(corner)}
                 />
