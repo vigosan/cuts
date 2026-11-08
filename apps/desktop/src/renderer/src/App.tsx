@@ -647,7 +647,7 @@ export function App() {
               )}
               {videoError && (
                 <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">
-                  {t.videoUnplayable}
+                  {isAudio ? t.audioUnplayable : t.videoUnplayable}
                 </p>
               )}
               {!videoError && !isAudio && videoSize?.width === 0 && (

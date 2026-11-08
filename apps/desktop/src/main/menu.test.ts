@@ -26,9 +26,9 @@ describe('menuTemplate', () => {
     expect(labels.every(Boolean)).toBe(true)
   })
 
-  it('opens another video from File > Open Video… with Command-O, the usual place on macOS', () => {
+  it('opens another recording from File > Open… with Command-O, the usual place on macOS', () => {
     const openVideo = vi.fn()
-    const item = flatten(menuTemplate(messagesFor('en'), 'Cuts', { openVideo, openUrl: () => {}, undo: () => {}, redo: () => {} })).find((e) => e.label === 'Open Video…')!
+    const item = flatten(menuTemplate(messagesFor('en'), 'Cuts', { openVideo, openUrl: () => {}, undo: () => {}, redo: () => {} })).find((e) => e.label === 'Open…')!
     expect(item.accelerator).toBe('CmdOrCtrl+O')
     ;(item.click as () => void)()
     expect(openVideo).toHaveBeenCalled()
@@ -98,7 +98,7 @@ describe('menuTemplate', () => {
     expect(labels).not.toContain('Open Recent')
   })
 
-  it('exports the current frame from File with Shift-Command-E, next to Open Video…', () => {
+  it('exports the current frame from File with Shift-Command-E, next to Open…', () => {
     const exportFrame = vi.fn()
     const item = flatten(menuTemplate(messagesFor('en'), 'Cuts', { openVideo: () => {}, openUrl: () => {}, undo: () => {}, redo: () => {}, exportFrame }))
       .find((e) => e.label === 'Export Current Frame')!

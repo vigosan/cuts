@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { RecentVideo } from '@shared/api'
+import { mediaKind } from '@shared/video-formats'
 import { t } from '../i18n'
+import { WaveIcon } from './icons'
 
 export function RecentVideos({ recents, onOpen }: { recents: RecentVideo[]; onOpen: (path: string) => void }) {
   const [now] = useState(Date.now)
@@ -16,7 +18,7 @@ export function RecentVideos({ recents, onOpen }: { recents: RecentVideo[]; onOp
               className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition duration-150 ease-out hover:bg-sunken active:scale-[0.99]"
               onClick={() => onOpen(recent.path)}
             >
-              <span className="aspect-video w-20 shrink-0 overflow-hidden rounded-md bg-sunken ring-1 ring-line">
+              <span className="grid aspect-video w-20 shrink-0 place-items-center overflow-hidden rounded-md bg-sunken text-ink-3 ring-1 ring-line">
                 {recent.poster && (
                   <img
                     data-testid={`recent-poster-${index + 1}`}
@@ -25,6 +27,9 @@ export function RecentVideos({ recents, onOpen }: { recents: RecentVideo[]; onOp
                     draggable={false}
                     className="size-full object-cover"
                   />
+                )}
+                {!recent.poster && mediaKind(recent.path) === 'audio' && (
+                  <WaveIcon data-testid={`recent-audio-${index + 1}`} className="size-5" />
                 )}
               </span>
               <span className="flex min-w-0 flex-1 flex-col">

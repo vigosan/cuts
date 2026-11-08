@@ -131,6 +131,16 @@ describe('App', () => {
     expect(screen.queryByTestId('recent-poster-2')).not.toBeInTheDocument()
   })
 
+  it('marks a recent audio recording with a waveform, since it has no frame to show', async () => {
+    vi.mocked(api.recentVideos).mockResolvedValue([
+      { path: '/Users/vicent/Downloads/set.wav', name: 'set.wav', folder: 'Downloads', openedAt: Date.now(), clips: 0, poster: null },
+      { path: '/Users/vicent/Desktop/ensayo.mov', name: 'ensayo.mov', folder: 'Desktop', openedAt: Date.now(), clips: 0, poster: null }
+    ])
+    render(<App />)
+    expect(await screen.findByTestId('recent-audio-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('recent-audio-2')).not.toBeInTheDocument()
+  })
+
   it('opens a recent video with one click, with the clips it had', async () => {
     vi.mocked(api.recentVideos).mockResolvedValue([{ path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2, poster: null }])
     vi.mocked(api.openRecent).mockResolvedValue(VIDEO)
@@ -1129,7 +1139,7 @@ describe('App', () => {
 
   it('shows the interface in the user language, here English from the test environment', async () => {
     render(<App />)
-    expect(screen.getByTestId('open-video')).toHaveTextContent('Choose video…')
+    expect(screen.getByTestId('open-video')).toHaveTextContent('Choose video or audio…')
     const video = await loadVideo()
     await markClip(video, 100, 150)
     expect(screen.getByTestId('export')).toHaveTextContent('Export 1 clip')
@@ -2451,6 +2461,12 @@ describe('audio recordings', () => {
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))
     expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ input: VIDEO, background: null, frame: { width: 1280, height: 720 } }))
+  })
+
+  it('says the audio cannot be played, not the video, when an audio file fails', async () => {
+    await loadAudio()
+    fireEvent(screen.getByTestId('video'), new Event('error'))
+    expect(screen.getByTestId('video-error')).toHaveTextContent(t.audioUnplayable)
   })
 
   it('explains a background over 500 MB instead of silently ignoring it', async () => {

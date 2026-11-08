@@ -108,6 +108,14 @@ export function TrashIcon({ className = 'size-4' }: IconProps) {
   )
 }
 
+export function WaveIcon({ className = 'size-4', 'data-testid': testId }: IconProps) {
+  return (
+    <svg data-testid={testId} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden className={`${base} ${className}`}>
+      <path d="M2 7v2M5 5v6M8 3v10M11 5v6M14 7v2" />
+    </svg>
+  )
+}
+
 export function SparkleIcon({ className = 'size-4' }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={`${base} ${className}`}>
