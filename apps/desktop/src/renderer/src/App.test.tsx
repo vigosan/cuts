@@ -424,7 +424,7 @@ describe('App', () => {
       overlay: null,
       kind: 'clips',
       background: null,
-      extras: { waveform: false, progressBar: false },
+      extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3 },
       frame: expect.anything()
     })
     expect(await screen.findByTestId('export-done')).toBeInTheDocument()
@@ -2383,7 +2383,7 @@ describe('audio recordings', () => {
         input: AUDIO,
         kind: 'clips',
         background: { path: LOOP.path, kind: 'video' },
-        extras: { waveform: true, progressBar: false },
+        extras: { waveform: true, progressBar: false, color: '#ffffff', opacity: 0.3 },
         frame: { width: 1920, height: 1080 }
       })
     )
@@ -2404,7 +2404,17 @@ describe('audio recordings', () => {
     await userEvent.click(screen.getByTestId('extras-progress'))
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))
-    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: true } }))
+    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: true, color: '#ffffff', opacity: 0.3 } }))
+  })
+
+  it('exports the waveform in the colour and opacity picked for it', async () => {
+    const video = await loadAudio()
+    await addLoop()
+    fireEvent.input(screen.getByTestId('extras-color'), { target: { value: '#4da8ff' } })
+    await userEvent.selectOptions(screen.getByTestId('extras-opacity'), '0.5')
+    await markClip(video, 600, 650)
+    await act(async () => userEvent.click(screen.getByTestId('export')))
+    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: false, color: '#4da8ff', opacity: 0.5 } }))
   })
 
   it('never asks ffmpeg for filmstrip frames of an audio file', async () => {
@@ -2435,6 +2445,7 @@ describe('audio recordings', () => {
     expect(screen.queryByTestId('background-add')).not.toBeInTheDocument()
     expect(screen.queryByTestId('background-name')).not.toBeInTheDocument()
     expect(screen.queryByTestId('extras-waveform')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('extras-color')).not.toBeInTheDocument()
     expect(screen.queryByTestId('background-video')).not.toBeInTheDocument()
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))

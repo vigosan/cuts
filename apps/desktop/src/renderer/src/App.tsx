@@ -352,7 +352,7 @@ export function App() {
         overlay: exportOverlay(),
         kind: 'clips',
         background: exportBackground(),
-        extras: isAudio ? extras : { waveform: false, progressBar: false },
+        extras: isAudio ? extras : { ...extras, waveform: false, progressBar: false },
         frame: videoSize ?? { width: 1920, height: 1080 }
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
@@ -374,7 +374,7 @@ export function App() {
         overlay: exportOverlay(),
         kind: 'full',
         background: exportBackground(),
-        extras: isAudio ? extras : { waveform: false, progressBar: false },
+        extras: isAudio ? extras : { ...extras, waveform: false, progressBar: false },
         frame: videoSize ?? { width: 1920, height: 1080 }
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))

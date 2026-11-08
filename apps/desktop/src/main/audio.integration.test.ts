@@ -53,7 +53,7 @@ const options = (output: string, change: Partial<AudioCutOptions>): AudioCutOpti
   cropY: 0.5,
   format: '16:9',
   background: { path: loop, kind: 'video' },
-  extras: { waveform: false, progressBar: false },
+  extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3 },
   bitrate: '4M',
   frame: { width: 320, height: 180 },
   ...change
@@ -89,13 +89,13 @@ describe('audio recordings with real ffmpeg', () => {
 
   it('draws the waveform where the spec puts it while the music plays', async () => {
     const output = join(dir, 'wave-1.mp4')
-    await runFfmpeg(ffmpeg, buildAudioArgs(options(output, { end: 4, background: { path: black, kind: 'video' }, extras: { waveform: true, progressBar: false } })), () => {})
+    await runFfmpeg(ffmpeg, buildAudioArgs(options(output, { end: 4, background: { path: black, kind: 'video' }, extras: { waveform: true, progressBar: false, color: '#ffffff', opacity: 0.3 } })), () => {})
     expect(brightness(output, 2, 960, Math.round(1080 * 0.82))).toBeGreaterThan(brightness(output, 2, 960, 300) + 30)
   })
 
   it('fills the progress bar halfway at the middle of the file', async () => {
     const output = join(dir, 'progress-1.mp4')
-    await runFfmpeg(ffmpeg, buildAudioArgs(options(output, { end: 6, background: { path: black, kind: 'video' }, extras: { waveform: false, progressBar: true } })), () => {})
+    await runFfmpeg(ffmpeg, buildAudioArgs(options(output, { end: 6, background: { path: black, kind: 'video' }, extras: { waveform: false, progressBar: true, color: '#ffffff', opacity: 0.3 } })), () => {})
     expect(brightness(output, 3, 480, 1078)).toBeGreaterThan(150)
     expect(brightness(output, 3, 1440, 1078)).toBeLessThan(40)
   })

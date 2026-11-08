@@ -36,8 +36,9 @@ Many sets are recorded as audio only (a WAV from the mixer). Vicent wants the sa
 
 ### Waveform and progress bar
 - Two toggles under Background, only for audio recordings: **Waveform** ("Onda", default on) and **Progress bar** ("Barra de progreso", default off). Global preferences.
-- Waveform: the real audio (after fades), white at 30 % opacity, centred horizontally, 52 % of the frame width, 7.4 % of the frame height, bottom edge at 86 % of the frame height, both ends faded over 22 % of its width.
-- Progress bar: white at 80 %, full width, height `max(2, round(frame height × 0.0037))` px, at the very bottom, growing from 0 to 100 % over the exported file (each clip has its own).
+- Waveform: the real audio (after fades), in the chosen colour and opacity (default white at 30 %), centred horizontally, 52 % of the frame width, 7.4 % of the frame height, bottom edge at 86 % of the frame height, both ends faded over 22 % of its width.
+- Colour and opacity (Vicent, 2026-11-08): next to the toggles, a colour picker (default white) and an opacity choice of 10, 30, 50, 80 or 100 % (default 30 %). Both apply to the waveform; the progress bar uses the same colour at 80 %. Global preferences.
+- Progress bar: the chosen colour (white by default) at 80 %, full width, height `max(2, round(frame height × 0.0037))` px, at the very bottom, growing from 0 to 100 % over the exported file (each clip has its own).
 
 ### Export full recording
 - A secondary button under the export button: **Export full recording** ("Exportar grabación completa").

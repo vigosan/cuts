@@ -51,7 +51,9 @@ export type ImportedBackground = { path: string; kind: BackgroundKind; name: str
 
 export type ExportBackground = { path: string; kind: BackgroundKind }
 
-export type AudioExtras = { waveform: boolean; progressBar: boolean }
+export type AudioExtras = { waveform: boolean; progressBar: boolean; color: string; opacity: number }
+
+export const WAVE_OPACITIES = [0.1, 0.3, 0.5, 0.8, 1]
 
 export type Api = {
   platform: NodeJS.Platform

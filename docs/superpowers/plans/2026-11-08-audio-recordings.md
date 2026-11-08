@@ -153,3 +153,20 @@ Input order: `0` background (`-stream_loop -1 -i` for video, `-loop 1 -framerate
 - [ ] **Step 3: Implement** a secondary button under the export button, same progress and result notice as clips.
 - [ ] **Step 4: Run** the gate — Expected: PASS.
 - [ ] **Step 5: Commit:** `git commit -m "Add Export full recording for videos and audio recordings"`
+
+### Task 8: Waveform colour and opacity
+
+Added on 2026-11-08 at Vicent's request, after Tasks 1–7.
+
+**Files:**
+- Modify: `apps/desktop/src/shared/api.ts` (`AudioExtras`), `apps/desktop/src/main/ffmpeg-args.ts`, `apps/desktop/src/renderer/src/preferences.ts`, `apps/desktop/src/renderer/src/components/ExportPanel.tsx`, `packages/core/src/i18n.ts`
+- Test: `apps/desktop/src/main/audio-args.test.ts`, `apps/desktop/src/renderer/src/App.test.tsx`
+
+**Interfaces:**
+- Produces: `AudioExtras = { waveform: boolean; progressBar: boolean; color: string; opacity: number }`, defaults `color: '#ffffff'`, `opacity: 0.3`; `WAVE_OPACITIES = [0.1, 0.3, 0.5, 0.8, 1]`.
+
+- [ ] **Step 1: Write the failing tests:** `colors=0x4da8ff` and `alpha(X,Y)*0.5*` for `{ color: '#4DA8FF', opacity: 0.5 }`; progress bar `color=c=0x4da8ff@0.8`; a colour that is not `#rrggbb` (e.g. `'red;drawtext'`) falls back to white so nothing reaches the filter graph; opacity outside 0.1–1 is clamped. App: [`extras-color`] and [`extras-opacity`] appear only for audio and their values reach the export request.
+- [ ] **Step 2: Run** `npx vitest run audio-args App.test` — Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the gate — Expected: PASS.
+- [ ] **Step 5: Commit:** `git commit -m "Let the waveform take any colour and opacity"`

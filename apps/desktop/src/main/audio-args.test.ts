@@ -15,7 +15,7 @@ const audio: AudioCutOptions = {
   cropY: 0.5,
   format: '16:9',
   background: { path: '/data/backgrounds/background-1.mp4', kind: 'video' },
-  extras: { waveform: false, progressBar: false },
+  extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3 },
   bitrate: '4M',
   frame: { width: 1280, height: 720 }
 }
@@ -56,16 +56,16 @@ describe('buildAudioArgs', () => {
   })
 
   it('draws the real waveform centred near the bottom at the spec size', () => {
-    const g = graph(buildAudioArgs({ ...audio, extras: { waveform: true, progressBar: false } }))
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, waveform: true } }))
     expect(g).toContain('asplit[a][aw]')
-    expect(g).toContain('showwaves=s=998x80:mode=cline:rate=30:scale=sqrt:draw=full:colors=white')
+    expect(g).toContain('showwaves=s=998x80:mode=cline:rate=30:scale=sqrt:draw=full:colors=0xffffff')
     expect(g).toContain("a='alpha(X,Y)*0.3*min(1,min(X,W-X)/(0.22*W))'")
     expect(g).toContain('overlay=x=(W-w)/2:y=0.86*H-h')
   })
 
   it('grows the progress bar over the clip so it reaches the end with the audio', () => {
-    const g = graph(buildAudioArgs({ ...audio, extras: { waveform: false, progressBar: true } }))
-    expect(g).toContain('color=c=white@0.8:s=1920x4:r=30')
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, progressBar: true } }))
+    expect(g).toContain('color=c=0xffffff@0.8:s=1920x4:r=30')
     expect(g).toContain("overlay=x='-w+w*t/60':y=H-h:eval=frame")
   })
 
@@ -82,13 +82,36 @@ describe('buildAudioArgs', () => {
   })
 
   it('uses the background size when the format is Original', () => {
-    const g = graph(buildAudioArgs({ ...audio, format: 'original', extras: { waveform: true, progressBar: true } }))
+    const g = graph(buildAudioArgs({ ...audio, format: 'original', extras: { ...audio.extras, waveform: true, progressBar: true } }))
     expect(g).toContain('showwaves=s=666x54')
     expect(g).toContain('s=1280x3')
   })
 
   it('encodes at the requested bitrate so a long set stays a reasonable size', () => {
     expect(valueAfter(buildAudioArgs(audio), '-b:v')).toBe('4M')
+  })
+})
+
+describe('waveform colour and opacity', () => {
+  const both = (color: string, opacity: number) =>
+    graph(buildAudioArgs({ ...audio, extras: { waveform: true, progressBar: true, color, opacity } }))
+
+  it('draws the waveform and bar in the chosen colour so they match the brand', () => {
+    const g = both('#4DA8FF', 0.5)
+    expect(g).toContain('colors=0x4da8ff')
+    expect(g).toContain("a='alpha(X,Y)*0.5*")
+    expect(g).toContain('color=c=0x4da8ff@0.8')
+  })
+
+  it('falls back to white for anything that is not #rrggbb, so nothing else reaches the filter graph', () => {
+    const g = both("red;drawtext=text='x'", 0.5)
+    expect(g).not.toContain('drawtext')
+    expect(g).toContain('colors=0xffffff')
+  })
+
+  it('keeps the opacity between 10 % and 100 %', () => {
+    expect(both('#ffffff', 5)).toContain("a='alpha(X,Y)*1*")
+    expect(both('#ffffff', 0)).toContain("a='alpha(X,Y)*0.1*")
   })
 })
 

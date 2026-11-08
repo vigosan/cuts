@@ -129,6 +129,8 @@ export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = proce
 
 const even = (n: number) => Math.round(n / 2) * 2
 
+const waveColor = (color: string) => (/^#[0-9a-f]{6}$/i.test(color) ? `0x${color.slice(1).toLowerCase()}` : '0xffffff')
+
 function backgroundInput(background: ExportBackground): string[] {
   return background.kind === 'image'
     ? ['-loop', '1', '-framerate', '30', '-i', background.path]
@@ -158,17 +160,19 @@ export function buildAudioArgs(o: AudioCutOptions, platform: NodeJS.Platform = p
     )
   }
   const audio = audioFades.length ? audioFades.join(',') : 'anull'
+  const color = waveColor(o.extras.color)
+  const opacity = num(Math.min(1, Math.max(0.1, o.extras.opacity)))
   if (o.extras.waveform) {
     parts.push(
       `[1:a]${audio},asplit[a][aw]`,
-      `[aw]aformat=channel_layouts=mono,showwaves=s=${even(width * 0.52)}x${even(height * 0.074)}:mode=cline:rate=30:scale=sqrt:draw=full:colors=white,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*0.3*min(1,min(X,W-X)/(0.22*W))'[w]`
+      `[aw]aformat=channel_layouts=mono,showwaves=s=${even(width * 0.52)}x${even(height * 0.074)}:mode=cline:rate=30:scale=sqrt:draw=full:colors=${color},format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*${opacity}*min(1,min(X,W-X)/(0.22*W))'[w]`
     )
     next('c2', '$in[w]overlay=x=(W-w)/2:y=0.86*H-h$out')
   } else {
     parts.push(`[1:a]${audio}[a]`)
   }
   if (o.extras.progressBar) {
-    parts.push(`color=c=white@0.8:s=${width}x${Math.max(2, Math.round(height * 0.0037))}:r=30[p]`)
+    parts.push(`color=c=${color}@0.8:s=${width}x${Math.max(2, Math.round(height * 0.0037))}:r=30[p]`)
     next('c3', `$in[p]overlay=x='-w+w*t/${num(duration)}':y=H-h:eval=frame:shortest=0$out`)
   }
   next('v', `$in${[...videoFades, 'format=yuv420p'].join(',')}$out`)

@@ -1,7 +1,7 @@
 import { MAX_CLIP_SECONDS, outputFileName, safeBaseName } from '@cuts/core/clips'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import type { Overlay } from '@cuts/core/overlay'
-import type { AudioExtras, ImportedBackground } from '@shared/api'
+import { WAVE_OPACITIES, type AudioExtras, type ImportedBackground } from '@shared/api'
 import { mediaUrl } from '@shared/media-url'
 import { t } from '../i18n'
 import { field } from './field'
@@ -329,6 +329,31 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
           />
           {t.extrasProgress}
         </label>
+        <input
+          type="color"
+          data-testid="extras-color"
+          aria-label={t.extrasColor}
+          title={t.extrasColor}
+          className="size-6 cursor-pointer rounded border border-line bg-transparent"
+          value={audio.extras.color}
+          disabled={disabled}
+          onChange={(e) => audio.onExtras({ ...audio.extras, color: e.target.value })}
+        />
+        <select
+          data-testid="extras-opacity"
+          aria-label={t.extrasOpacity}
+          title={t.extrasOpacity}
+          className={field}
+          value={audio.extras.opacity}
+          disabled={disabled}
+          onChange={(e) => audio.onExtras({ ...audio.extras, opacity: Number(e.target.value) })}
+        >
+          {WAVE_OPACITIES.map((opacity) => (
+            <option key={opacity} value={opacity}>
+              {Math.round(opacity * 100)} %
+            </option>
+          ))}
+        </select>
       </div>
     </>
   )
