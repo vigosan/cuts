@@ -15,7 +15,7 @@ const audio: AudioCutOptions = {
   cropY: 0.5,
   format: '16:9',
   background: { path: '/data/backgrounds/background-1.mp4', kind: 'video' },
-  extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3 },
+  extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null },
   bitrate: '4M',
   frame: { width: 1280, height: 720 }
 }
@@ -60,13 +60,14 @@ describe('buildAudioArgs', () => {
     expect(g).toContain('asplit[a][aw]')
     expect(g).toContain('showwaves=s=998x80:mode=cline:rate=30:scale=sqrt:draw=full:colors=0xffffff')
     expect(g).toContain("a='alpha(X,Y)*0.3*min(1,min(X,W-X)/(0.22*W))'")
-    expect(g).toContain('overlay=x=(W-w)/2:y=0.86*H-h')
+    expect(g).toContain('[w]overlay=x=461:y=849')
   })
 
   it('grows the progress bar over the clip so it reaches the end with the audio', () => {
     const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, progressBar: true } }))
-    expect(g).toContain('color=c=0xffffff@0.8:s=1920x4:r=30')
-    expect(g).toContain("overlay=x='-w+w*t/60':y=H-h:eval=frame")
+    expect(g).toContain('color=c=0xffffff:s=1920x4:r=30')
+    expect(g).toContain("a='if(lt(X,W*T/60),204,0)'")
+    expect(g).toContain('[p]overlay=x=0:y=1076')
   })
 
   it('reads the overlay PNG as the third input so the background and audio keep their indexes', () => {
@@ -94,13 +95,13 @@ describe('buildAudioArgs', () => {
 
 describe('waveform colour and opacity', () => {
   const both = (color: string, opacity: number) =>
-    graph(buildAudioArgs({ ...audio, extras: { waveform: true, progressBar: true, color, opacity } }))
+    graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, waveform: true, progressBar: true, color, opacity } }))
 
   it('draws the waveform and bar in the chosen colour so they match the brand', () => {
     const g = both('#4DA8FF', 0.5)
     expect(g).toContain('colors=0x4da8ff')
     expect(g).toContain("a='alpha(X,Y)*0.5*")
-    expect(g).toContain('color=c=0x4da8ff@0.8')
+    expect(g).toContain('color=c=0x4da8ff:s=')
   })
 
   it('falls back to white for anything that is not #rrggbb, so nothing else reaches the filter graph', () => {
@@ -115,7 +116,33 @@ describe('waveform colour and opacity', () => {
   })
 })
 
+describe('placing the waveform and the bar', () => {
+  it('draws the waveform where it was placed on the preview, keeping its shape', () => {
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, waveform: true, wave: { x: 0.1, y: 0.2, width: 0.25 } } }))
+    expect(g).toContain('showwaves=s=480x38')
+    expect(g).toContain('[w]overlay=x=192:y=216')
+  })
+
+  it('grows the progress bar from where it was placed, never left of it', () => {
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, progressBar: true, bar: { x: 0.25, y: 0.5, width: 0.5 } } }))
+    expect(g).toContain('s=960x2:r=30')
+    expect(g).toContain('[p]overlay=x=480:y=540')
+  })
+
+  it('pulls a placement that came out of the frame back inside', () => {
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, waveform: true, wave: { x: 0.9, y: 0.99, width: 0.5 } } }))
+    expect(g).toContain('[w]overlay=x=960:y=1003')
+  })
+})
+
 describe('values that come from the renderer', () => {
+  it('ignores a forged placement instead of putting it in the filter graph', () => {
+    const forged = { x: '0;movie=/etc/passwd' as unknown as number, y: 0.2, width: 0.25 }
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, waveform: true, wave: forged } }))
+    expect(g).not.toContain('movie')
+    expect(g).toContain('[w]overlay=x=461:y=849')
+  })
+
   it('never lets a forged frame size reach the filter graph', () => {
     const forged = { width: "2[p];movie=/etc/passwd" as unknown as number, height: 720 }
     const g = graph(buildAudioArgs({ ...audio, format: 'original', frame: forged, extras: { ...audio.extras, waveform: true, progressBar: true } }))

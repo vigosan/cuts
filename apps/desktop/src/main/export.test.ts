@@ -14,7 +14,7 @@ const request: ExportRequest = {
   overlay: null,
   kind: 'clips',
   background: null,
-  extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3 },
+  extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null },
   frame: { width: 1920, height: 1080 },
   clips: [
     { id: 'a', start: 100, end: 150, videoFade: 'black', audioFade: 'natural', fadeSeconds: 1, framing: 'crop', cropX: 0.5, cropY: 0.5, position: 0 },
@@ -218,7 +218,7 @@ describe('audio recordings and full recordings', () => {
     ...request,
     input: '/Downloads/set.wav',
     background: { path: '/data/backgrounds/background-1.mp4', kind: 'video' },
-    extras: { waveform: true, progressBar: false, color: '#ffffff', opacity: 0.3 }
+    extras: { waveform: true, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null }
   }
   const full = (r: ExportRequest, end: number): ExportRequest => ({ ...r, kind: 'full', clips: [{ ...r.clips[0], start: 0, end, position: 0 }] })
 

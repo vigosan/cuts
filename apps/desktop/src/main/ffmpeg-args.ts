@@ -1,7 +1,8 @@
 import { posix, win32 } from 'node:path'
 import type { AudioFade, VideoFade } from '@cuts/core/fades'
 import type { ClipFraming } from '@cuts/core/framing'
-import type { ExportOverlay, Size } from '@cuts/core/overlay'
+import { clampPlacement, type ExportOverlay, type OverlayPlacement, type Size } from '@cuts/core/overlay'
+import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement } from '@cuts/core/audio-layers'
 import type { AudioExtras, ExportBackground } from '../shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 
@@ -139,6 +140,11 @@ const waveOpacity = (value: number) => {
   return Number.isFinite(n) ? Math.min(1, Math.max(0.1, n)) : 0.3
 }
 
+const placed = (wanted: OverlayPlacement | null, aspect: number, frame: Size, fallback: OverlayPlacement): OverlayPlacement => {
+  if (!wanted || ![wanted.x, wanted.y, wanted.width].every((n) => typeof n === 'number' && Number.isFinite(n))) return fallback
+  return clampPlacement(wanted, aspect, frame)
+}
+
 const waveColor = (color: string) => (/^#[0-9a-f]{6}$/i.test(color) ? `0x${color.slice(1).toLowerCase()}` : '0xffffff')
 
 function backgroundInput(background: ExportBackground): string[] {
@@ -174,18 +180,25 @@ export function buildAudioArgs(o: AudioCutOptions, platform: NodeJS.Platform = p
   const audio = audioFades.length ? audioFades.join(',') : 'anull'
   const color = waveColor(o.extras.color)
   const opacity = num(waveOpacity(o.extras.opacity))
+  const frame = { width, height }
   if (o.extras.waveform) {
+    const wave = placed(o.extras.wave, WAVE_ASPECT, frame, defaultWavePlacement(frame))
+    const waveWidth = even(width * wave.width)
     parts.push(
       `[1:a]${audio},asplit[a][aw]`,
-      `[aw]aformat=channel_layouts=mono,showwaves=s=${even(width * 0.52)}x${even(height * 0.074)}:mode=cline:rate=30:scale=sqrt:draw=full:colors=${color},format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*${opacity}*min(1,min(X,W-X)/(0.22*W))'[w]`
+      `[aw]aformat=channel_layouts=mono,showwaves=s=${waveWidth}x${Math.max(2, even(waveWidth * WAVE_ASPECT))}:mode=cline:rate=30:scale=sqrt:draw=full:colors=${color},format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*${opacity}*min(1,min(X,W-X)/(0.22*W))'[w]`
     )
-    next('c2', '$in[w]overlay=x=(W-w)/2:y=0.86*H-h$out')
+    next('c2', `$in[w]overlay=x=${Math.round(wave.x * width)}:y=${Math.round(wave.y * height)}$out`)
   } else {
     parts.push(`[1:a]${audio}[a]`)
   }
   if (o.extras.progressBar) {
-    parts.push(`color=c=${color}@0.8:s=${width}x${Math.max(2, Math.round(height * 0.0037))}:r=30[p]`)
-    next('c3', `$in[p]overlay=x='-w+w*t/${num(duration)}':y=H-h:eval=frame:shortest=0$out`)
+    const bar = placed(o.extras.bar, BAR_ASPECT, frame, defaultBarPlacement(frame))
+    const barWidth = Math.round(width * bar.width)
+    parts.push(
+      `color=c=${color}:s=${barWidth}x${Math.max(2, Math.round(barWidth * BAR_ASPECT))}:r=30,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(X,W*T/${num(duration)}),204,0)'[p]`
+    )
+    next('c3', `$in[p]overlay=x=${Math.round(bar.x * width)}:y=${Math.round(bar.y * height)}:shortest=0$out`)
   }
   next('v', `$in${[...videoFades, 'format=yuv420p'].join(',')}$out`)
   return [

@@ -2,7 +2,7 @@ import type { Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
 import type { ClipFraming } from '@cuts/core/framing'
 import type { OutputFormat } from '@cuts/core/formats'
-import type { ExportOverlay, Size } from '@cuts/core/overlay'
+import type { ExportOverlay, OverlayPlacement, Size } from '@cuts/core/overlay'
 
 export type ExportClip = Clip & ClipSettings & { position: number }
 
@@ -51,7 +51,14 @@ export type ImportedBackground = { path: string; kind: BackgroundKind; name: str
 
 export type ExportBackground = { path: string; kind: BackgroundKind }
 
-export type AudioExtras = { waveform: boolean; progressBar: boolean; color: string; opacity: number }
+export type AudioExtras = {
+  waveform: boolean
+  progressBar: boolean
+  color: string
+  opacity: number
+  wave: OverlayPlacement | null
+  bar: OverlayPlacement | null
+}
 
 export const WAVE_OPACITIES = [0.1, 0.3, 0.5, 0.8, 1]
 
