@@ -41,6 +41,11 @@ Many sets are recorded as audio only (a WAV from the mixer). Vicent wants the sa
 - Colour and opacity (Vicent, 2026-11-08): next to the toggles, a colour picker (default white) and an opacity choice of 10, 30, 50, 80 or 100 % (default 30 %). Both apply to the waveform; the progress bar uses the same colour at 80 %. Global preferences.
 - Progress bar: the chosen colour (white by default) at 80 %, full width, height `max(2, round(frame height × 0.0037))` px, at the very bottom, growing from 0 to 100 % over the exported file (each clip has its own).
 
+### Placing the waveform and the bar (Vicent, 2026-11-08, second round)
+- With a background loaded, the waveform and the progress bar appear on the preview and are moved and resized from the corners exactly like the overlay PNG (same snapping, aspect ratio kept). The export draws them at that placement. The default placements are the ones above.
+- The preview waveform is an illustrative shape in the chosen colour and opacity; the bar preview fills with the playback position over a faint track.
+- The toggles are Cuts-style buttons (pressed state), the colour is a round swatch and the opacity a compact menu next to it.
+
 ### Export full recording
 - A secondary button under the export button: **Export full recording** ("Exportar grabación completa").
 - Writes `<name>-full.mp4` in the chosen folder, with the overwrite prompt, progress and cancel of today.
