@@ -135,9 +135,9 @@ const positive = (value: number, fallback: number) => {
   return Number.isFinite(n) && n > 0 ? Math.round(n) : fallback
 }
 
-const waveOpacity = (value: number) => {
+const waveOpacity = (value: number, fallback = 0.3) => {
   const n = Number(value)
-  return Number.isFinite(n) ? Math.min(1, Math.max(0.1, n)) : 0.3
+  return Number.isFinite(n) ? Math.min(1, Math.max(0.1, n)) : fallback
 }
 
 const placed = (wanted: OverlayPlacement | null, aspect: number, frame: Size, fallback: OverlayPlacement): OverlayPlacement => {
@@ -196,7 +196,7 @@ export function buildAudioArgs(o: AudioCutOptions, platform: NodeJS.Platform = p
     const bar = placed(o.extras.bar, BAR_ASPECT, frame, defaultBarPlacement(frame))
     const barWidth = Math.round(width * bar.width)
     parts.push(
-      `color=c=${color}:s=${barWidth}x${Math.max(2, Math.round(barWidth * BAR_ASPECT))}:r=30,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(X,W*T/${num(duration)}),204,0)'[p]`
+      `color=c=${waveColor(o.extras.barColor)}:s=${barWidth}x${Math.max(2, Math.round(barWidth * BAR_ASPECT))}:r=30,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(X,W*T/${num(duration)}),${Math.round(255 * waveOpacity(o.extras.barOpacity, 0.8))},0)'[p]`
     )
     next('c3', `$in[p]overlay=x=${Math.round(bar.x * width)}:y=${Math.round(bar.y * height)}:shortest=0$out`)
   }

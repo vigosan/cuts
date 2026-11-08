@@ -435,7 +435,7 @@ describe('App', () => {
       overlay: null,
       kind: 'clips',
       background: null,
-      extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null },
+      extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 },
       frame: expect.anything()
     })
     expect(await screen.findByTestId('export-done')).toBeInTheDocument()
@@ -2394,7 +2394,7 @@ describe('audio recordings', () => {
         input: AUDIO,
         kind: 'clips',
         background: { path: LOOP.path, kind: 'video' },
-        extras: { waveform: true, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null },
+        extras: { waveform: true, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 },
         frame: { width: 1920, height: 1080 }
       })
     )
@@ -2415,7 +2415,7 @@ describe('audio recordings', () => {
     await userEvent.click(screen.getByTestId('extras-progress'))
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))
-    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: true, color: '#ffffff', opacity: 0.3, wave: null, bar: null } }))
+    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: true, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 } }))
   })
 
   it('exports the waveform in the colour and opacity picked for it', async () => {
@@ -2425,7 +2425,7 @@ describe('audio recordings', () => {
     await userEvent.selectOptions(screen.getByTestId('extras-opacity'), '0.5')
     await markClip(video, 600, 650)
     await act(async () => userEvent.click(screen.getByTestId('export')))
-    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: false, color: '#4da8ff', opacity: 0.5, wave: null, bar: null } }))
+    expect(api.exportClips).toHaveBeenCalledWith(expect.objectContaining({ extras: { waveform: true, progressBar: false, color: '#4da8ff', opacity: 0.5, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 } }))
   })
 
   it('shows the chosen colour in the swatch, so white is not mistaken for an empty box', async () => {
@@ -2476,6 +2476,19 @@ describe('audio recordings', () => {
       fireEvent.pointerUp(window, { clientX: 700 - frame.width * 0.1, clientY: 80 })
       const resized = resizeOverlay(defaultWavePlacement(HD), 'br', -0.1, WAVE_ASPECT, HD)
       expect(stored().wave.width).toBeCloseTo(resized.width)
+    })
+
+    it('exports the progress bar in the colour and opacity picked for it, apart from the waveform', async () => {
+      const video = await loadAudio()
+      await addLoop()
+      await userEvent.click(screen.getByTestId('extras-progress'))
+      fireEvent.input(screen.getByTestId('bar-color'), { target: { value: '#1c1c1e' } })
+      await userEvent.selectOptions(screen.getByTestId('bar-opacity'), '1')
+      expect(screen.getByTestId('bar-swatch')).toHaveStyle({ backgroundColor: '#1c1c1e' })
+      expect(screen.getByTestId('bar-fill')).toHaveStyle({ backgroundColor: '#1c1c1e' })
+      await markClip(video, 600, 650)
+      await act(async () => userEvent.click(screen.getByTestId('export')))
+      expect(vi.mocked(api.exportClips).mock.calls[0][0].extras).toMatchObject({ color: '#ffffff', barColor: '#1c1c1e', barOpacity: 1 })
     })
 
     it('shows the progress bar where it will be, filled as far as playback has gone', async () => {

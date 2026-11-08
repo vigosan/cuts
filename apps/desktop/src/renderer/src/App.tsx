@@ -672,7 +672,7 @@ export function App() {
                   testId="bar"
                   onChange={(bar) => setExtras({ ...extras, bar })}
                 >
-                  <BarPreview color={extras.color} progress={duration > 0 ? time / duration : 0} />
+                  <BarPreview color={extras.barColor} opacity={extras.barOpacity} progress={duration > 0 ? time / duration : 0} />
                 </OverlayLayer>
               )}
               {videoError && (

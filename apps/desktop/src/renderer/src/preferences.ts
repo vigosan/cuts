@@ -12,7 +12,7 @@ type Preferences = {
   extras: AudioExtras
 }
 
-const DEFAULT_EXTRAS: AudioExtras = { waveform: true, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null }
+const DEFAULT_EXTRAS: AudioExtras = { waveform: true, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 }
 
 const KEY = 'preferences'
 

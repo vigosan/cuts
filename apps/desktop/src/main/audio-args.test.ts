@@ -15,7 +15,7 @@ const audio: AudioCutOptions = {
   cropY: 0.5,
   format: '16:9',
   background: { path: '/data/backgrounds/background-1.mp4', kind: 'video' },
-  extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null },
+  extras: { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 },
   bitrate: '4M',
   frame: { width: 1280, height: 720 }
 }
@@ -97,11 +97,22 @@ describe('waveform colour and opacity', () => {
   const both = (color: string, opacity: number) =>
     graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, waveform: true, progressBar: true, color, opacity } }))
 
-  it('draws the waveform and bar in the chosen colour so they match the brand', () => {
+  it('draws the waveform in the chosen colour so it matches the brand', () => {
     const g = both('#4DA8FF', 0.5)
     expect(g).toContain('colors=0x4da8ff')
     expect(g).toContain("a='alpha(X,Y)*0.5*")
-    expect(g).toContain('color=c=0x4da8ff:s=')
+  })
+
+  it('draws the progress bar in its own colour and opacity, so it can stay visible on a light background', () => {
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, progressBar: true, color: '#ffffff', barColor: '#1C1C1E', barOpacity: 0.5 } }))
+    expect(g).toContain('color=c=0x1c1c1e:s=')
+    expect(g).toContain("a='if(lt(X,W*T/60),128,0)'")
+  })
+
+  it('keeps the bar colour to #rrggbb and its opacity within 10–100 %', () => {
+    const g = graph(buildAudioArgs({ ...audio, extras: { ...audio.extras, progressBar: true, barColor: 'red;x', barOpacity: 7 } }))
+    expect(g).toContain('color=c=0xffffff:s=')
+    expect(g).toContain("a='if(lt(X,W*T/60),255,0)'")
   })
 
   it('falls back to white for anything that is not #rrggbb, so nothing else reaches the filter graph', () => {

@@ -20,12 +20,12 @@ export function WavePreview({ color, opacity }: { color: string; opacity: number
   )
 }
 
-export function BarPreview({ color, progress }: { color: string; progress: number }) {
+export function BarPreview({ color, opacity, progress }: { color: string; opacity: number; progress: number }) {
   return (
     <div className="relative size-full select-none">
       <div className="absolute -inset-y-2 inset-x-0" />
       <div className="absolute inset-0 opacity-15" style={{ backgroundColor: color }} />
-      <div data-testid="bar-fill" className="relative h-full opacity-80" style={{ width: `${progress * 100}%`, backgroundColor: color }} />
+      <div data-testid="bar-fill" className="relative h-full" style={{ width: `${progress * 100}%`, backgroundColor: color, opacity }} />
     </div>
   )
 }

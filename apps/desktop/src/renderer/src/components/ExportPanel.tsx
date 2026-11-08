@@ -292,47 +292,84 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
       <span className="text-ink-2">{t.extrasWaveform}</span>
       <div className="flex h-8 items-center justify-end gap-3">
         {audio.extras.waveform && (
-          <div className="flex h-8 items-center rounded-lg bg-sunken pl-1 transition-colors hover:bg-sunken/80">
-            <label title={t.extrasColor} className="relative grid size-6 shrink-0 cursor-pointer place-items-center rounded-md">
-              <span
-                data-testid="extras-swatch"
-                className="size-4 rounded-full ring-1 ring-ink-3/40"
-                style={{ backgroundColor: audio.extras.color }}
-              />
-              <input
-                type="color"
-                data-testid="extras-color"
-                aria-label={t.extrasColor}
-                className="absolute inset-0 cursor-pointer opacity-0"
-                value={audio.extras.color}
-                disabled={disabled}
-                onChange={(e) => audio.onExtras({ ...audio.extras, color: e.target.value })}
-              />
-            </label>
-            <select
-              data-testid="extras-opacity"
-              aria-label={t.extrasOpacity}
-              title={t.extrasOpacity}
-              className="h-8 cursor-pointer appearance-none bg-transparent pr-2.5 pl-1.5 text-sm tabular-nums text-ink outline-none"
-              value={audio.extras.opacity}
-              disabled={disabled}
-              onChange={(e) => audio.onExtras({ ...audio.extras, opacity: Number(e.target.value) })}
-            >
-              {WAVE_OPACITIES.map((opacity) => (
-                <option key={opacity} value={opacity}>
-                  {Math.round(opacity * 100)} %
-                </option>
-              ))}
-            </select>
-          </div>
+          <ColorPill
+            prefix="extras"
+            colorLabel={t.extrasColor}
+            opacityLabel={t.extrasOpacity}
+            color={audio.extras.color}
+            opacity={audio.extras.opacity}
+            disabled={disabled}
+            onChange={(color, opacity) => audio.onExtras({ ...audio.extras, color, opacity })}
+          />
         )}
         <Switch testId="extras-waveform" label={t.extrasWaveform} on={audio.extras.waveform} disabled={disabled} onChange={() => toggle('waveform')} />
       </div>
       <span className="text-ink-2">{t.extrasProgress}</span>
-      <div className="flex h-8 items-center justify-end">
+      <div className="flex h-8 items-center justify-end gap-3">
+        {audio.extras.progressBar && (
+          <ColorPill
+            prefix="bar"
+            colorLabel={t.barColor}
+            opacityLabel={t.barOpacity}
+            color={audio.extras.barColor}
+            opacity={audio.extras.barOpacity}
+            disabled={disabled}
+            onChange={(barColor, barOpacity) => audio.onExtras({ ...audio.extras, barColor, barOpacity })}
+          />
+        )}
         <Switch testId="extras-progress" label={t.extrasProgress} on={audio.extras.progressBar} disabled={disabled} onChange={() => toggle('progressBar')} />
       </div>
     </>
+  )
+}
+
+function ColorPill({
+  prefix,
+  colorLabel,
+  opacityLabel,
+  color,
+  opacity,
+  disabled,
+  onChange
+}: {
+  prefix: string
+  colorLabel: string
+  opacityLabel: string
+  color: string
+  opacity: number
+  disabled: boolean
+  onChange: (color: string, opacity: number) => void
+}) {
+  return (
+    <div className="flex h-8 items-center rounded-lg bg-sunken pl-1 transition-colors hover:bg-sunken/80">
+      <label title={colorLabel} className="relative grid size-6 shrink-0 cursor-pointer place-items-center rounded-md">
+        <span data-testid={`${prefix}-swatch`} className="size-4 rounded-full ring-1 ring-ink-3/40" style={{ backgroundColor: color }} />
+        <input
+          type="color"
+          data-testid={`${prefix}-color`}
+          aria-label={colorLabel}
+          className="absolute inset-0 cursor-pointer opacity-0"
+          value={color}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value, opacity)}
+        />
+      </label>
+      <select
+        data-testid={`${prefix}-opacity`}
+        aria-label={opacityLabel}
+        title={opacityLabel}
+        className="h-8 cursor-pointer appearance-none bg-transparent pr-2.5 pl-1.5 text-sm tabular-nums text-ink outline-none"
+        value={opacity}
+        disabled={disabled}
+        onChange={(e) => onChange(color, Number(e.target.value))}
+      >
+        {WAVE_OPACITIES.map((option) => (
+          <option key={option} value={option}>
+            {Math.round(option * 100)} %
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }
 

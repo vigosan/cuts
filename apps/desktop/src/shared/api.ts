@@ -58,6 +58,8 @@ export type AudioExtras = {
   opacity: number
   wave: OverlayPlacement | null
   bar: OverlayPlacement | null
+  barColor: string
+  barOpacity: number
 }
 
 export const WAVE_OPACITIES = [0.1, 0.3, 0.5, 0.8, 1]
