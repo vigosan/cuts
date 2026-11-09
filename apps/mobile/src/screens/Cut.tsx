@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Animated, Text, View } from 'react-native'
+import { ActionSheetIOS, Animated, Text, View } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useEvent } from 'expo'
@@ -28,12 +28,13 @@ import { Tap } from '../components/Tap'
 export type SheetKind = 'clip' | 'export' | 'export-clip'
 
 const STEP_REPEAT_MS = 80
+const BACKGROUND_SOURCES = [null, 'files', 'photos'] as const
 
 type Props = { onBack: () => void; onOpenSheet: (sheet: SheetKind) => void }
 
 export function Cut({ onBack, onOpenSheet }: Props) {
   const theme = useTheme()
-  const { asset, state, dispatch, clips, selectedClip, shownSettings, baseName, format, overlay, setOverlay, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
+  const { asset, state, dispatch, clips, selectedClip, shownSettings, baseName, format, overlay, setOverlay, background, setBackground, chooseBackground, extras, setExtras, source, peaks, suggest, exportLabel, progress, notice, setNotice } = useEditor()
   const player = useVideoPlayer(asset.uri, (created) => {
     created.timeUpdateEventInterval = 0.1
   })
@@ -101,10 +102,17 @@ export function Cut({ onBack, onOpenSheet }: Props) {
       framing: shownSettings.framing,
       cropX: shownSettings.cropX,
       cropY: shownSettings.cropY,
-      overlay: exportOverlay(overlay, format, asset)
+      overlay: exportOverlay(overlay, format, source)
     })
     setNotice(t.mobile.frameSaved)
   }
+
+  const addBackground = () =>
+    ActionSheetIOS.showActionSheetWithOptions({ options: [t.cancel, t.mobile.overlayFromFiles, t.mobile.overlayFromPhotos], cancelButtonIndex: 0 }, (index) => {
+      const from = BACKGROUND_SOURCES[index]
+      if (!from) return
+      void chooseBackground(from).then((problem) => problem && setNotice(problem === 'too-big' ? t.backgroundTooBig : t.backgroundInvalid))
+    })
 
   return (
     <SafeAreaView edges={['bottom']} style={{ flex: 1, backgroundColor: theme.background }}>
@@ -118,7 +126,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
               canRedo: state.history.future.length > 0,
               onUndo: () => dispatch({ type: 'undo' }),
               onRedo: () => dispatch({ type: 'redo' }),
-              onSaveFrame: () => void saveCurrentFrame(),
+              onSaveFrame: asset.kind === 'audio' ? null : () => void saveCurrentFrame(),
               exportClip: selectedClip ? { number: clips.indexOf(selectedClip) + 1, onPress: () => onOpenSheet('export-clip') } : null
             })
         }}
@@ -134,6 +142,12 @@ export function Cut({ onBack, onOpenSheet }: Props) {
           overlay={overlay}
           onOverlay={(placement) => overlay && setOverlay({ ...overlay, ...placement })}
           onOverlayMissing={() => setOverlay(null)}
+          source={source}
+          background={background}
+          extras={extras}
+          onExtras={setExtras}
+          onAddBackground={addBackground}
+          onBackgroundMissing={() => setBackground(null)}
         />
         {!expanded && (
           <View onLayout={(event) => setTravel(event.nativeEvent.layout.height + 8)} style={{ gap: 8 }}>
@@ -166,6 +180,7 @@ export function Cut({ onBack, onOpenSheet }: Props) {
               </View>
               <Timeline
                 assetId={asset.id}
+                thumbnails={asset.kind !== 'audio'}
                 duration={asset.duration}
                 currentTime={currentTime}
                 clips={clips}

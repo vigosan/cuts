@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { Image, View, type LayoutChangeEvent } from 'react-native'
-import { GestureDetector, usePanGesture, usePinchGesture, type PanGesture } from 'react-native-gesture-handler'
-import { VideoView, type VideoPlayer } from 'expo-video'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Image, Text, View, type LayoutChangeEvent } from 'react-native'
+import { GestureDetector, usePanGesture, usePinchGesture, type PanGesture, type PinchGesture } from 'react-native-gesture-handler'
+import { useVideoPlayer, VideoView, type VideoPlayer } from 'expo-video'
+import { SymbolView } from 'expo-symbols'
+import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement, type AudioExtras } from '@cuts/core/audio-layers'
 import { cropBox, dragCrop, videoBox, type Box } from '@cuts/core/crop'
 import type { ClipSettings } from '@cuts/core/fades'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
@@ -21,8 +23,9 @@ import {
 } from '@cuts/core/overlay'
 import { stepCrop } from '../editor/crop-frame'
 import { t } from '../i18n'
-import { overlayUri, thumbnail, type AssetInfo } from '../media'
+import { backgroundUri, overlayUri, thumbnail, type AssetInfo, type Background } from '../media'
 import { useTheme } from '../theme'
+import { Tap } from './Tap'
 
 type Zone = { cropX: number; cropY: number }
 
@@ -33,20 +36,49 @@ type Props = {
   settings: ClipSettings
   currentTime: number
   onCrop: (zone: Zone) => void
+  source: Size
   overlay: Overlay | null
   onOverlay: (placement: OverlayPlacement) => void
   onOverlayMissing: () => void
+  background?: Background | null
+  extras?: AudioExtras
+  onExtras?: (extras: AudioExtras) => void
+  onAddBackground?: () => void
+  onBackgroundMissing?: () => void
 }
+
+type LayerKind = 'overlay' | 'wave' | 'bar'
+
+type TouchLayer = { placement: OverlayPlacement; aspect: number; onChange: (placement: OverlayPlacement) => void }
 
 const DIM = 'rgba(0,0,0,0.55)'
 
-export function Stage({ player, asset, format, settings, currentTime, onCrop, overlay, onOverlay, onOverlayMissing }: Props) {
+export function Stage(props: Props) {
+  const { player, asset, format, settings, currentTime, onCrop, source, overlay, onOverlay, onOverlayMissing, background = null, extras, onExtras = () => {} } = props
   const [size, setSize] = useState({ width: 0, height: 0 })
   const target = formatSize(format)
-  const frame = previewFrame(size, asset, target ?? null, settings.framing, settings)
-  const output = outputFrame(format, asset)
-  const touch = useOverlayTouch(overlay, frame, output, onOverlay)
-  const video = <VideoView player={player} nativeControls={false} allowsVideoFrameAnalysis={false} contentFit="contain" style={{ flex: 1 }} />
+  const frame = previewFrame(size, source, target ?? null, settings.framing, settings)
+  const output = outputFrame(format, source)
+  const audio = asset.kind === 'audio'
+  const wave = audio && extras?.waveform ? clampPlacement(extras.wave ?? defaultWavePlacement(output), WAVE_ASPECT, output) : null
+  const bar = audio && extras?.progressBar ? clampPlacement(extras.bar ?? defaultBarPlacement(output), BAR_ASPECT, output) : null
+  const touch = useLayerTouch(
+    {
+      overlay: overlay && { placement: overlay, aspect: overlay.aspect, onChange: onOverlay },
+      wave: wave && extras ? { placement: wave, aspect: WAVE_ASPECT, onChange: (placement) => onExtras({ ...extras, wave: placement }) } : null,
+      bar: bar && extras ? { placement: bar, aspect: BAR_ASPECT, onChange: (placement) => onExtras({ ...extras, bar: placement }) } : null
+    },
+    frame,
+    output
+  )
+  const picture = !audio ? (
+    <VideoView player={player} nativeControls={false} allowsVideoFrameAnalysis={false} contentFit="contain" style={{ flex: 1 }} />
+  ) : background ? (
+    <BackgroundPicture background={background} onMissing={props.onBackgroundMissing} />
+  ) : (
+    <EmptyBackground onPress={props.onAddBackground} />
+  )
+  const stillBackdrop = audio && background?.kind === 'image' ? backgroundUri(background.path) : null
   return (
     <GestureDetector gesture={touch.pinch}>
       <View
@@ -54,37 +86,49 @@ export function Stage({ player, asset, format, settings, currentTime, onCrop, ov
         onLayout={(event: LayoutChangeEvent) => setSize(event.nativeEvent.layout)}
         style={{ aspectRatio: 16 / 9, borderRadius: 14, overflow: 'hidden', backgroundColor: '#000' }}
       >
-        {!target || !size.width ? (
-          video
+        {!target || !size.width || (audio && !background) ? (
+          picture
         ) : settings.framing === 'fit' ? (
-          <FitPreview box={videoBox(size.width, size.height, target.width, target.height)} assetId={asset.id} time={currentTime}>
-            {video}
+          <FitPreview box={videoBox(size.width, size.height, target.width, target.height)} assetId={asset.id} time={currentTime} still={audio ? stillBackdrop : undefined}>
+            {picture}
           </FitPreview>
         ) : (
           <>
-            {video}
+            {picture}
             <CropFrame
-              video={videoBox(size.width, size.height, asset.width, asset.height)}
+              video={videoBox(size.width, size.height, source.width, source.height)}
               target={target}
               zone={{ cropX: settings.cropX, cropY: settings.cropY }}
               onCrop={onCrop}
             />
           </>
         )}
-        {overlay && size.width > 0 && <OverlayLayer frame={frame} output={output} overlay={overlay} pan={touch.pan} guides={touch.guides} onMissing={onOverlayMissing} />}
+        {overlay && size.width > 0 && <OverlayLayer frame={frame} output={output} overlay={overlay} pan={touch.pans.overlay} guides={touch.guides} onMissing={onOverlayMissing} />}
+        {wave && extras && size.width > 0 && (
+          <PlacedLayer testID="wave" frame={frame} placement={wave} aspect={WAVE_ASPECT} pan={touch.pans.wave}>
+            <WavePreview color={extras.color} opacity={extras.opacity} />
+          </PlacedLayer>
+        )}
+        {bar && extras && size.width > 0 && (
+          <PlacedLayer testID="bar" frame={frame} placement={bar} aspect={BAR_ASPECT} pan={touch.pans.bar}>
+            <View testID="bar-fill" style={{ width: `${Math.max(0, Math.min(1, currentTime / asset.duration)) * 100}%`, height: '100%', backgroundColor: extras.barColor, opacity: extras.barOpacity }} />
+          </PlacedLayer>
+        )}
       </View>
     </GestureDetector>
   )
 }
 
-function useOverlayTouch(overlay: Overlay | null, frame: Box, output: Size, onChange: (placement: OverlayPlacement) => void) {
+function useLayerTouch(layers: Record<LayerKind, TouchLayer | null>, frame: Box, output: Size) {
   const [guides, setGuides] = useState<Guide[]>([])
   const none = { x: 0, y: 0, width: 0 }
-  const touch = useRef({ active: 0, start: none, last: none, x: 0, y: 0, fromX: 0, fromY: 0, scale: 1, fromScale: 1 })
-  const begin = () => {
-    if (!overlay) return
+  const touch = useRef({ kind: 'overlay' as LayerKind, selected: 'overlay' as LayerKind, active: 0, start: none, last: none, x: 0, y: 0, fromX: 0, fromY: 0, scale: 1, fromScale: 1 })
+  const begin = (kind: LayerKind) => {
     const current = touch.current
-    const start = current.active++ === 0 ? clampPlacement(overlay, overlay.aspect, output) : current.last
+    const layer = layers[current.active === 0 ? kind : current.kind]
+    if (!layer) return
+    if (current.active === 0) current.kind = kind
+    const start = current.active++ === 0 ? clampPlacement(layer.placement, layer.aspect, output) : current.last
     Object.assign(current, { start, last: start, fromX: current.x, fromY: current.y, fromScale: current.scale })
   }
   const end = () => {
@@ -92,22 +136,23 @@ function useOverlayTouch(overlay: Overlay | null, frame: Box, output: Size, onCh
     if (touch.current.active === 0) setGuides([])
   }
   const update = () => {
-    if (!overlay) return
+    const layer = layers[touch.current.kind]
+    if (!layer) return
     const { start, x, y, fromX, fromY, scale, fromScale } = touch.current
     const dx = x - fromX
     const dy = y - fromY
     const ratio = scale / fromScale
-    const moved = dx || dy ? moveOverlay(start, dx, dy, overlay.aspect, output) : { placement: start, guides: [] }
-    setGuides(ratio === 1 ? heldGuides(moved.placement, moved.guides, overlay.aspect, output) : [])
-    touch.current.last = ratio === 1 ? moved.placement : scaleOverlay(moved.placement, ratio, overlay.aspect, output)
-    onChange(touch.current.last)
+    const moved = dx || dy ? moveOverlay(start, dx, dy, layer.aspect, output) : { placement: start, guides: [] }
+    setGuides(ratio === 1 ? heldGuides(moved.placement, moved.guides, layer.aspect, output) : [])
+    touch.current.last = ratio === 1 ? moved.placement : scaleOverlay(moved.placement, ratio, layer.aspect, output)
+    layer.onChange(touch.current.last)
   }
   const pinch = usePinchGesture({
     runOnJS: true,
     testID: 'overlay-pinch',
-    enabled: overlay !== null,
+    enabled: Object.values(layers).some(Boolean),
     onActivate: () => {
-      begin()
+      begin(touch.current.active > 0 ? touch.current.kind : touch.current.selected)
       Object.assign(touch.current, { scale: 1, fromScale: 1 })
     },
     onUpdate: (event) => {
@@ -116,23 +161,111 @@ function useOverlayTouch(overlay: Overlay | null, frame: Box, output: Size, onCh
     },
     onDeactivate: end
   })
-  const pan = usePanGesture({
-    runOnJS: true,
-    testID: 'overlay-pan',
-    hitSlop: 20,
-    simultaneousWith: pinch,
-    onActivate: () => {
-      begin()
+  const moves: Moves = {
+    select: (kind) => {
+      touch.current.selected = kind
+    },
+    start: (kind) => {
+      begin(kind)
       Object.assign(touch.current, { x: 0, y: 0, fromX: 0, fromY: 0 })
     },
-    onUpdate: (event) => {
-      touch.current.x = event.translationX / frame.width
-      touch.current.y = event.translationY / frame.height
+    track: (dx, dy) => {
+      touch.current.x = dx / frame.width
+      touch.current.y = dy / frame.height
       update()
     },
+    end,
+    pinch
+  }
+  const pans = {
+    overlay: useLayerPan('overlay', layers.overlay !== null, moves),
+    wave: useLayerPan('wave', layers.wave !== null, moves),
+    bar: useLayerPan('bar', layers.bar !== null, moves)
+  }
+  return { pinch, pans, guides }
+}
+
+type Moves = {
+  select: (kind: LayerKind) => void
+  start: (kind: LayerKind) => void
+  track: (dx: number, dy: number) => void
+  end: () => void
+  pinch: PinchGesture
+}
+
+function useLayerPan(kind: LayerKind, enabled: boolean, { select, start, track, end, pinch }: Moves) {
+  return usePanGesture({
+    runOnJS: true,
+    testID: `${kind}-pan`,
+    hitSlop: 20,
+    enabled,
+    simultaneousWith: pinch,
+    onBegin: () => select(kind),
+    onActivate: () => start(kind),
+    onUpdate: (event) => track(event.translationX, event.translationY),
     onDeactivate: end
   })
-  return { pinch, pan, guides }
+}
+
+function PlacedLayer({ testID, frame, placement, aspect, pan, children }: { testID: string; frame: Box; placement: OverlayPlacement; aspect: number; pan: PanGesture; children: ReactNode }) {
+  const box = overlayBox(frame, placement, aspect)
+  return (
+    <GestureDetector gesture={pan}>
+      <View testID={testID} style={{ position: 'absolute', left: box.left, top: box.top, width: box.width, height: box.height }}>
+        {children}
+      </View>
+    </GestureDetector>
+  )
+}
+
+const WAVE_BARS = Array.from({ length: 48 }, (_, index) => 0.25 + 0.75 * Math.abs(Math.sin(index * 1.7) * Math.cos(index * 0.6)))
+
+function WavePreview({ color, opacity }: { color: string; opacity: number }) {
+  return (
+    <View pointerEvents="none" style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', opacity }}>
+      {WAVE_BARS.map((height, index) => (
+        <View
+          key={index}
+          style={{
+            width: 2,
+            height: `${height * 100}%`,
+            borderRadius: 1,
+            backgroundColor: color,
+            opacity: Math.min(1, Math.min(index, WAVE_BARS.length - 1 - index) / (0.22 * WAVE_BARS.length))
+          }}
+        />
+      ))}
+    </View>
+  )
+}
+
+function BackgroundPicture({ background, onMissing }: { background: Background; onMissing?: () => void }) {
+  if (background.kind === 'image') {
+    return <Image testID="background-image" source={{ uri: backgroundUri(background.path) }} onError={onMissing} resizeMode="contain" style={{ flex: 1 }} />
+  }
+  return <BackgroundVideo key={background.path} uri={backgroundUri(background.path)} onMissing={onMissing} />
+}
+
+function BackgroundVideo({ uri, onMissing }: { uri: string; onMissing?: () => void }) {
+  const player = useVideoPlayer(uri, (created) => {
+    created.loop = true
+    created.muted = true
+    created.play()
+  })
+  useEffect(() => {
+    const subscription = player.addListener('statusChange', ({ status }) => status === 'error' && onMissing?.())
+    return () => subscription.remove()
+  }, [player, onMissing])
+  return <VideoView testID="background-video" player={player} nativeControls={false} allowsVideoFrameAnalysis={false} contentFit="contain" style={{ flex: 1 }} />
+}
+
+function EmptyBackground({ onPress }: { onPress?: () => void }) {
+  return (
+    <Tap testID="background-empty" accessibilityRole="button" onPress={() => onPress?.()} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+      <SymbolView name="photo.badge.plus" size={28} tintColor="rgba(255,255,255,0.7)" />
+      <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, fontWeight: '600' }}>{t.backgroundEmpty}</Text>
+    </Tap>
+  )
 }
 
 type OverlayProps = { frame: Box; output: Size; overlay: Overlay; pan: PanGesture; guides: Guide[]; onMissing: () => void }
@@ -172,16 +305,17 @@ function OverlayLayer({ frame, output, overlay, pan, guides, onMissing }: Overla
   )
 }
 
-function FitPreview({ box, assetId, time, children }: { box: Box; assetId: string; time: number; children: React.ReactNode }) {
-  const [backdrop, setBackdrop] = useState<string | null>(null)
+function FitPreview({ box, assetId, time, still, children }: { box: Box; assetId: string; time: number; still?: string | null; children: ReactNode }) {
+  const [fetched, setBackdrop] = useState<string | null>(null)
+  const backdrop = still === undefined ? fetched : still
   const second = Math.floor(time)
   useEffect(() => {
     let live = true
-    void thumbnail(assetId, second, 120).then((uri) => live && setBackdrop(uri), () => {})
+    if (still === undefined) void thumbnail(assetId, second, 120).then((uri) => live && setBackdrop(uri), () => {})
     return () => {
       live = false
     }
-  }, [assetId, second])
+  }, [assetId, second, still])
   return (
     <View testID="fit-preview" style={{ position: 'absolute', left: box.left, top: box.top, width: box.width, height: box.height, overflow: 'hidden' }}>
       <Image testID="fit-backdrop" source={backdrop ? { uri: backdrop } : undefined} blurRadius={16} resizeMode="cover" style={{ position: 'absolute', inset: 0 }} />

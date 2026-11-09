@@ -14,6 +14,7 @@ import { useTheme } from '../theme'
 
 type Props = {
   assetId: string
+  thumbnails?: boolean
   duration: number
   currentTime: number
   clips: Clip[]
@@ -46,7 +47,7 @@ function settleView(from: TimelineView, to: TimelineView, apply: (view: Timeline
   requestAnimationFrame(frame)
 }
 
-export function Timeline({ assetId, duration, currentTime, clips, selectedId, pendingStart = null, peaks, snap, onSeek, onSelect, onDragStart, onDrag, onPressClip }: Props) {
+export function Timeline({ assetId, thumbnails = true, duration, currentTime, clips, selectedId, pendingStart = null, peaks, snap, onSeek, onSelect, onDragStart, onDrag, onPressClip }: Props) {
   const theme = useTheme()
   const [width, setWidth] = useState(0)
   const [span, setSpan] = useState(duration)
@@ -157,7 +158,7 @@ export function Timeline({ assetId, duration, currentTime, clips, selectedId, pe
   const gesture = useCompetingGestures(zoom, hold, pan, taps)
 
   const tileWidth = Math.round((FILM * 16) / 9)
-  const tiles = width ? filmstripTiles(view.start, view.span, width, tileWidth, duration) : []
+  const tiles = width && thumbnails ? filmstripTiles(view.start, view.span, width, tileWidth, duration) : []
   const columns = peaks && width ? waveformColumns(peaks, PEAKS_PER_SECOND, view.start, view.span, Math.floor(width / 3)) : null
   const pending = pendingStart !== null ? { start: pendingStart, end: Math.max(pendingStart, currentTime) } : null
 

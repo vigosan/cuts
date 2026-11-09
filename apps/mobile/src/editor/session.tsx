@@ -11,7 +11,7 @@ import { suggestMoments } from '@cuts/core/suggest'
 import type { ExportState } from '../components/ExportSheet'
 import { haptics } from '../haptics'
 import { t } from '../i18n'
-import { cancelExport, exportClip, readPeaks, saveToCutsAlbum, type AssetInfo, type Background } from '../media'
+import { cancelExport, exportClip, pickBackground, readPeaks, saveToCutsAlbum, type AssetInfo, type Background } from '../media'
 import { editorReducer, initialEditor, settingsOf, type EditorAction, type EditorState } from './editor'
 import { audioExport, exportJobs, exportOverlay, sourceSize } from './export-jobs'
 import { runExport } from './export-run'
@@ -36,6 +36,7 @@ export type EditorSession = {
   setOverlay: (overlay: Overlay | null) => void
   background: Background | null
   setBackground: (background: Background | null) => void
+  chooseBackground: (from: 'files' | 'photos') => Promise<'invalid' | 'too-big' | null>
   extras: AudioExtras
   setExtras: (extras: AudioExtras) => void
   source: Size
@@ -175,6 +176,12 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
     setOverlay,
     background,
     setBackground,
+    chooseBackground: async (from) => {
+      const chosen = await pickBackground(from).catch(() => 'invalid' as const)
+      if (chosen === 'invalid' || chosen === 'too-big') return chosen
+      if (chosen) setBackground(chosen)
+      return null
+    },
     extras,
     setExtras,
     source,

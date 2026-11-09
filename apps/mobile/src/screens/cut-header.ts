@@ -1,7 +1,7 @@
 import type { NativeStackHeaderItem } from 'expo-router'
 import { t } from '../i18n'
 
-type Actions = { canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void; onSaveFrame: () => void; exportClip: { number: number; onPress: () => void } | null }
+type Actions = { canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void; onSaveFrame: (() => void) | null; exportClip: { number: number; onPress: () => void } | null }
 
 export function cutHeaderItems({ canUndo, canRedo, onUndo, onRedo, onSaveFrame, exportClip }: Actions): NativeStackHeaderItem[] {
   return [
@@ -14,7 +14,7 @@ export function cutHeaderItems({ canUndo, canRedo, onUndo, onRedo, onSaveFrame, 
         items: [
           ...(exportClip ? [{ type: 'action' as const, label: t.exportClip(exportClip.number), icon: { type: 'sfSymbol' as const, name: 'square.and.arrow.up' as const }, onPress: exportClip.onPress }] : []),
           { type: 'action', label: t.menuRedo, icon: { type: 'sfSymbol', name: 'arrow.uturn.forward' }, disabled: !canRedo, onPress: onRedo },
-          { type: 'action', label: t.mobile.saveFrame, icon: { type: 'sfSymbol', name: 'photo' }, onPress: onSaveFrame }
+          ...(onSaveFrame ? [{ type: 'action' as const, label: t.mobile.saveFrame, icon: { type: 'sfSymbol' as const, name: 'photo' as const }, onPress: onSaveFrame }] : [])
         ]
       }
     },

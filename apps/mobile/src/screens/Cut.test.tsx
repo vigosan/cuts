@@ -1,7 +1,9 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native'
+import { ActionSheetIOS } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import CutsMedia from '../../modules/cuts-media'
 import { memoryStore } from '../editor/memory-store'
+import { loadPreferences, savePreferences } from '../editor/preferences'
 import { loadSession } from '../editor/sessions'
 import { t } from '../i18n'
 import { CutHarness, pressHeaderButton, pressMenuAction } from '../test-utils/CutHarness'
@@ -142,4 +144,58 @@ it('the beat magnet shows it is on with the accent yellow, not the black of Play
   expect(screen.getByTestId('magnet')).toHaveStyle({ backgroundColor: '#fde047' })
   await fireEvent.press(screen.getByTestId('magnet'))
   expect(screen.getByTestId('magnet')).toHaveStyle({ backgroundColor: '#e8e7e3' })
+})
+
+const recording = { id: 'file:set.wav', name: 'set.wav', duration: 20, width: 0, height: 0, frameRate: 30, uri: 'file:///set.wav', kind: 'audio' as const }
+const loop = { path: 'background-1.mp4', kind: 'video' as const, name: 'loop.mp4', width: 1920, height: 1080 }
+
+const renderRecording = async (store = memoryStore()) => {
+  await render(<CutHarness asset={recording} store={store} />)
+  await act(async () => {})
+  await fireEvent(screen.getByTestId('stage'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 384, height: 216 } } })
+  return store
+}
+
+describe('an audio recording', () => {
+  it('Add a background on the stage offers Files and Photos and keeps the pick for the next recording', async () => {
+    const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation((_options, callback) => callback(2))
+    native.pickBackground.mockResolvedValueOnce(loop)
+    const store = await renderRecording()
+    await fireEvent.press(screen.getByTestId('background-empty'))
+    expect(sheet.mock.calls[0][0].options).toEqual([t.cancel, t.mobile.overlayFromFiles, t.mobile.overlayFromPhotos])
+    expect(native.pickBackground).toHaveBeenCalledWith('photos')
+    expect(await screen.findByTestId('background-video')).toBeTruthy()
+    expect(loadPreferences(store).background).toEqual(loop)
+    sheet.mockRestore()
+  })
+
+  it('a file that is too big says so instead of silently doing nothing', async () => {
+    const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation((_options, callback) => callback(1))
+    native.pickBackground.mockResolvedValueOnce('too-big')
+    await renderRecording()
+    await fireEvent.press(screen.getByTestId('background-empty'))
+    expect(await screen.findByText(t.backgroundTooBig)).toBeTruthy()
+    sheet.mockRestore()
+  })
+
+  it('a background that is gone brings back Add a background, so the recording can still be finished', async () => {
+    const store = memoryStore()
+    savePreferences(store, { background: { ...loop, path: 'background-1.jpg', kind: 'image' } })
+    await renderRecording(store)
+    await fireEvent(screen.getByTestId('background-image'), 'error')
+    expect(screen.getByTestId('background-empty')).toBeTruthy()
+    expect(loadPreferences(store).background).toBeNull()
+  })
+
+  it('the filmstrip asks for no thumbnails, since a recording has no picture', async () => {
+    await renderRecording()
+    await fireEvent(screen.getByTestId('timeline'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 360, height: 72 } } })
+    await act(async () => {})
+    expect(native.thumbnail).not.toHaveBeenCalled()
+  })
+
+  it('the ··· menu has no Save frame, since there is no picture to save', async () => {
+    await renderRecording()
+    await expect(pressMenuAction(t.mobile.saveFrame)).rejects.toThrow('no menu action')
+  })
 })

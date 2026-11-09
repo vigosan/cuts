@@ -4,7 +4,9 @@ import { createGestureController, fireGestureHandler, getByGestureTestId } from 
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import type { Framing } from '@cuts/core/framing'
-import { moveOverlay, overlayBox, previewFrame, scaleOverlay } from '@cuts/core/overlay'
+import { moveOverlay, outputFrame, overlayBox, previewFrame, scaleOverlay } from '@cuts/core/overlay'
+import { BAR_ASPECT, DEFAULT_EXTRAS, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement, type AudioExtras } from '@cuts/core/audio-layers'
+import type { Background } from '../media'
 import { Stage } from './Stage'
 
 const asset = { id: 'A1', name: 'set.mov', duration: 600, width: 1920, height: 1080, frameRate: 25, uri: 'file:///set.mov' }
@@ -21,6 +23,7 @@ const renderStage = async (format: OutputFormat, framing: Framing, stored = over
         settings={{ ...DEFAULT_SETTINGS, framing, cropX: 0.3 }}
         currentTime={0}
         onCrop={jest.fn()}
+        source={asset}
         overlay={stored}
         onOverlay={onOverlay}
         onOverlayMissing={onOverlayMissing}
@@ -160,4 +163,110 @@ it('a snap the frame edge pushed the PNG off shows no guide, the same as the Mac
   })
   expect(screen.queryByTestId('overlay-guide-bottom')).toBeNull()
   expect(screen.getByTestId('overlay-guide-centerX')).toBeTruthy()
+})
+
+const recording = { ...asset, id: 'file:set.wav', name: 'set.wav', width: 0, height: 0, kind: 'audio' as const }
+const loop = { path: 'background-1.mp4', kind: 'video' as const, name: 'loop.mp4', width: 1920, height: 1080 }
+const still = { ...loop, path: 'background-2.jpg', kind: 'image' as const, name: 'cover.jpg' }
+const source = { width: 1920, height: 1080 }
+
+type AudioOptions = { background?: Background | null; extras?: AudioExtras; withOverlay?: boolean; currentTime?: number }
+
+const renderAudio = async ({ background = loop, extras = DEFAULT_EXTRAS, withOverlay = false, currentTime = 0 }: AudioOptions = {}) => {
+  const handlers = { onExtras: jest.fn(), onOverlay: jest.fn(), onAddBackground: jest.fn(), onBackgroundMissing: jest.fn() }
+  await render(
+    <GestureHandlerRootView>
+      <Stage
+        player={{} as never}
+        asset={recording}
+        format="original"
+        settings={DEFAULT_SETTINGS}
+        currentTime={currentTime}
+        onCrop={jest.fn()}
+        source={source}
+        overlay={withOverlay ? overlay : null}
+        onOverlay={handlers.onOverlay}
+        onOverlayMissing={jest.fn()}
+        background={background}
+        extras={extras}
+        onExtras={handlers.onExtras}
+        onAddBackground={handlers.onAddBackground}
+        onBackgroundMissing={handlers.onBackgroundMissing}
+      />
+    </GestureHandlerRootView>
+  )
+  await fireEvent(screen.getByTestId('stage'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, ...container } } })
+  return handlers
+}
+
+const audioFrame = () => previewFrame(container, source, null, 'crop', DEFAULT_SETTINGS)
+
+describe('an audio recording', () => {
+  it('without a background asks for one right on the stage, since there is no picture to show yet', async () => {
+    const { onAddBackground } = await renderAudio({ background: null })
+    await fireEvent.press(screen.getByTestId('background-empty'))
+    expect(onAddBackground).toHaveBeenCalled()
+  })
+
+  it('shows a looping video background, or a still image', async () => {
+    await renderAudio()
+    expect(screen.getByTestId('background-video')).toBeTruthy()
+    await renderAudio({ background: still })
+    expect(screen.getByTestId('background-image').props.source).toEqual({ uri: 'file:///app-support/backgrounds/background-2.jpg' })
+  })
+
+  it('a background image that is gone clears the background, so the stage asks for a new one instead of staying black', async () => {
+    const { onBackgroundMissing } = await renderAudio({ background: still })
+    await fireEvent(screen.getByTestId('background-image'), 'error')
+    expect(onBackgroundMissing).toHaveBeenCalled()
+  })
+
+  it('a background video that cannot play any more clears the background too', async () => {
+    const { __player } = jest.requireMock('expo-video') as { __player: { addListener: jest.Mock } }
+    const { onBackgroundMissing } = await renderAudio()
+    const listener = __player.addListener.mock.calls.filter(([name]) => name === 'statusChange').at(-1)?.[1]
+    await act(async () => listener({ status: 'error' }))
+    expect(onBackgroundMissing).toHaveBeenCalled()
+  })
+
+  it('a waveform never placed sits where the export puts it', async () => {
+    await renderAudio({ extras: { ...DEFAULT_EXTRAS, waveform: true } })
+    const box = overlayBox(audioFrame(), defaultWavePlacement(outputFrame('original', source)), WAVE_ASPECT)
+    expect(screen.getByTestId('wave')).toHaveStyle({ left: box.left, top: box.top, width: box.width, height: box.height })
+  })
+
+  it('dragging the waveform moves it by the same share of the frame', async () => {
+    const { onExtras } = await renderAudio({ extras: { ...DEFAULT_EXTRAS, waveform: true } })
+    await act(async () =>
+      fireGestureHandler(getByGestureTestId('wave-pan'), [
+        { state: State.BEGAN, translationX: 0, translationY: 0 },
+        { state: State.ACTIVE, translationX: 0, translationY: 0 },
+        { state: State.ACTIVE, translationX: 0, translationY: -21.6 }
+      ])
+    )
+    const start = defaultWavePlacement(source)
+    expect(onExtras).toHaveBeenLastCalledWith({ ...DEFAULT_EXTRAS, waveform: true, wave: moveOverlay(start, 0, -0.1, WAVE_ASPECT, source).placement })
+  })
+
+  it('after touching the waveform a pinch sizes only the waveform, never the logo beside it', async () => {
+    const { onExtras, onOverlay } = await renderAudio({ extras: { ...DEFAULT_EXTRAS, waveform: true }, withOverlay: true })
+    const pan = createGestureController('wave-pan')
+    const pinch = createGestureController('overlay-pinch')
+    await act(async () => {
+      pan.begin({ translationX: 0, translationY: 0 })
+      pan.end({ translationX: 0, translationY: 0 })
+      pinch.begin({ scale: 1 })
+      pinch.activate({ scale: 1 })
+      pinch.update({ scale: 0.5 })
+    })
+    expect(onOverlay).not.toHaveBeenCalled()
+    expect(onExtras).toHaveBeenLastCalledWith({ ...DEFAULT_EXTRAS, waveform: true, wave: scaleOverlay(defaultWavePlacement(source), 0.5, WAVE_ASPECT, source) })
+  })
+
+  it('the progress bar fills as far as the recording has played', async () => {
+    await renderAudio({ extras: { ...DEFAULT_EXTRAS, progressBar: true }, currentTime: 150 })
+    const box = overlayBox(audioFrame(), defaultBarPlacement(source), BAR_ASPECT)
+    expect(screen.getByTestId('bar')).toHaveStyle({ left: box.left, width: box.width })
+    expect(screen.getByTestId('bar-fill')).toHaveStyle({ width: '25%' })
+  })
 })
