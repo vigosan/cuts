@@ -38,6 +38,12 @@ SET="if(between(t,120,150)+between(t,360,390),$PAD,$KICK)"
 [ -f "$OUT/overlay-red.png" ] || "$FFMPEG" -hide_banner -loglevel error -y \
   -f lavfi -i "color=c=red:s=200x100" -frames:v 1 "$OUT/overlay-red.png"
 
+[ -f "$OUT/still.jpg" ] || "$FFMPEG" -hide_banner -loglevel error -y \
+  -f lavfi -i "testsrc2=size=320x180" -frames:v 1 "$OUT/still.jpg"
+
+[ -f "$OUT/still.gif" ] || "$FFMPEG" -hide_banner -loglevel error -y \
+  -f lavfi -i "testsrc2=size=320x180" -frames:v 1 "$OUT/still.gif"
+
 node --no-warnings "$ROOT/scripts/reference-peaks.ts" "$OUT/set.mp4" > "$OUT/set-reference-peaks.json"
 swift build -c release --package-path "$ROOT/modules/cuts-media/ios/CutsMedia" --product cuts-media-cli >/dev/null
 "$ROOT/modules/cuts-media/ios/CutsMedia/.build/release/cuts-media-cli" peaks "$OUT/set.mp4" > "$OUT/set-swift-peaks.json"

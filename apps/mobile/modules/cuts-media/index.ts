@@ -27,13 +27,17 @@ export type NativeFrameJob = { format: string; framing: string; cropX: number; c
 
 export type NativeOverlay = { path: string; aspect: number; name: string }
 
+export type NativeBackground = { path: string; kind: 'video' | 'image'; name: string; width: number; height: number }
+
 declare class CutsMediaModule extends NativeModule<Events> {
   readonly overlayDir: string
+  readonly backgroundDir: string
   requestLibraryAccess(): Promise<'granted' | 'limited' | 'denied'>
   pickVideo(): Promise<string | null>
   pickFile(): Promise<string | null>
   pickAudio(): Promise<string | null>
   pickOverlay(source: 'files' | 'photos'): Promise<NativeOverlay | 'invalid' | null>
+  pickBackground(source: 'files' | 'photos'): Promise<NativeBackground | 'invalid' | 'too-big' | null>
   openAsset(id: string): Promise<NativeAsset>
   cancelOpen(id: string): void
   poster(id: string, height: number): Promise<string>

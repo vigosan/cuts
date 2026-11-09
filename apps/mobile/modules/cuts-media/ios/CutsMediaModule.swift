@@ -50,6 +50,7 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
   private var cancelledFiles: Set<String> = []
   private var documentPicker: DocumentPickerDelegate?
   private var overlayPicker: OverlayPickerDelegate?
+  private var backgroundPicker: OverlayPickerDelegate?
   private let files = FileBookmarks()
   private static let posterDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("posters")
 
@@ -67,6 +68,7 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
   private static let exportDir = FileManager.default.temporaryDirectory.appendingPathComponent("exports")
   private static let thumbDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("thumbs")
   static let overlayDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("overlays", isDirectory: true)
+  static let backgroundDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("backgrounds", isDirectory: true)
 
   public func definition() -> ModuleDefinition {
     Name("CutsMedia")
@@ -74,6 +76,8 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
     Events("onDownload", "onExportProgress")
 
     Constant("overlayDir") { Self.overlayDir.absoluteString }
+
+    Constant("backgroundDir") { Self.backgroundDir.absoluteString }
 
     AsyncFunction("requestLibraryAccess") { () -> String in
       switch await requestLibraryAccess() {
@@ -141,6 +145,57 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
         self.documentPicker = nil
         guard let url else { return promise.resolve(nil) }
         finish(try? Data(contentsOf: url), url.lastPathComponent)
+      }
+      self.documentPicker = delegate
+      controller.delegate = delegate
+      presenter?.present(controller, animated: true)
+    }.runOnQueue(.main)
+
+    AsyncFunction("pickBackground") { (source: String, promise: Promise) in
+      let finish = { (url: URL?) in
+        guard let url else { return promise.resolve(nil) }
+        Task {
+          defer { try? FileManager.default.removeItem(at: url) }
+          do {
+            let stored = try await storeBackground(from: url, in: Self.backgroundDir, now: Int(Date().timeIntervalSince1970 * 1000))
+            promise.resolve(["path": URL(fileURLWithPath: stored.path).lastPathComponent, "kind": stored.kind, "name": stored.name,
+                             "width": stored.width, "height": stored.height])
+          } catch BackgroundError.invalid {
+            promise.resolve("invalid")
+          } catch BackgroundError.tooBig {
+            promise.resolve("too-big")
+          } catch { promise.reject(error) }
+        }
+      }
+      let presenter = self.appContext?.utilities?.currentViewController()
+      if source == "photos" {
+        var configuration = PHPickerConfiguration()
+        configuration.filter = .any(of: [.videos, .images])
+        configuration.selectionLimit = 1
+        configuration.preferredAssetRepresentationMode = .compatible
+        let controller = PHPickerViewController(configuration: configuration)
+        let delegate = OverlayPickerDelegate { provider in
+          self.backgroundPicker = nil
+          guard let provider else { return promise.resolve(nil) }
+          let type = provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) ? UTType.movie : UTType.jpeg
+          provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { url, _ in
+            guard let url else { return finish(nil) }
+            let copy = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
+            try? FileManager.default.removeItem(at: copy)
+            try? FileManager.default.copyItem(at: url, to: copy)
+            finish(copy)
+          }
+        }
+        self.backgroundPicker = delegate
+        controller.delegate = delegate
+        presenter?.present(controller, animated: true)
+        return
+      }
+      let controller = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .png, .jpeg], asCopy: true)
+      controller.allowsMultipleSelection = false
+      let delegate = DocumentPickerDelegate { url in
+        self.documentPicker = nil
+        finish(url)
       }
       self.documentPicker = delegate
       controller.delegate = delegate

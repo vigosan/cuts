@@ -2,9 +2,11 @@ import type { AudioFade, VideoFade } from '@cuts/core/fades'
 import type { OutputFormat } from '@cuts/core/formats'
 import type { Framing } from '@cuts/core/framing'
 import type { ExportOverlay } from '@cuts/core/overlay'
-import CutsMedia, { type NativeAsset, type NativeOverlayFields } from '../modules/cuts-media'
+import CutsMedia, { type NativeAsset, type NativeBackground, type NativeOverlayFields } from '../modules/cuts-media'
 
 export type AssetInfo = NativeAsset
+
+export type Background = NativeBackground
 
 export type ExportJob = {
   start: number
@@ -26,6 +28,8 @@ export type FrameJob = { format: OutputFormat; framing: Framing; cropX: number; 
 
 export const overlayUri = (path: string) => (path.includes('/') ? path : CutsMedia.overlayDir + path)
 
+export const backgroundUri = (path: string) => (path.includes('/') ? path : CutsMedia.backgroundDir + path)
+
 function withOverlay<T extends { overlay?: ExportOverlay }>({ overlay, ...job }: T): Omit<T, 'overlay'> & NativeOverlayFields {
   if (!overlay) return job
   return { ...job, overlayPath: overlayUri(overlay.path), overlayX: overlay.x, overlayY: overlay.y, overlayWidth: overlay.width }
@@ -40,6 +44,8 @@ export const pickFile = () => CutsMedia.pickFile()
 export const pickAudio = () => CutsMedia.pickAudio()
 
 export const pickOverlay = (source: 'files' | 'photos') => CutsMedia.pickOverlay(source)
+
+export const pickBackground = (source: 'files' | 'photos') => CutsMedia.pickBackground(source)
 
 export async function openAsset(id: string, onDownload: (ratio: number) => void): Promise<AssetInfo> {
   const subscription = CutsMedia.addListener('onDownload', (event) => event.id === id && onDownload(event.ratio))

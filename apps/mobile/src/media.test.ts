@@ -5,6 +5,7 @@ const native = vi.hoisted(() => ({ exportClip: vi.fn(async () => 'file:///tmp/se
 vi.mock('../modules/cuts-media', () => ({
   default: {
     overlayDir: 'file:///app-support/overlays/',
+    backgroundDir: 'file:///app-support/backgrounds/',
     saveFrame: native.saveFrame,
     readPeaks: async () => [0.1, 0.5, 0.25],
     exportClip: native.exportClip,
@@ -60,5 +61,10 @@ describe('media', () => {
     const { overlayUri } = await import('./media')
     expect(overlayUri('file:///elsewhere/logo.png')).toBe('file:///elsewhere/logo.png')
     expect(overlayUri('/elsewhere/logo.png')).toBe('/elsewhere/logo.png')
+  })
+
+  it('finds a stored background by name inside the app folder, which moves when the app updates', async () => {
+    const { backgroundUri } = await import('./media')
+    expect(backgroundUri('background-2.mp4')).toBe('file:///app-support/backgrounds/background-2.mp4')
   })
 })
