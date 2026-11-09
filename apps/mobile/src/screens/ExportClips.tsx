@@ -9,16 +9,16 @@ import { useTheme } from '../theme'
 
 export function ExportClips({ onClose, onlySelected = false }: { onClose: () => void; onlySelected?: boolean }) {
   const theme = useTheme()
-  const { asset, clips, selectedClip, exportLabel, format, setFormat, overlay, setOverlay, baseName, setBaseName, exporting, startExport, stopExport, resetExport } = useEditor()
+  const { source, clips, selectedClip, exportLabel, format, setFormat, overlay, setOverlay, baseName, setBaseName, exporting, startExport, stopExport, resetExport } = useEditor()
   const [overlayInvalid, setOverlayInvalid] = useState(false)
   const running = exporting.status === 'running'
   const only = onlySelected ? selectedClip : null
   useEffect(() => resetExport, [resetExport])
-  const chooseOverlay = async (source: 'files' | 'photos') => {
-    const chosen = await pickOverlay(source).catch(() => 'invalid' as const)
+  const chooseOverlay = async (from: 'files' | 'photos') => {
+    const chosen = await pickOverlay(from).catch(() => 'invalid' as const)
     setOverlayInvalid(chosen === 'invalid')
     if (!chosen || chosen === 'invalid') return
-    const frame = outputFrame(format, asset)
+    const frame = outputFrame(format, source)
     setOverlay({ ...chosen, ...(overlay ? clampPlacement(overlay, chosen.aspect, frame) : defaultPlacement(chosen.aspect, frame)) })
   }
   return (

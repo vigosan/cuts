@@ -2,7 +2,7 @@ import type { AudioFade, VideoFade } from '@cuts/core/fades'
 import type { OutputFormat } from '@cuts/core/formats'
 import type { Framing } from '@cuts/core/framing'
 import type { ExportOverlay } from '@cuts/core/overlay'
-import CutsMedia, { type NativeAsset, type NativeBackground, type NativeOverlayFields } from '../modules/cuts-media'
+import CutsMedia, { type NativeAsset, type NativeAudioFields, type NativeBackground, type NativeOverlayFields } from '../modules/cuts-media'
 
 export type AssetInfo = NativeAsset
 
@@ -22,7 +22,13 @@ export type ExportJob = {
   fileName: string
   position: number
   overlay?: ExportOverlay
+  background?: { path: string; kind: 'video' | 'image' }
+  wave?: ExportLayer
+  bar?: ExportLayer
+  bitrate?: number
 }
+
+export type ExportLayer = { x: number; y: number; width: number; color: string; opacity: number }
 
 export type FrameJob = { format: OutputFormat; framing: Framing; cropX: number; cropY: number; overlay?: ExportOverlay }
 
@@ -33,6 +39,15 @@ export const backgroundUri = (path: string) => (path.includes('/') ? path : Cuts
 function withOverlay<T extends { overlay?: ExportOverlay }>({ overlay, ...job }: T): Omit<T, 'overlay'> & NativeOverlayFields {
   if (!overlay) return job
   return { ...job, overlayPath: overlayUri(overlay.path), overlayX: overlay.x, overlayY: overlay.y, overlayWidth: overlay.width }
+}
+
+function withAudio({ background, wave, bar, ...job }: ExportJob): Omit<ExportJob, 'background' | 'wave' | 'bar'> & NativeAudioFields {
+  return {
+    ...job,
+    ...(background && { backgroundPath: backgroundUri(background.path), backgroundKind: background.kind }),
+    ...(wave && { waveX: wave.x, waveY: wave.y, waveWidth: wave.width, waveColor: wave.color, waveOpacity: wave.opacity }),
+    ...(bar && { barX: bar.x, barY: bar.y, barWidth: bar.width, barColor: bar.color, barOpacity: bar.opacity })
+  }
 }
 
 export const requestLibraryAccess = () => CutsMedia.requestLibraryAccess()
@@ -70,7 +85,7 @@ export const thumbnail = (id: string, time: number, height: number) => CutsMedia
 export async function exportClip(id: string, job: ExportJob, onProgress: (ratio: number) => void): Promise<string> {
   const subscription = CutsMedia.addListener('onExportProgress', (event) => onProgress(event.ratio))
   try {
-    return await CutsMedia.exportClip(id, withOverlay(job))
+    return await CutsMedia.exportClip(id, withOverlay(withAudio(job)))
   } finally {
     subscription.remove()
   }

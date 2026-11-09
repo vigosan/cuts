@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { overlayHeight } from './overlay'
-import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement } from './audio-layers'
+import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement, DEFAULT_EXTRAS, WAVE_OPACITIES } from './audio-layers'
 
 const HD = { width: 1920, height: 1080 }
 
@@ -27,5 +27,12 @@ describe('audio layers', () => {
     const portrait = { width: 1080, height: 1920 }
     const wave = defaultWavePlacement(portrait)
     expect(wave.y + overlayHeight(wave, WAVE_ASPECT, portrait)).toBeCloseTo(0.86)
+  })
+})
+
+describe('audio extras', () => {
+  it('start off, white, with a quiet waveform and a clear bar, so nothing appears until asked for on Mac or iPhone', () => {
+    expect(DEFAULT_EXTRAS).toEqual({ waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 })
+    expect(WAVE_OPACITIES).toEqual([0.1, 0.3, 0.5, 0.8, 1])
   })
 })

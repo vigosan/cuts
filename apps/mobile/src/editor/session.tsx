@@ -1,18 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState, type Dispatch, type ReactNode } from 'react'
 import { AppState } from 'react-native'
 import { randomUUID } from 'expo-crypto'
+import type { AudioExtras } from '@cuts/core/audio-layers'
 import { defaultBaseName, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import type { OutputFormat } from '@cuts/core/formats'
-import type { Overlay } from '@cuts/core/overlay'
+import type { Overlay, Size } from '@cuts/core/overlay'
 import { suggestMoments } from '@cuts/core/suggest'
 import type { ExportState } from '../components/ExportSheet'
 import { haptics } from '../haptics'
 import { t } from '../i18n'
-import { cancelExport, exportClip, readPeaks, saveToCutsAlbum, type AssetInfo } from '../media'
+import { cancelExport, exportClip, readPeaks, saveToCutsAlbum, type AssetInfo, type Background } from '../media'
 import { editorReducer, initialEditor, settingsOf, type EditorAction, type EditorState } from './editor'
-import { exportJobs, exportOverlay } from './export-jobs'
+import { audioExport, exportJobs, exportOverlay, sourceSize } from './export-jobs'
 import { runExport } from './export-run'
 import { loadPreferences, savePreferences } from './preferences'
 import { loadSession, saveSession, touchRecent, type KeyValue } from './sessions'
@@ -33,6 +34,11 @@ export type EditorSession = {
   setFormat: (format: OutputFormat) => void
   overlay: Overlay | null
   setOverlay: (overlay: Overlay | null) => void
+  background: Background | null
+  setBackground: (background: Background | null) => void
+  extras: AudioExtras
+  setExtras: (extras: AudioExtras) => void
+  source: Size
   peaks: Float32Array | null
   suggest: () => Promise<void>
   exportLabel: string
@@ -68,6 +74,9 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   const [baseName, setBaseName] = useState(() => stored?.baseName ?? defaultBaseName(asset.name))
   const [format, setFormatState] = useState(preferences.format)
   const [overlay, setOverlay] = useState(preferences.overlay)
+  const [background, setBackground] = useState(preferences.background)
+  const [extras, setExtras] = useState(preferences.extras)
+  const source = sourceSize(asset, background)
   const [exporting, setExporting] = useState<ExportState>({ status: 'idle' })
   const [progress, setProgress] = useState<Record<string, number>>({})
   const [peaks, setPeaks] = useState<Float32Array | null>(null)
@@ -93,6 +102,8 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   useEffect(() => savePreferences(store, { settings: state.defaultSettings }), [store, state.defaultSettings])
 
   useEffect(() => savePreferences(store, { overlay }), [store, overlay])
+
+  useEffect(() => savePreferences(store, { background, extras }), [store, background, extras])
 
   useEffect(() => {
     if (exporting.status !== 'running') return
@@ -126,7 +137,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   }
 
   const startExport = async (only?: string) => {
-    const jobs = exportJobs(clips, (id) => settingsOf(state, id), format, baseName, only, exportOverlay(overlay, format, asset))
+    const jobs = exportJobs(clips, (id) => settingsOf(state, id), format, baseName, only, exportOverlay(overlay, format, source), audioExport(asset, background, extras, format))
     const ids = jobs.map((job) => clips[job.position].id)
     stopped.current = false
     setProgress({})
@@ -162,6 +173,11 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
     },
     overlay,
     setOverlay,
+    background,
+    setBackground,
+    extras,
+    setExtras,
+    source,
     peaks,
     suggest,
     exportLabel: t.exportClips(clips.length),

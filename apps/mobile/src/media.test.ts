@@ -41,6 +41,24 @@ describe('media', () => {
     expect(native.saveFrame).toHaveBeenLastCalledWith('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5, ...fields })
   })
 
+  it('sends the background and layers as the flat fields the native record reads, with the background inside the app folder', async () => {
+    const { exportClip } = await import('./media')
+    const job = {
+      fileName: 'set-1.mp4',
+      background: { path: 'background-2.mp4', kind: 'video' },
+      wave: { x: 0.1, y: 0.7, width: 0.5, color: '#ff0000', opacity: 0.3 },
+      bar: { x: 0, y: 0.99, width: 1, color: '#ffffff', opacity: 0.8 },
+      bitrate: 4_000_000
+    }
+    await exportClip('asset', job as never, () => {})
+    expect(native.exportClip).toHaveBeenLastCalledWith('asset', {
+      fileName: 'set-1.mp4', bitrate: 4_000_000,
+      backgroundPath: 'file:///app-support/backgrounds/background-2.mp4', backgroundKind: 'video',
+      waveX: 0.1, waveY: 0.7, waveWidth: 0.5, waveColor: '#ff0000', waveOpacity: 0.3,
+      barX: 0, barY: 0.99, barWidth: 1, barColor: '#ffffff', barOpacity: 0.8
+    })
+  })
+
   it('without an overlay the native call gets no overlay fields, so it exports as before', async () => {
     const { saveFrame } = await import('./media')
     await saveFrame('asset', 5, { format: '4:5', framing: 'crop', cropX: 0.5, cropY: 0.5 })

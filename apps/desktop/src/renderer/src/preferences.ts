@@ -1,3 +1,4 @@
+import { DEFAULT_EXTRAS } from '@cuts/core/audio-layers'
 import { DEFAULT_SETTINGS, type ClipSettings } from '@cuts/core/fades'
 import type { OutputFormat } from '@cuts/core/formats'
 import type { Overlay } from '@cuts/core/overlay'
@@ -11,8 +12,6 @@ type Preferences = {
   background: ImportedBackground | null
   extras: AudioExtras
 }
-
-const DEFAULT_EXTRAS: AudioExtras = { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 }
 
 const KEY = 'preferences'
 

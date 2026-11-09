@@ -1,5 +1,20 @@
 import { clampPlacement, overlayHeight, type OverlayPlacement, type Size } from './overlay'
 
+export type AudioExtras = {
+  waveform: boolean
+  progressBar: boolean
+  color: string
+  opacity: number
+  wave: OverlayPlacement | null
+  bar: OverlayPlacement | null
+  barColor: string
+  barOpacity: number
+}
+
+export const DEFAULT_EXTRAS: AudioExtras = { waveform: false, progressBar: false, color: '#ffffff', opacity: 0.3, wave: null, bar: null, barColor: '#ffffff', barOpacity: 0.8 }
+
+export const WAVE_OPACITIES = [0.1, 0.3, 0.5, 0.8, 1]
+
 export const WAVE_ASPECT = 80 / 998
 export const BAR_ASPECT = 1 / 480
 
