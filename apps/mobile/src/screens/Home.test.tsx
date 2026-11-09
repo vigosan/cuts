@@ -197,3 +197,23 @@ it('a flicked recent row keeps the speed of the finger as it settles, so there i
   )
   expect(spring).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toValue: -88, velocity: -900 }))
 })
+
+it('an audio recording from Files opens the cut screen like a video, so a set without picture can be cut too', async () => {
+  const recording = { ...asset, id: 'file:set.wav', name: 'set.wav', width: 0, height: 0, kind: 'audio' as const }
+  native.pickAudio.mockResolvedValue('file:set.wav')
+  native.openAsset.mockResolvedValue(recording)
+  const onOpen = jest.fn()
+  await render(<GestureHandlerRootView><Home store={memoryStore()} onOpen={onOpen} /></GestureHandlerRootView>)
+  await fireEvent.press(screen.getByTestId('choose-audio'))
+  await waitFor(() => expect(onOpen).toHaveBeenCalledWith(recording))
+  expect(native.requestLibraryAccess).not.toHaveBeenCalled()
+  expect(screen.getByLabelText(t.mobile.chooseAudio)).toBeTruthy()
+})
+
+it('a recent audio recording shows a waveform instead of asking for a poster it does not have', async () => {
+  const store = memoryStore()
+  touchRecent(store, { assetId: 'file:set.wav', name: 'set.wav', duration: 60, clips: 0, openedAt: 1, kind: 'audio' })
+  await render(<GestureHandlerRootView><Home store={store} onOpen={jest.fn()} /></GestureHandlerRootView>)
+  expect(screen.getByTestId('recent-audio-file:set.wav')).toBeTruthy()
+  expect(native.poster).not.toHaveBeenCalled()
+})

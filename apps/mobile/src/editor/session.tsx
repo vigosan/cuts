@@ -85,7 +85,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
   useEffect(() => {
     const timer = setTimeout(() => {
       saveSession(store, asset.id, { clips, clipSettings: state.clipSettings, defaultSettings: state.defaultSettings, baseName })
-      touchRecent(store, { assetId: asset.id, name: asset.name, duration: asset.duration, clips: clips.length, openedAt: Date.now() })
+      touchRecent(store, { assetId: asset.id, name: asset.name, duration: asset.duration, clips: clips.length, openedAt: Date.now(), kind: asset.kind })
     }, SAVE_DELAY_MS)
     return () => clearTimeout(timer)
   }, [store, asset, clips, state.clipSettings, state.defaultSettings, baseName])

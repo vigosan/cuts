@@ -19,6 +19,21 @@ public enum LibraryError: Error {
   case notAVideo
 }
 
+public enum AssetKind: String, Sendable {
+  case video, audio
+}
+
+public func mediaInfo(asset: AVURLAsset) async throws -> (kind: AssetKind, duration: Double, size: CGSize, frameRate: Double) {
+  let duration = try await asset.load(.duration).seconds
+  if let track = try await asset.loadTracks(withMediaType: .video).first {
+    let (size, transform, rate) = try await track.load(.naturalSize, .preferredTransform, .nominalFrameRate)
+    let upright = CGRect(origin: .zero, size: size).applying(transform)
+    return (.video, duration, CGSize(width: abs(upright.width), height: abs(upright.height)), Double(rate > 0 ? rate : 30))
+  }
+  guard try await !asset.loadTracks(withMediaType: .audio).isEmpty else { throw LibraryError.notAVideo }
+  return (.audio, duration, .zero, 30)
+}
+
 public func requestLibraryAccess() async -> PHAuthorizationStatus {
   await PHPhotoLibrary.requestAuthorization(for: .readWrite)
 }

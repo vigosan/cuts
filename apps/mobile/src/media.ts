@@ -37,6 +37,8 @@ export const pickVideo = () => CutsMedia.pickVideo()
 
 export const pickFile = () => CutsMedia.pickFile()
 
+export const pickAudio = () => CutsMedia.pickAudio()
+
 export const pickOverlay = (source: 'files' | 'photos') => CutsMedia.pickOverlay(source)
 
 export async function openAsset(id: string, onDownload: (ratio: number) => void): Promise<AssetInfo> {

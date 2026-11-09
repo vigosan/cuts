@@ -7,7 +7,7 @@ import { formatTime } from '@cuts/core/clips'
 import { recents, removeRecent, type KeyValue, type Recent } from '../editor/sessions'
 import { t } from '../i18n'
 import { OpeningProgress } from '../components/OpeningProgress'
-import { cancelOpen, openAsset, pickFile, pickVideo, poster, requestLibraryAccess, type AssetInfo } from '../media'
+import { cancelOpen, openAsset, pickAudio, pickFile, pickVideo, poster, requestLibraryAccess, type AssetInfo } from '../media'
 import { useTheme } from '../theme'
 import { Tap } from '../components/Tap'
 
@@ -50,9 +50,9 @@ export function Home({ store, onOpen, visits = 0 }: Props) {
     if (id) await open(id)
   }
 
-  const chooseFile = async () => {
+  const chooseFile = async (pick: () => Promise<string | null>) => {
     setProblem(null)
-    const id = await pickFile()
+    const id = await pick()
     if (id) await open(id)
   }
 
@@ -79,7 +79,8 @@ export function Home({ store, onOpen, visits = 0 }: Props) {
         </View>
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <SourceTile testID="choose-video" icon="photo.on.rectangle" label={t.mobile.fromPhotos} accessibilityLabel={t.mobile.chooseFromPhotos} primary onPress={() => void choose()} />
-          <SourceTile testID="choose-file" icon="folder" label={t.mobile.fromFiles} accessibilityLabel={t.mobile.chooseFromFiles} onPress={() => void chooseFile()} />
+          <SourceTile testID="choose-file" icon="folder" label={t.mobile.fromFiles} accessibilityLabel={t.mobile.chooseFromFiles} onPress={() => void chooseFile(pickFile)} />
+          <SourceTile testID="choose-audio" icon="waveform" label={t.mobile.fromAudio} accessibilityLabel={t.mobile.chooseAudio} onPress={() => void chooseFile(pickAudio)} />
         </View>
         {problem && (
           <View style={{ gap: 8 }}>
@@ -172,9 +173,10 @@ function RecentRow({ recent, onPress, onRemove }: { recent: Recent; onPress: () 
   const [x] = useState(() => new Animated.Value(0))
   const [open, setOpen] = useState(false)
   const [revealed, setRevealed] = useState(false)
+  const audio = recent.kind === 'audio'
   useEffect(() => {
-    void poster(recent.assetId, POSTER_HEIGHT).then(setImage, () => {})
-  }, [recent.assetId])
+    if (!audio) void poster(recent.assetId, POSTER_HEIGHT).then(setImage, () => {})
+  }, [recent.assetId, audio])
   const slide = (to: number, velocity = 0) => {
     setOpen(to !== 0)
     Animated.spring(x, { toValue: to, velocity, useNativeDriver: true, bounciness: 0, speed: 18 }).start(({ finished }) => finished && to === 0 && setRevealed(false))
@@ -208,7 +210,8 @@ function RecentRow({ recent, onPress, onRemove }: { recent: Recent; onPress: () 
             onAccessibilityAction={(event) => event.nativeEvent.actionName === 'delete' && onRemove()}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, padding: 10 }}
           >
-            <View style={{ width: 64, height: 40, borderRadius: 6, overflow: 'hidden', backgroundColor: theme.fill }}>
+            <View style={{ width: 64, height: 40, borderRadius: 6, overflow: 'hidden', backgroundColor: theme.fill, alignItems: 'center', justifyContent: 'center' }}>
+              {audio && <SymbolView testID={`recent-audio-${recent.assetId}`} name="waveform" size={22} tintColor={theme.muted} />}
               {image && <Image source={{ uri: image }} style={{ width: 64, height: 40 }} />}
             </View>
             <View style={{ flex: 1 }}>

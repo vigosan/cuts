@@ -32,6 +32,9 @@ SET="if(between(t,120,150)+between(t,360,390),$PAD,$KICK)"
 [ -f "$OUT/two-tracks.mp4" ] || "$FFMPEG" -hide_banner -loglevel error -y -i "$OUT/rotated.mp4" \
   -map 0:v -map 0:a -map 0:a -c copy "$OUT/two-tracks.mp4"
 
+[ -f "$OUT/set.wav" ] || "$FFMPEG" -hide_banner -loglevel error -y \
+  -f lavfi -i "aevalsrc='$KICK|$KICK':s=44100:d=12" "$OUT/set.wav"
+
 [ -f "$OUT/overlay-red.png" ] || "$FFMPEG" -hide_banner -loglevel error -y \
   -f lavfi -i "color=c=red:s=200x100" -frames:v 1 "$OUT/overlay-red.png"
 

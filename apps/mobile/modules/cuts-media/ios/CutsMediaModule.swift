@@ -99,18 +99,11 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
     }.runOnQueue(.main)
 
     AsyncFunction("pickFile") { (promise: Promise) in
-      let controller = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .video], asCopy: false)
-      controller.allowsMultipleSelection = false
-      let delegate = DocumentPickerDelegate { url in
-        self.documentPicker = nil
-        guard let url else { return promise.resolve(nil) }
-        let accessing = url.startAccessingSecurityScopedResource()
-        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-        do { promise.resolve(try self.files.remember(url)) } catch { promise.reject(error) }
-      }
-      self.documentPicker = delegate
-      controller.delegate = delegate
-      self.appContext?.utilities?.currentViewController()?.present(controller, animated: true)
+      self.pickDocument(types: [.movie, .video], promise: promise)
+    }.runOnQueue(.main)
+
+    AsyncFunction("pickAudio") { (promise: Promise) in
+      self.pickDocument(types: [.audio], promise: promise)
     }.runOnQueue(.main)
 
     AsyncFunction("pickOverlay") { (source: String, promise: Promise) in
@@ -166,7 +159,7 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
       let details = try info(id: id)
       let frameRate = try await resolved.loadTracks(withMediaType: .video).first?.load(.nominalFrameRate) ?? 30
       return ["id": id, "name": details.name, "duration": details.duration, "width": details.width, "height": details.height,
-              "frameRate": Double(frameRate > 0 ? frameRate : 30), "uri": resolved.url.absoluteString]
+              "frameRate": Double(frameRate > 0 ? frameRate : 30), "uri": resolved.url.absoluteString, "kind": "video"]
     }
 
     Function("cancelOpen") { (id: String) in
@@ -257,6 +250,21 @@ extension CutsMediaModule {
     return ["path": file.lastPathComponent, "aspect": height / width, "name": name]
   }
 
+  fileprivate func pickDocument(types: [UTType], promise: Promise) {
+    let controller = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: false)
+    controller.allowsMultipleSelection = false
+    let delegate = DocumentPickerDelegate { url in
+      self.documentPicker = nil
+      guard let url else { return promise.resolve(nil) }
+      let accessing = url.startAccessingSecurityScopedResource()
+      defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+      do { promise.resolve(try self.files.remember(url)) } catch { promise.reject(error) }
+    }
+    self.documentPicker = delegate
+    controller.delegate = delegate
+    self.appContext?.utilities?.currentViewController()?.present(controller, animated: true)
+  }
+
   fileprivate func openFile(_ id: String) async throws -> [String: Any] {
     lock.withLock { _ = cancelledFiles.remove(id) }
     let url = try files.url(for: id)
@@ -265,12 +273,9 @@ extension CutsMediaModule {
     }
     let asset = AVURLAsset(url: url)
     remember(id, asset)
-    let duration = try await asset.load(.duration).seconds
-    guard let track = try await asset.loadTracks(withMediaType: .video).first else { throw LibraryError.notAVideo }
-    let (size, transform, rate) = try await track.load(.naturalSize, .preferredTransform, .nominalFrameRate)
-    let upright = CGRect(origin: .zero, size: size).applying(transform)
-    return ["id": id, "name": url.lastPathComponent, "duration": duration, "width": Int(abs(upright.width)), "height": Int(abs(upright.height)),
-            "frameRate": Double(rate > 0 ? rate : 30), "uri": url.absoluteString]
+    let media = try await mediaInfo(asset: asset)
+    return ["id": id, "name": url.lastPathComponent, "duration": media.duration, "width": Int(media.size.width), "height": Int(media.size.height),
+            "frameRate": media.frameRate, "uri": url.absoluteString, "kind": media.kind.rawValue]
   }
 
   fileprivate func filePoster(_ id: String, height: Int) async throws -> CGImage {

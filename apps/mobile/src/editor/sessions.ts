@@ -2,7 +2,7 @@ import type { Clip } from '@cuts/core/clips'
 import { DEFAULT_SETTINGS, type ClipSettings } from '@cuts/core/fades'
 
 export type Session = { clips: Clip[]; clipSettings: Record<string, ClipSettings>; defaultSettings: ClipSettings; baseName: string }
-export type Recent = { assetId: string; name: string; duration: number; clips: number; openedAt: number }
+export type Recent = { assetId: string; name: string; duration: number; clips: number; openedAt: number; kind?: 'video' | 'audio' }
 export type KeyValue = { get(key: string): string | null; set(key: string, value: string): void; remove(key: string): void }
 
 const MAX_RECENTS = 10

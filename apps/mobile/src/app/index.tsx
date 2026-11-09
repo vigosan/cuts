@@ -19,7 +19,8 @@ export default function HomeRoute() {
           name: asset.name,
           duration: asset.duration,
           clips: loadSession(store, asset.id)?.clips.length ?? 0,
-          openedAt: Date.now()
+          openedAt: Date.now(),
+          kind: asset.kind
         })
         router.push({ pathname: '/cut/[assetId]', params: { assetId: asset.id } })
       }}

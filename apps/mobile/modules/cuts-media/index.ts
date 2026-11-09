@@ -5,7 +5,7 @@ type Events = {
   onExportProgress(event: { ratio: number }): void
 }
 
-export type NativeAsset = { id: string; name: string; duration: number; width: number; height: number; frameRate: number; uri: string }
+export type NativeAsset = { id: string; name: string; duration: number; width: number; height: number; frameRate: number; uri: string; kind?: 'video' | 'audio' }
 
 export type NativeJob = {
   start: number
@@ -32,6 +32,7 @@ declare class CutsMediaModule extends NativeModule<Events> {
   requestLibraryAccess(): Promise<'granted' | 'limited' | 'denied'>
   pickVideo(): Promise<string | null>
   pickFile(): Promise<string | null>
+  pickAudio(): Promise<string | null>
   pickOverlay(source: 'files' | 'photos'): Promise<NativeOverlay | 'invalid' | null>
   openAsset(id: string): Promise<NativeAsset>
   cancelOpen(id: string): void
