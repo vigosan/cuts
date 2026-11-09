@@ -38,6 +38,16 @@ private func brightness(_ pixel: (UInt8, UInt8, UInt8)) -> Int {
 }
 
 @Suite(.serialized) struct AudioExportTests {
+  @Test func stopPressedBeforeTheExportGetsGoingStillStopsItAndLeavesNoFile() async throws {
+    let job = audioJob("stopped.mp4", background: "loop.mp4", end: 11)
+    let exporter = Exporter()
+    exporter.cancel()
+    await #expect(throws: CancellationError.self) {
+      try await exporter.export(asset: Fixtures.asset("set.wav"), job: job) { _ in }
+    }
+    #expect(!FileManager.default.fileExists(atPath: job.output.path))
+  }
+
   @Test func aShortBackgroundLoopsSoTheVideoLastsAsLongAsTheClipAndKeepsMoving() async throws {
     let clip = try await export(audioJob("loop.mp4", background: "loop.mp4", end: 11))
     #expect(abs(try await clip.load(.duration).seconds - 10) <= 1.0 / 30)
@@ -90,6 +100,6 @@ private func brightness(_ pixel: (UInt8, UInt8, UInt8)) -> Int {
     let late = stream.window(at: 6, length: 1.0 / 30)
     #expect(early.count == 1470 && late.count == 1470)
     #expect(late.contains { abs(Int($0)) > 8000 })
-    #expect(stream.window(at: 0.5, length: 1.0 / 30).isEmpty)
+    #expect(stream.window(at: 5.9, length: 1.0 / 30).count == 1470)
   }
 }

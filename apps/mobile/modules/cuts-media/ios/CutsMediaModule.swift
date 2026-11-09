@@ -202,9 +202,11 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
         let delegate = OverlayPickerDelegate { provider in
           self.backgroundPicker = nil
           guard let provider else { return promise.resolve(nil) }
-          let type = provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) ? UTType.movie : UTType.jpeg
+          guard let type = [UTType.movie, .jpeg, .png].first(where: { provider.hasItemConformingToTypeIdentifier($0.identifier) }) else {
+            return promise.resolve("invalid")
+          }
           provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { url, _ in
-            guard let url else { return finish(nil) }
+            guard let url else { return promise.resolve("invalid") }
             let copy = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
             try? FileManager.default.removeItem(at: copy)
             try? FileManager.default.copyItem(at: url, to: copy)

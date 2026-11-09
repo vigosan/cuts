@@ -45,7 +45,8 @@ private func imageSize(_ url: URL) throws -> CGSize {
         let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue,
         width > 0, height > 0
   else { throw BackgroundError.invalid }
-  return CGSize(width: width, height: height)
+  let orientation = (properties[kCGImagePropertyOrientation] as? NSNumber)?.intValue ?? 1
+  return (5...8).contains(orientation) ? CGSize(width: height, height: width) : CGSize(width: width, height: height)
 }
 
 private func videoSize(_ url: URL) async throws -> CGSize {

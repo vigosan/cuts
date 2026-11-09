@@ -261,6 +261,7 @@ private final class Pump: @unchecked Sendable {
   let input: AVAssetWriterInput
   private let queue = DispatchQueue(label: "cuts.export.pump")
   private var continuation: CheckedContinuation<Bool, Never>?
+  private var stopped = false
 
   init(output: AVAssetReaderOutput, input: AVAssetWriterInput) {
     self.output = output
@@ -271,6 +272,7 @@ private final class Pump: @unchecked Sendable {
     await withCheckedContinuation { continuation in
       queue.async {
         self.continuation = continuation
+        if self.stopped { return self.finish(false) }
         self.input.requestMediaDataWhenReady(on: self.queue) {
           while self.continuation != nil && self.input.isReadyForMoreMediaData {
             guard let buffer = self.output.copyNextSampleBuffer() else {
@@ -287,7 +289,10 @@ private final class Pump: @unchecked Sendable {
   }
 
   func stop() {
-    queue.async { self.finish(false) }
+    queue.async {
+      self.stopped = true
+      self.finish(false)
+    }
   }
 
   private func finish(_ complete: Bool) {

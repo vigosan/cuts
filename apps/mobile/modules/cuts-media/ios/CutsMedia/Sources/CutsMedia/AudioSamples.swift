@@ -38,7 +38,7 @@ public final class SampleStream: @unchecked Sendable {
         chunk.withUnsafeMutableBytes { _ = CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: count * 2, destination: $0.baseAddress!) }
         samples.append(contentsOf: chunk)
       }
-      let drop = min(samples.count, max(0, from - first))
+      let drop = min(samples.count, max(0, from - Int(Self.rate) - first))
       samples.removeFirst(drop)
       first += drop
       let start = min(samples.count, max(0, from - first))
