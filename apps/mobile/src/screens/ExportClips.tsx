@@ -7,9 +7,9 @@ import { t } from '../i18n'
 import { pickColor, pickOverlay } from '../media'
 import { useTheme } from '../theme'
 
-export function ExportClips({ onClose, onlySelected = false }: { onClose: () => void; onlySelected?: boolean }) {
+export function ExportClips({ onClose, onlySelected = false, full = false }: { onClose: () => void; onlySelected?: boolean; full?: boolean }) {
   const theme = useTheme()
-  const { asset, background, setBackground, chooseBackground, extras, setExtras, source, clips, selectedClip, exportLabel, format, setFormat, overlay, setOverlay, baseName, setBaseName, exporting, startExport, stopExport, resetExport } = useEditor()
+  const { asset, background, setBackground, chooseBackground, extras, setExtras, source, clips, selectedClip, exportLabel, format, setFormat, overlay, setOverlay, baseName, setBaseName, exporting, startExport, startFullExport, stopExport, resetExport } = useEditor()
   const [overlayInvalid, setOverlayInvalid] = useState(false)
   const [backgroundProblem, setBackgroundProblem] = useState<'invalid' | 'too-big' | null>(null)
   const running = exporting.status === 'running'
@@ -27,7 +27,7 @@ export function ExportClips({ onClose, onlySelected = false }: { onClose: () => 
       <Stack.Screen options={{ gestureEnabled: !running }} />
       <ExportSheet
         theme={theme}
-        label={only ? t.exportClip(clips.indexOf(only) + 1) : exportLabel}
+        label={full ? t.exportFull : only ? t.exportClip(clips.indexOf(only) + 1) : exportLabel}
         format={format}
         baseName={baseName}
         state={exporting}
@@ -40,7 +40,7 @@ export function ExportClips({ onClose, onlySelected = false }: { onClose: () => 
           setOverlay(null)
         }}
         onName={setBaseName}
-        onStart={() => void startExport(only?.id)}
+        onStart={() => void (full ? startFullExport() : startExport(only?.id))}
         onStop={stopExport}
         onClose={() => !running && onClose()}
         audio={

@@ -11,9 +11,9 @@ import { suggestMoments } from '@cuts/core/suggest'
 import type { ExportState } from '../components/ExportSheet'
 import { haptics } from '../haptics'
 import { t } from '../i18n'
-import { cancelExport, exportClip, pickBackground, readPeaks, saveToCutsAlbum, type AssetInfo, type Background } from '../media'
+import { cancelExport, exportClip, pickBackground, readPeaks, saveToCutsAlbum, type AssetInfo, type Background, type ExportJob } from '../media'
 import { editorReducer, initialEditor, settingsOf, type EditorAction, type EditorState } from './editor'
-import { audioExport, exportJobs, exportOverlay, sourceSize } from './export-jobs'
+import { audioExport, exportJobs, exportOverlay, fullJob, sourceSize } from './export-jobs'
 import { runExport } from './export-run'
 import { loadPreferences, savePreferences } from './preferences'
 import { loadSession, saveSession, touchRecent, type KeyValue } from './sessions'
@@ -46,6 +46,7 @@ export type EditorSession = {
   exporting: ExportState
   progress: Record<string, number>
   startExport: (only?: string) => Promise<void>
+  startFullExport: () => Promise<void>
   stopExport: () => void
   resetExport: () => void
   notice: Notice | null
@@ -137,9 +138,15 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
     setNotice(t.mobile.momentsAdded(moments.length), true)
   }
 
-  const startExport = async (only?: string) => {
+  const startExport = (only?: string) => {
     const jobs = exportJobs(clips, (id) => settingsOf(state, id), format, baseName, only, exportOverlay(overlay, format, source), audioExport(asset, background, extras, format))
-    const ids = jobs.map((job) => clips[job.position].id)
+    return run(jobs, jobs.map((job) => clips[job.position].id))
+  }
+
+  const startFullExport = () =>
+    run([fullJob(asset.duration, state.defaultSettings, format, baseName, exportOverlay(overlay, format, source), audioExport(asset, background, extras, format))], ['full'])
+
+  const run = async (jobs: ExportJob[], ids: string[]) => {
     stopped.current = false
     setProgress({})
     setExporting({ status: 'running', index: 0, total: jobs.length })
@@ -191,6 +198,7 @@ function useEditorSession(asset: AssetInfo, store: KeyValue): EditorSession {
     exporting,
     progress,
     startExport,
+    startFullExport,
     stopExport: () => {
       stopped.current = true
       cancelExport()

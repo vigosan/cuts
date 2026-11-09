@@ -70,7 +70,8 @@ it('undo button reverts the last clip change', async () => {
   await mark(2, 6)
   expect(screen.getByText(t.exportClips(1))).toBeTruthy()
   await pressHeaderButton('undo')
-  expect(screen.getByText(t.exportClips(0))).toBeTruthy()
+  expect(screen.queryByText(t.exportClips(1))).toBeNull()
+  expect(screen.getByText(t.exportFull)).toBeTruthy()
 })
 
 it('the session is saved and comes back on reopen', async () => {

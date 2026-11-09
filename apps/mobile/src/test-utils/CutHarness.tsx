@@ -18,6 +18,7 @@ export function CutHarness({ asset, store }: { asset: AssetInfo; store: KeyValue
         {sheet === 'clip' && <ClipSettings onClose={() => setSheet(null)} />}
         {sheet === 'export' && <ExportClips onClose={() => setSheet(null)} />}
         {sheet === 'export-clip' && <ExportClips onlySelected onClose={() => setSheet(null)} />}
+        {sheet === 'export-full' && <ExportClips full onClose={() => setSheet(null)} />}
       </EditorProvider>
     </GestureHandlerRootView>
   )

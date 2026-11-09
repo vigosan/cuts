@@ -192,10 +192,10 @@ it('fade length is picked from the same lengths as the Mac, shown as plain butto
   expect(screen.queryByTestId('fade-handle')).toBeNull()
 })
 
-it('Export spans the whole width; the format lives in the clip sheet', async () => {
+it('Export spans the whole width beside its arrow; the format lives in the clip sheet', async () => {
   await renderCut(storeWith(twoClips))
   expect(screen.queryByTestId('format-button')).toBeNull()
-  expect(screen.getByTestId('export')).toHaveStyle({ alignSelf: 'stretch' })
+  expect(screen.getByTestId('export')).toHaveStyle({ flex: 1 })
 })
 
 it('while exporting, the sheet asks to keep Cuts open', async () => {
@@ -319,4 +319,37 @@ it('the row thumbnail and the saved frame find a bare file name in the current o
   expect(native.saveFrame).toHaveBeenCalledWith('A1', expect.any(Number), expect.objectContaining({ overlayPath: 'file:///app-support/overlays/overlay-1.png' }))
   await fireEvent.press(screen.getByTestId('export'))
   expect(screen.getByTestId('overlay-thumb').props.source).toEqual({ uri: 'file:///app-support/overlays/overlay-1.png' })
+})
+
+describe('one export button', () => {
+  it('with no clips it exports the whole recording as one -full file, fading in like a single clip', async () => {
+    await renderCut(storeWith([]))
+    expect(screen.queryByTestId('export-menu')).toBeNull()
+    await fireEvent.press(screen.getByTestId('export'))
+    expect(screen.getByTestId('start-export')).toHaveTextContent(t.exportFull)
+    await fireEvent.press(screen.getByTestId('start-export'))
+    expect(native.exportClip.mock.calls.map(([, job]) => [job.start, job.end, job.videoFadeIn, job.fileName])).toEqual([[0, 600, true, 'set-full.mp4']])
+    expect(native.saveToCutsAlbum).toHaveBeenCalledWith(['file:///tmp/set-full.mp4'])
+  })
+
+  it('with clips the arrow offers the clips or the whole recording', async () => {
+    const sheet = pickFrom(2)
+    await renderCut(storeWith(twoClips))
+    expect(screen.getByTestId('export')).toHaveTextContent(t.exportClips(2))
+    await fireEvent.press(screen.getByTestId('export-menu'))
+    expect(sheet.mock.calls[0][0].options).toEqual([t.cancel, t.exportClips(2), t.exportFull])
+    expect(screen.getByTestId('start-export')).toHaveTextContent(t.exportFull)
+    await fireEvent.press(screen.getByTestId('start-export'))
+    expect(native.exportClip.mock.calls.map(([, job]) => job.fileName)).toEqual(['set-full.mp4'])
+  })
+
+  it('after an export, closing the sheet and opening it again offers Export again', async () => {
+    await renderCut(storeWith(twoClips))
+    await fireEvent.press(screen.getByTestId('export'))
+    await fireEvent.press(screen.getByTestId('start-export'))
+    expect(await screen.findByText(t.mobile.savedToAlbum(2))).toBeTruthy()
+    await fireEvent.press(screen.getByTestId('close-sheet'))
+    await fireEvent.press(screen.getByTestId('export'))
+    expect(screen.getByTestId('start-export')).toBeTruthy()
+  })
 })

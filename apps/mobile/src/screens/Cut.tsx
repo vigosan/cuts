@@ -25,7 +25,7 @@ import { useTheme, type Theme } from '../theme'
 import { backItem, cutHeaderItems } from './cut-header'
 import { Tap } from '../components/Tap'
 
-export type SheetKind = 'clip' | 'export' | 'export-clip'
+export type SheetKind = 'clip' | 'export' | 'export-clip' | 'export-full'
 
 const STEP_REPEAT_MS = 80
 const BACKGROUND_SOURCES = [null, 'files', 'photos'] as const
@@ -280,16 +280,41 @@ export function Cut({ onBack, onOpenSheet }: Props) {
             />
           )}
         </Animated.View>
-        <Tap
-          testID="export"
-          shrink
-          disabled={clips.length === 0}
-          accessibilityState={{ disabled: clips.length === 0 }}
-          onPress={() => onOpenSheet('export')}
-          style={{ alignSelf: 'stretch', backgroundColor: clips.length > 0 ? theme.ink : theme.fill, borderRadius: 12, minHeight: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
-        >
-          <Text style={{ color: clips.length > 0 ? theme.inverse : theme.muted, fontSize: 17, fontWeight: '600' }}>{exportLabel}</Text>
-        </Tap>
+        <View style={{ flexDirection: 'row', gap: 2, marginBottom: 8 }}>
+          <Tap
+            testID="export"
+            shrink
+            onPress={() => onOpenSheet(clips.length > 0 ? 'export' : 'export-full')}
+            style={{
+              flex: 1,
+              backgroundColor: clips.length > 0 ? theme.ink : theme.fill,
+              borderRadius: 12,
+              borderTopRightRadius: clips.length > 0 ? 4 : 12,
+              borderBottomRightRadius: clips.length > 0 ? 4 : 12,
+              minHeight: 50,
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Text style={{ color: clips.length > 0 ? theme.inverse : theme.ink, fontSize: 17, fontWeight: '600' }}>{clips.length > 0 ? exportLabel : t.exportFull}</Text>
+          </Tap>
+          {clips.length > 0 && (
+            <Tap
+              testID="export-menu"
+              accessibilityRole="button"
+              accessibilityLabel={t.exportOptions}
+              onPress={() =>
+                ActionSheetIOS.showActionSheetWithOptions({ options: [t.cancel, exportLabel, t.exportFull], cancelButtonIndex: 0 }, (index) => {
+                  if (index === 1) onOpenSheet('export')
+                  if (index === 2) onOpenSheet('export-full')
+                })
+              }
+              style={{ width: 50, backgroundColor: theme.ink, borderRadius: 12, borderTopLeftRadius: 4, borderBottomLeftRadius: 4, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <SymbolView name="chevron.down" size={16} tintColor={theme.inverse} />
+            </Tap>
+          )}
+        </View>
         {notice && (
           <View testID="notice" style={{ position: 'absolute', bottom: 72, alignSelf: 'center', zIndex: 2, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.ink, paddingLeft: 14, paddingRight: notice.undo ? 4 : 14, minHeight: 44, borderRadius: 12 }}>
             <Text style={{ color: theme.inverse, fontSize: 15 }}>{notice.text}</Text>
