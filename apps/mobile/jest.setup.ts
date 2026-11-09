@@ -10,6 +10,7 @@ jest.mock('./modules/cuts-media', () => ({
     overlayDir: 'file:///app-support/overlays/',
     backgroundDir: 'file:///app-support/backgrounds/',
     pickBackground: jest.fn(async () => null),
+    pickColor: jest.fn(async () => null),
     openAsset: jest.fn(),
     cancelOpen: jest.fn(),
     poster: jest.fn(async () => 'file:///poster.jpg'),

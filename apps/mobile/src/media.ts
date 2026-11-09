@@ -62,6 +62,8 @@ export const pickOverlay = (source: 'files' | 'photos') => CutsMedia.pickOverlay
 
 export const pickBackground = (source: 'files' | 'photos') => CutsMedia.pickBackground(source)
 
+export const pickColor = (initial: string) => CutsMedia.pickColor(initial)
+
 export async function openAsset(id: string, onDownload: (ratio: number) => void): Promise<AssetInfo> {
   const subscription = CutsMedia.addListener('onDownload', (event) => event.id === id && onDownload(event.ratio))
   try {

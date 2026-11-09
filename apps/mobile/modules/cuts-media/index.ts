@@ -54,6 +54,7 @@ declare class CutsMediaModule extends NativeModule<Events> {
   pickAudio(): Promise<string | null>
   pickOverlay(source: 'files' | 'photos'): Promise<NativeOverlay | 'invalid' | null>
   pickBackground(source: 'files' | 'photos'): Promise<NativeBackground | 'invalid' | 'too-big' | null>
+  pickColor(initial: string): Promise<string | null>
   openAsset(id: string): Promise<NativeAsset>
   cancelOpen(id: string): void
   poster(id: string, height: number): Promise<string>

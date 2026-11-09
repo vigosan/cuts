@@ -75,6 +75,7 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
   private var documentPicker: DocumentPickerDelegate?
   private var overlayPicker: OverlayPickerDelegate?
   private var backgroundPicker: OverlayPickerDelegate?
+  private var colorPicker: ColorPickerDelegate?
   private let files = FileBookmarks()
   private static let posterDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("posters")
 
@@ -224,6 +225,23 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
       self.documentPicker = delegate
       controller.delegate = delegate
       presenter?.present(controller, animated: true)
+    }.runOnQueue(.main)
+
+    AsyncFunction("pickColor") { (initial: String, promise: Promise) in
+      let controller = UIColorPickerViewController()
+      controller.supportsAlpha = false
+      let start = Layers.color(initial)
+      controller.selectedColor = UIColor(red: start.red, green: start.green, blue: start.blue, alpha: 1)
+      let delegate = ColorPickerDelegate { color in
+        self.colorPicker = nil
+        var (red, green, blue, alpha): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        let byte = { (value: CGFloat) in Int((max(0, min(1, value)) * 255).rounded()) }
+        promise.resolve(String(format: "#%02x%02x%02x", byte(red), byte(green), byte(blue)))
+      }
+      self.colorPicker = delegate
+      controller.delegate = delegate
+      self.appContext?.utilities?.currentViewController()?.present(controller, animated: true)
     }.runOnQueue(.main)
 
     AsyncFunction("openAsset") { (id: String) -> [String: Any] in
@@ -382,6 +400,18 @@ final class DocumentPickerDelegate: NSObject, UIDocumentPickerDelegate {
 
   func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
     done(nil)
+  }
+}
+
+final class ColorPickerDelegate: NSObject, UIColorPickerViewControllerDelegate {
+  private let done: (UIColor) -> Void
+
+  init(done: @escaping (UIColor) -> Void) {
+    self.done = done
+  }
+
+  func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
+    done(viewController.selectedColor)
   }
 }
 

@@ -4,13 +4,14 @@ import { clampPlacement, defaultPlacement, outputFrame } from '@cuts/core/overla
 import { ExportSheet } from '../components/ExportSheet'
 import { useEditor } from '../editor/session'
 import { t } from '../i18n'
-import { pickOverlay } from '../media'
+import { pickColor, pickOverlay } from '../media'
 import { useTheme } from '../theme'
 
 export function ExportClips({ onClose, onlySelected = false }: { onClose: () => void; onlySelected?: boolean }) {
   const theme = useTheme()
-  const { source, clips, selectedClip, exportLabel, format, setFormat, overlay, setOverlay, baseName, setBaseName, exporting, startExport, stopExport, resetExport } = useEditor()
+  const { asset, background, setBackground, chooseBackground, extras, setExtras, source, clips, selectedClip, exportLabel, format, setFormat, overlay, setOverlay, baseName, setBaseName, exporting, startExport, stopExport, resetExport } = useEditor()
   const [overlayInvalid, setOverlayInvalid] = useState(false)
+  const [backgroundProblem, setBackgroundProblem] = useState<'invalid' | 'too-big' | null>(null)
   const running = exporting.status === 'running'
   const only = onlySelected ? selectedClip : null
   useEffect(() => resetExport, [resetExport])
@@ -42,6 +43,25 @@ export function ExportClips({ onClose, onlySelected = false }: { onClose: () => 
         onStart={() => void startExport(only?.id)}
         onStop={stopExport}
         onClose={() => !running && onClose()}
+        audio={
+          asset.kind === 'audio'
+            ? {
+                background,
+                problem: backgroundProblem,
+                extras,
+                onChooseBackground: (from) => void chooseBackground(from).then(setBackgroundProblem),
+                onRemoveBackground: () => {
+                  setBackgroundProblem(null)
+                  setBackground(null)
+                },
+                onExtras: setExtras,
+                onPickColor: (layer) =>
+                  void pickColor(layer === 'wave' ? extras.color : extras.barColor).then(
+                    (color) => color && setExtras(layer === 'wave' ? { ...extras, color } : { ...extras, barColor: color })
+                  )
+              }
+            : undefined
+        }
       />
     </>
   )
