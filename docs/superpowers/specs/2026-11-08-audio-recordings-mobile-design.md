@@ -44,4 +44,4 @@ Bring the Mac 1.9 work to Cuts for iPhone, so the phone keeps "the same features
 ## Anti-goals
 
 - Changing video-source clip exports beyond the button and the outdated rule.
-- Holding a whole two-hour WAV in memory at full rate: the waveform reads the audio at 2 kHz mono.
+- Holding a whole two-hour WAV in memory: the waveform streams the audio at 44.1 kHz mono and keeps only the current frame's window.

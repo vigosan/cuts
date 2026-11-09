@@ -19,7 +19,23 @@ export type NativeJob = {
   fadeSeconds: number
   videoFadeIn: boolean
   fileName: string
-} & NativeOverlayFields
+} & NativeOverlayFields & NativeAudioFields
+
+export type NativeAudioFields = {
+  backgroundPath?: string
+  backgroundKind?: 'video' | 'image'
+  waveX?: number
+  waveY?: number
+  waveWidth?: number
+  waveColor?: string
+  waveOpacity?: number
+  barX?: number
+  barY?: number
+  barWidth?: number
+  barColor?: string
+  barOpacity?: number
+  bitrate?: number
+}
 
 export type NativeOverlayFields = { overlayPath?: string; overlayX?: number; overlayY?: number; overlayWidth?: number }
 

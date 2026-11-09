@@ -31,28 +31,36 @@ public final class Exporter: @unchecked Sendable {
   }
 
   private func run(asset: AVAsset, job requested: ExportJob, progress: @escaping @Sendable (Double) -> Void) async throws {
-    let videoTrack = try await asset.loadTracks(withMediaType: .video)[0]
-    let audioTracks = Array(try await asset.loadTracks(withMediaType: .audio).prefix(1))
     var clamped = requested
     clamped.end = min(clamped.end, try await asset.load(.duration).seconds)
-    let job = clamped
-    let (naturalSize, transform, frameDuration) = try await videoTrack.load(.naturalSize, .preferredTransform, .minFrameDuration)
-    let upright = CGRect(origin: .zero, size: naturalSize).applying(transform)
-    let framer = Framer(job: job, sourceSize: CGSize(width: abs(upright.width), height: abs(upright.height)))
-    let range = CMTimeRange(start: CMTime(seconds: job.start, preferredTimescale: 600), end: CMTime(seconds: job.end, preferredTimescale: 600))
+    let source: Source
+    let job: ExportJob
+    if let background = clamped.background {
+      source = try await backgroundSource(background, recording: asset, job: clamped)
+      job = clamped.startingAtZero
+    } else {
+      source = try await videoSource(asset)
+      job = clamped
+    }
+    let samples = job.wave == nil ? nil : try await SampleStream(asset: asset, range: clamped.range)
+    let videoTrack = source.videoTrack
+    let audioTracks = source.audioTracks
+    let framer = Framer(job: job, sourceSize: source.size)
+    let range = job.range
 
-    let composition = try await AVMutableVideoComposition.videoComposition(with: asset) { request in
+    let composition = try await AVMutableVideoComposition.videoComposition(with: source.asset) { request in
       let seconds = request.compositionTime.seconds - job.start
-      let image = framer.fade(image: framer.overlay(image: framer.render(image: request.sourceImage)), at: seconds, clipLength: job.length)
-      request.finish(with: image, context: nil)
+      let framed = framer.overlay(image: framer.render(image: source.still ?? request.sourceImage))
+      let layered = job.wave == nil && job.bar == nil ? framed : framer.layers(image: framed, at: seconds, samples: samples)
+      request.finish(with: framer.fade(image: layered, at: seconds, clipLength: job.length), context: nil)
     }
     composition.renderSize = framer.renderSize
-    composition.frameDuration = frameDuration.isValid && frameDuration.seconds > 0 ? frameDuration : CMTime(value: 1, timescale: 30)
+    composition.frameDuration = source.frameDuration
     composition.colorPrimaries = AVVideoColorPrimaries_ITU_R_709_2
     composition.colorTransferFunction = AVVideoTransferFunction_ITU_R_709_2
     composition.colorYCbCrMatrix = AVVideoYCbCrMatrix_ITU_R_709_2
 
-    let reader = try AVAssetReader(asset: asset)
+    let reader = try AVAssetReader(asset: source.asset)
     reader.timeRange = range
     let videoOutput = AVAssetReaderVideoCompositionOutput(videoTracks: [videoTrack], videoSettings: [
       kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
@@ -72,7 +80,7 @@ public final class Exporter: @unchecked Sendable {
         AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
       ],
       AVVideoCompressionPropertiesKey: [
-        AVVideoAverageBitRateKey: 12_000_000,
+        AVVideoAverageBitRateKey: job.bitrate,
         AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
         AVVideoExpectedSourceFrameRateKey: Int((1 / composition.frameDuration.seconds).rounded())
       ]
@@ -138,6 +146,71 @@ public final class Exporter: @unchecked Sendable {
     progress(1)
   }
 
+  private func videoSource(_ asset: AVAsset) async throws -> Source {
+    let videoTrack = try await asset.loadTracks(withMediaType: .video)[0]
+    let audioTracks = Array(try await asset.loadTracks(withMediaType: .audio).prefix(1))
+    let (naturalSize, transform, frameDuration) = try await videoTrack.load(.naturalSize, .preferredTransform, .minFrameDuration)
+    let upright = CGRect(origin: .zero, size: naturalSize).applying(transform)
+    return Source(asset: asset, videoTrack: videoTrack, audioTracks: audioTracks, size: CGSize(width: abs(upright.width), height: abs(upright.height)),
+                  frameDuration: frameDuration.isValid && frameDuration.seconds > 0 ? frameDuration : CMTime(value: 1, timescale: 30), still: nil)
+  }
+
+  private func backgroundSource(_ background: BackgroundSpec, recording: AVAsset, job: ExportJob) async throws -> Source {
+    let still = background.isImage ? CIImage(contentsOf: background.url, options: [.applyOrientationProperty: true]) : nil
+    if background.isImage && still == nil { throw CocoaError(.fileReadCorruptFile) }
+    let backgroundAsset = AVURLAsset(url: background.isImage ? try await stillPlaceholder() : background.url)
+    let backgroundTrack = try await backgroundAsset.loadTracks(withMediaType: .video)[0]
+    let (naturalSize, transform, loop) = try await backgroundTrack.load(.naturalSize, .preferredTransform, .timeRange)
+    let composition = AVMutableComposition()
+    guard let video = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else { throw CocoaError(.featureUnsupported) }
+    video.preferredTransform = transform
+    let length = CMTime(seconds: job.length, preferredTimescale: 600)
+    var at = CMTime.zero
+    while at < length {
+      let piece = CMTimeMinimum(loop.duration, length - at)
+      try video.insertTimeRange(CMTimeRange(start: loop.start, duration: piece), of: backgroundTrack, at: at)
+      at = at + piece
+    }
+    var audioTracks: [AVAssetTrack] = []
+    if let recorded = try await recording.loadTracks(withMediaType: .audio).first,
+       let audio = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
+      try audio.insertTimeRange(job.range, of: recorded, at: .zero)
+      audioTracks = [audio]
+    }
+    let upright = CGRect(origin: .zero, size: naturalSize).applying(transform)
+    return Source(asset: composition, videoTrack: video, audioTracks: audioTracks,
+                  size: still?.extent.size ?? CGSize(width: abs(upright.width), height: abs(upright.height)),
+                  frameDuration: CMTime(value: 1, timescale: 30), still: still)
+  }
+
+  private func stillPlaceholder() async throws -> URL {
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent("cuts-still-placeholder.mp4")
+    if FileManager.default.fileExists(atPath: url.path) { return url }
+    let partial = FileManager.default.temporaryDirectory.appendingPathComponent("cuts-still-\(UUID().uuidString).mp4")
+    let writer = try AVAssetWriter(outputURL: partial, fileType: .mp4)
+    let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: 16, AVVideoHeightKey: 16])
+    let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
+      kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: 16, kCVPixelBufferHeightKey as String: 16
+    ])
+    writer.add(input)
+    guard writer.startWriting() else { throw writer.error ?? CocoaError(.fileWriteUnknown) }
+    writer.startSession(atSourceTime: .zero)
+    for frame in 0..<30 {
+      while !input.isReadyForMoreMediaData { try await Task.sleep(for: .milliseconds(5)) }
+      var buffer: CVPixelBuffer?
+      guard let pool = adaptor.pixelBufferPool, CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer) == kCVReturnSuccess, let buffer else {
+        throw CocoaError(.fileWriteUnknown)
+      }
+      adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: 30))
+    }
+    input.markAsFinished()
+    writer.endSession(atSourceTime: CMTime(value: 1, timescale: 1))
+    await writer.finishWriting()
+    guard writer.status == .completed else { throw writer.error ?? CocoaError(.fileWriteUnknown) }
+    try? FileManager.default.moveItem(at: partial, to: url)
+    return url
+  }
+
   private func audioMix(tracks: [AVAssetTrack], job: ExportJob) -> AVAudioMix? {
     guard job.audioFade != "none" else { return nil }
     let length = fadeLength(job.fadeSeconds, clipLength: job.length)
@@ -158,6 +231,28 @@ public final class Exporter: @unchecked Sendable {
       return parameters
     }
     return mix
+  }
+}
+
+private struct Source: @unchecked Sendable {
+  let asset: AVAsset
+  let videoTrack: AVAssetTrack
+  let audioTracks: [AVAssetTrack]
+  let size: CGSize
+  let frameDuration: CMTime
+  let still: CIImage?
+}
+
+private extension ExportJob {
+  var range: CMTimeRange {
+    CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 600), end: CMTime(seconds: end, preferredTimescale: 600))
+  }
+
+  var startingAtZero: ExportJob {
+    var shifted = self
+    shifted.start = 0
+    shifted.end = length
+    return shifted
   }
 }
 

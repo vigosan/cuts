@@ -21,6 +21,19 @@ struct JobRecord: Record {
   @Field var overlayX: Double = 0
   @Field var overlayY: Double = 0
   @Field var overlayWidth: Double = 0.25
+  @Field var backgroundPath: String = ""
+  @Field var backgroundKind: String = "video"
+  @Field var waveX: Double = 0
+  @Field var waveY: Double = 0
+  @Field var waveWidth: Double = 0
+  @Field var waveColor: String = "#ffffff"
+  @Field var waveOpacity: Double = 0.3
+  @Field var barX: Double = 0
+  @Field var barY: Double = 0
+  @Field var barWidth: Double = 0
+  @Field var barColor: String = "#ffffff"
+  @Field var barOpacity: Double = 0.8
+  @Field var bitrate: Int = 12_000_000
 }
 
 struct FrameRecord: Record {
@@ -32,6 +45,17 @@ struct FrameRecord: Record {
   @Field var overlayX: Double = 0
   @Field var overlayY: Double = 0
   @Field var overlayWidth: Double = 0.25
+}
+
+private func backgroundSpec(path: String, kind: String) -> BackgroundSpec? {
+  guard !path.isEmpty else { return nil }
+  let url = path.hasPrefix("file://") ? URL(string: path)
+    : path.contains("/") ? URL(fileURLWithPath: path) : CutsMediaModule.backgroundDir.appendingPathComponent(path)
+  return url.map { BackgroundSpec(url: $0, isImage: kind == "image") }
+}
+
+private func layerSpec(x: Double, y: Double, width: Double, color: String, opacity: Double) -> LayerSpec? {
+  width > 0 ? LayerSpec(x: x, y: y, width: width, color: color, opacity: opacity) : nil
 }
 
 private func overlaySpec(path: String, x: Double, y: Double, width: Double) -> OverlaySpec? {
@@ -255,10 +279,14 @@ public final class CutsMediaModule: Module, @unchecked Sendable {
     AsyncFunction("exportClip") { (id: String, record: JobRecord) -> String in
       try FileManager.default.createDirectory(at: Self.exportDir, withIntermediateDirectories: true)
       let output = Self.exportDir.appendingPathComponent(record.fileName)
-      let job = ExportJob(start: record.start, end: record.end, format: record.format, framing: record.framing, cropX: record.cropX,
+      var job = ExportJob(start: record.start, end: record.end, format: record.format, framing: record.framing, cropX: record.cropX,
                           cropY: record.cropY, videoFade: record.videoFade, audioFade: record.audioFade, fadeSeconds: record.fadeSeconds,
                           videoFadeIn: record.videoFadeIn, output: output,
                           overlay: overlaySpec(path: record.overlayPath, x: record.overlayX, y: record.overlayY, width: record.overlayWidth))
+      job.background = backgroundSpec(path: record.backgroundPath, kind: record.backgroundKind)
+      job.wave = layerSpec(x: record.waveX, y: record.waveY, width: record.waveWidth, color: record.waveColor, opacity: record.waveOpacity)
+      job.bar = layerSpec(x: record.barX, y: record.barY, width: record.barWidth, color: record.barColor, opacity: record.barOpacity)
+      job.bitrate = record.bitrate
       let exporter = Exporter()
       self.lock.withLock { self.exporter = exporter }
       defer { self.lock.withLock { self.exporter = nil } }

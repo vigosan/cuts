@@ -14,6 +14,32 @@ public struct OverlaySpec: Codable, Sendable {
   }
 }
 
+public struct BackgroundSpec: Codable, Sendable {
+  public var url: URL
+  public var isImage: Bool
+
+  public init(url: URL, isImage: Bool) {
+    self.url = url
+    self.isImage = isImage
+  }
+}
+
+public struct LayerSpec: Codable, Sendable {
+  public var x: Double
+  public var y: Double
+  public var width: Double
+  public var color: String
+  public var opacity: Double
+
+  public init(x: Double, y: Double, width: Double, color: String, opacity: Double) {
+    self.x = x
+    self.y = y
+    self.width = width
+    self.color = color
+    self.opacity = opacity
+  }
+}
+
 public struct ExportJob: Codable, Sendable {
   public var start: Double
   public var end: Double
@@ -27,6 +53,10 @@ public struct ExportJob: Codable, Sendable {
   public var videoFadeIn: Bool
   public var output: URL
   public var overlay: OverlaySpec?
+  public var background: BackgroundSpec?
+  public var wave: LayerSpec?
+  public var bar: LayerSpec?
+  public var bitrate = 12_000_000
 
   public init(start: Double, end: Double, format: String, framing: String, cropX: Double, cropY: Double, videoFade: String,
               audioFade: String, fadeSeconds: Double, videoFadeIn: Bool, output: URL, overlay: OverlaySpec? = nil) {
