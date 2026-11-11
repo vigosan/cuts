@@ -36,3 +36,17 @@ describe('dragClip', () => {
     expect(dragClip(clip, 'end', 10_000, duration).end).toBe(duration)
   })
 })
+
+describe('dragClip within a video of a joined timeline', () => {
+  const inside = { id: 'a', start: 12, end: 20 }
+
+  it('never lets a moved clip cross into the neighbouring video', () => {
+    expect(dragClip(inside, 'move', -500, 30, 10)).toEqual({ id: 'a', start: 10, end: 18 })
+    expect(dragClip(inside, 'move', 500, 30, 10)).toEqual({ id: 'a', start: 22, end: 30 })
+  })
+
+  it('never lets an edge cross into the neighbouring video', () => {
+    expect(dragClip(inside, 'start', -500, 30, 10).start).toBe(10)
+    expect(dragClip(inside, 'end', 500, 30, 10).end).toBe(30)
+  })
+})
