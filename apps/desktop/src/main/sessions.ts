@@ -31,3 +31,7 @@ export async function saveSession(dir: string, videoPath: string, session: Sessi
   await mkdir(dir, { recursive: true })
   await writeFile(file, JSON.stringify(session))
 }
+
+export async function removeSession(dir: string, videoPath: string): Promise<void> {
+  await rm(fileFor(dir, videoPath), { force: true })
+}

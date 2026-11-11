@@ -15,6 +15,13 @@ describe('recents', () => {
     expect((await loadRecents(file)).map((entry) => entry.path)).toEqual(['/Movies/a.mov', '/Movies/b.mov'])
   })
 
+  it('returns the entries pushed out of the list, so their joined files can be deleted instead of piling up', async () => {
+    const file = fileIn()
+    for (let i = 0; i < MAX_RECENTS; i++) await rememberRecent(file, { path: `/Movies/${i}.mov`, openedAt: i })
+    expect(await rememberRecent(file, { path: '/Movies/new.mov', openedAt: 9 })).toEqual([{ path: '/Movies/0.mov', openedAt: 0 }])
+    expect(await rememberRecent(file, { path: '/Movies/4.mov', openedAt: 10 })).toEqual([])
+  })
+
   it('keeps only the last few videos, so the start screen stays a short list', async () => {
     const file = fileIn()
     for (let i = 0; i < MAX_RECENTS + 2; i++) await rememberRecent(file, { path: `/Movies/${i}.mov`, openedAt: i })
@@ -54,6 +61,11 @@ describe('recents', () => {
       clips: 3,
       poster: 'data:image/jpeg;base64,AA'
     })
+  })
+
+  it('shows a joined session as its first video plus how many more, in the first video\'s folder, so it reads as that set', () => {
+    const entry = { path: '/userData/joined/abc.mov', openedAt: 5, sources: ['/Users/vicent/Movies/Sets/IMG_0412.mov', '/Volumes/X/IMG_0413.mov', '/Volumes/X/IMG_0414.mov'] }
+    expect(toRecentVideo(entry, 2, null)).toEqual({ path: '/userData/joined/abc.mov', name: 'IMG_0412.mov +2', folder: 'Sets', openedAt: 5, clips: 2, poster: null })
   })
 
   it('keeps one poster file per video, so a set is recognised by a frame of it on the start screen', () => {

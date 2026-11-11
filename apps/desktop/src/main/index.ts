@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
@@ -14,20 +14,25 @@ import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg }
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { importOverlay, isOwnedOverlay, type OverlayDeps } from './overlay'
+import { openVideos, type OpenDeps } from './open-videos'
 import { existingAncestor } from './paths'
 import { forgetRecent, loadRecents, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
-import { loadSession, saveSession } from './sessions'
+import { loadSession, removeSession, saveSession } from './sessions'
 import { UPDATE_CHECK_INTERVAL_MS, updatesEnabled } from './updates'
 import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
 
 registerMediaScheme()
 
+const OPEN_FILE_BATCH_MS = 300
 const pendingPaths: string[] = []
-let sendPath: ((path: string) => void) | null = null
+let sendPaths: ((paths: string[]) => void) | null = null
+let batchTimer: NodeJS.Timeout | undefined
 app.on('open-file', (event, path) => {
   event.preventDefault()
-  if (sendPath) sendPath(path)
-  else pendingPaths.push(path)
+  pendingPaths.push(path)
+  if (!sendPaths) return
+  clearTimeout(batchTimer)
+  batchTimer = setTimeout(() => sendPaths?.(pendingPaths.splice(0)), OPEN_FILE_BATCH_MS)
 })
 
 const THUMBNAIL_HEIGHT = 96
@@ -108,13 +113,11 @@ app.whenReady().then(() => {
     await mkdir(postersDir, { recursive: true })
     await writeFile(posterFile(postersDir, path), jpeg)
   }
+  const bookmarks = new Map<string, string>()
   const allowVideo = (path: string, bookmark?: string) => {
     openedVideos.add(path)
+    if (bookmark) bookmarks.set(path, bookmark)
     app.addRecentDocument(path)
-    if (!process.mas || bookmark) {
-      void rememberRecent(recentsFile, { path, openedAt: Date.now(), bookmark })
-      savePoster(path).catch(() => {})
-    }
   }
   const opened = (path: string) => {
     if (!openedVideos.has(path)) throw new Error('This video was not opened in Cuts')
@@ -131,13 +134,13 @@ app.whenReady().then(() => {
   ipcMain.handle('open-video', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     const result = await dialog.showOpenDialog(win, {
-      properties: ['openFile'],
+      properties: ['openFile', 'multiSelections'],
       filters: [{ name: t.videoFilter, extensions: [...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS] }],
       securityScopedBookmarks: process.mas === true
     })
     if (result.canceled) return null
-    allowVideo(result.filePaths[0], result.bookmarks?.[0])
-    return result.filePaths[0]
+    result.filePaths.forEach((path, index) => allowVideo(path, result.bookmarks?.[index]))
+    return result.filePaths
   })
 
   const overlayDeps: OverlayDeps = {
@@ -270,6 +273,39 @@ app.whenReady().then(() => {
   ipcMain.handle('load-session', (_event, videoPath: string) => loadSession(sessionsDir, videoPath))
   ipcMain.on('save-session', (_event, videoPath: string, session: Session) => void saveSession(sessionsDir, videoPath, session))
 
+  const joinedDir = join(app.getPath('userData'), 'joined')
+  const openDeps: OpenDeps = {
+    dir: joinedDir,
+    exists: existsSync,
+    info: (path) => readFfmpegInfo(bundledFfmpeg()!, path),
+    run: (args) => runFfmpeg(bundledFfmpeg()!, args, () => {}),
+    read: (path) => readFile(path, 'utf8').catch(() => null),
+    write: async (path, text) => {
+      await mkdir(joinedDir, { recursive: true })
+      await writeFile(path, text)
+    },
+    rename,
+    remove: (path) => rm(path, { force: true }),
+    removeSession: (videoPath) => removeSession(sessionsDir, videoPath),
+    forget: (path) => forgetRecent(recentsFile, path),
+    remember: async (entry) => {
+      if (process.mas && !entry.bookmark && !entry.bookmarks) return []
+      const evicted = await rememberRecent(recentsFile, entry)
+      savePoster(entry.path).catch(() => {})
+      return evicted
+    },
+    bookmark: (path) => bookmarks.get(path),
+    now: Date.now
+  }
+  const open = async (paths: string[], replacing: string | null) => {
+    const result = await openVideos(paths, replacing, openDeps)
+    if (result.ok) openedVideos.add(result.path)
+    return result
+  }
+  ipcMain.handle('open-videos', (_event, paths: string[], replacing: string | null) =>
+    open(paths.map(opened), replacing === null ? null : opened(replacing))
+  )
+
   const exists = (entry: RecentEntry) => {
     const stop = entry.bookmark ? (app.startAccessingSecurityScopedResource(entry.bookmark) as () => void) : undefined
     try {
@@ -293,13 +329,21 @@ app.whenReady().then(() => {
   ipcMain.handle('open-recent', async (_event, path: string) => {
     const entry = (await loadRecents(recentsFile)).find((recent) => recent.path === path)
     if (!entry) return null
+    if (entry.sources) {
+      entry.sources.forEach((source, index) => {
+        const bookmark = entry.bookmarks?.[index]
+        if (bookmark) app.startAccessingSecurityScopedResource(bookmark)
+        allowVideo(source, bookmark)
+      })
+      return open(entry.sources, null)
+    }
     if (entry.bookmark) app.startAccessingSecurityScopedResource(entry.bookmark)
     if (!existsSync(path)) {
       await forgetRecent(recentsFile, path)
       return null
     }
     allowVideo(path, entry.bookmark)
-    return path
+    return open([path], null)
   })
 
   ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')).catch(() => app.getPath('videos')))
@@ -313,15 +357,15 @@ app.whenReady().then(() => {
 
   const win = createWindow()
   win.webContents.once('did-finish-load', () => {
-    sendPath = (path) => {
-      allowVideo(path)
+    sendPaths = (paths) => {
+      paths.forEach((path) => allowVideo(path))
       const target = mainWindow()
       if (!target) return
       if (target.isMinimized()) target.restore()
       target.focus()
-      target.webContents.send('open-path', path)
+      target.webContents.send('open-paths', paths)
     }
-    pendingPaths.splice(0).forEach(sendPath)
+    if (pendingPaths.length > 0) sendPaths(pendingPaths.splice(0))
   })
   if (updates) {
     autoUpdater.on('update-downloaded', ({ version }) => mainWindow()?.webContents.send('update-ready', version))

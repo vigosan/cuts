@@ -9,6 +9,7 @@ const api: Api = {
     return path
   },
   openVideo: () => ipcRenderer.invoke('open-video'),
+  openVideos: (paths, replacing) => ipcRenderer.invoke('open-videos', paths, replacing),
   chooseOverlay: () => ipcRenderer.invoke('choose-overlay'),
   importOverlayFile: (file) => ipcRenderer.invoke('import-overlay', webUtils.getPathForFile(file)),
   chooseBackground: () => ipcRenderer.invoke('choose-background'),
@@ -50,10 +51,10 @@ const api: Api = {
     ipcRenderer.on('menu-shortcuts', listener)
     return () => ipcRenderer.removeListener('menu-shortcuts', listener)
   },
-  onOpenPath: (callback) => {
-    const listener = (_event: IpcRendererEvent, path: string) => callback(path)
-    ipcRenderer.on('open-path', listener)
-    return () => ipcRenderer.removeListener('open-path', listener)
+  onOpenPaths: (callback) => {
+    const listener = (_event: IpcRendererEvent, paths: string[]) => callback(paths)
+    ipcRenderer.on('open-paths', listener)
+    return () => ipcRenderer.removeListener('open-paths', listener)
   },
   onUpdateReady: (callback) => {
     const listener = (_event: IpcRendererEvent, version: string) => callback(version)

@@ -42,6 +42,10 @@ export type ExportResult = { ok: true; files: string[] } | { ok: false; error: s
 
 export type ExportProgress = { index: number; ratio: number }
 
+export type Source = { path: string; name: string; duration: number }
+
+export type OpenResult = { ok: true; path: string; sources: Source[] } | { ok: false; problem: 'mismatch' | 'missing'; name: string }
+
 export type RecentVideo = { path: string; name: string; folder: string; openedAt: number; clips: number; poster: string | null }
 
 export type ImportedOverlay = { path: string; aspect: number; name: string }
@@ -57,7 +61,8 @@ export { WAVE_OPACITIES, type AudioExtras } from '@cuts/core/audio-layers'
 export type Api = {
   platform: NodeJS.Platform
   pathForFile(file: File): string
-  openVideo(): Promise<string | null>
+  openVideo(): Promise<string[] | null>
+  openVideos(paths: string[], replacing: string | null): Promise<OpenResult>
   chooseOverlay(): Promise<ImportedOverlay | 'invalid' | null>
   importOverlayFile(file: File): Promise<ImportedOverlay | 'invalid'>
   chooseBackground(): Promise<ImportedBackground | 'invalid' | 'too-big' | null>
@@ -71,7 +76,7 @@ export type Api = {
   cancelExport(): void
   share(files: string[]): void
   onMenuOpenVideo(callback: () => void): () => void
-  onOpenPath(callback: (path: string) => void): () => void
+  onOpenPaths(callback: (paths: string[]) => void): () => void
   onMenuExportFrame(callback: () => void): () => void
   onMenuShortcuts(callback: () => void): () => void
   onMenuCommand(callback: (command: 'undo' | 'redo') => void): () => void
@@ -83,5 +88,5 @@ export type Api = {
   waveform(path: string): Promise<Float32Array>
   frameRate(path: string): Promise<number>
   recentVideos(): Promise<RecentVideo[]>
-  openRecent(path: string): Promise<string | null>
+  openRecent(path: string): Promise<OpenResult | null>
 }

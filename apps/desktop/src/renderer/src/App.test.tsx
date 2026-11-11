@@ -13,7 +13,8 @@ function makeApi(): Api {
   return {
     platform: 'darwin',
     pathForFile: vi.fn(() => VIDEO),
-    openVideo: vi.fn(async () => VIDEO),
+    openVideo: vi.fn(async () => [VIDEO]),
+    openVideos: vi.fn(async (paths: string[]) => ({ ok: true as const, path: paths[0], sources: [] })),
     chooseOverlay: vi.fn(async () => null),
     importOverlayFile: vi.fn(async () => 'invalid' as const),
     chooseBackground: vi.fn(async () => null),
@@ -43,8 +44,8 @@ function makeApi(): Api {
       menuShortcuts = callback
       return () => {}
     }),
-    onOpenPath: vi.fn((callback: (path: string) => void) => {
-      openPath = callback
+    onOpenPaths: vi.fn((callback: (paths: string[]) => void) => {
+      openPath = (path) => callback([path])
       return () => {}
     }),
     onMenuCommand: vi.fn((callback: (command: 'undo' | 'redo') => void) => {
@@ -144,7 +145,7 @@ describe('App', () => {
 
   it('opens a recent video with one click, with the clips it had', async () => {
     vi.mocked(api.recentVideos).mockResolvedValue([{ path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2, poster: null }])
-    vi.mocked(api.openRecent).mockResolvedValue(VIDEO)
+    vi.mocked(api.openRecent).mockResolvedValue({ ok: true, path: VIDEO, sources: [] })
     render(<App />)
     await userEvent.click(await screen.findByTestId('recent-video-1'))
     expect(api.openRecent).toHaveBeenCalledWith(VIDEO)
@@ -1122,7 +1123,7 @@ describe('App', () => {
   })
 
   it('names the clips and the default folder after the video on Windows, whose paths use backslashes', async () => {
-    vi.mocked(api.openVideo).mockResolvedValue('C:\\Users\\vicent\\Videos\\set.mov')
+    vi.mocked(api.openVideo).mockResolvedValue(['C:\\Users\\vicent\\Videos\\set.mov'])
     vi.mocked(api.moviesDir).mockResolvedValue('C:\\Users\\vicent\\Videos')
     render(<App />)
     const video = await loadVideo()
@@ -1782,7 +1783,7 @@ describe('App', () => {
     render(<App />)
     await loadVideo()
     await userEvent.click(screen.getByTestId('suggest'))
-    vi.mocked(api.openVideo).mockResolvedValue('/Users/vicent/Movies/other.mov')
+    vi.mocked(api.openVideo).mockResolvedValue(['/Users/vicent/Movies/other.mov'])
     await act(async () => menuOpenVideo())
     const peaks = new Float32Array(4880 * 50).fill(0.2)
     peaks.fill(0.02, 980 * 50, 1000 * 50)
@@ -2027,7 +2028,7 @@ describe('App', () => {
 
   it('names the window after the video on Windows and Linux, whose native title bar shows it', async () => {
     api.platform = 'linux'
-    vi.mocked(api.openVideo).mockResolvedValue('C:\\Users\\vicent\\Videos\\set.mov')
+    vi.mocked(api.openVideo).mockResolvedValue(['C:\\Users\\vicent\\Videos\\set.mov'])
     render(<App />)
     await loadVideo()
     expect(screen.queryByTestId('titlebar')).toBeNull()
@@ -2356,7 +2357,7 @@ describe('audio recordings', () => {
   const LOOP = { path: '/data/backgrounds/background-1.mp4', kind: 'video' as const, name: 'xtv loop.mp4' }
 
   async function loadAudio() {
-    vi.mocked(api.openVideo).mockResolvedValue(AUDIO)
+    vi.mocked(api.openVideo).mockResolvedValue([AUDIO])
     render(<App />)
     await userEvent.click(screen.getByTestId('open-video'))
     const video = screen.getByTestId('video') as HTMLVideoElement
@@ -2560,7 +2561,7 @@ describe('audio recordings', () => {
   it('leaves videos exactly as before even with a background chosen', async () => {
     await loadAudio()
     await addLoop()
-    vi.mocked(api.openVideo).mockResolvedValue(VIDEO)
+    vi.mocked(api.openVideo).mockResolvedValue([VIDEO])
     await act(async () => menuOpenVideo())
     const video = screen.getByTestId('video') as HTMLVideoElement
     Object.defineProperty(video, 'duration', { configurable: true, value: 4880 })
@@ -2639,7 +2640,7 @@ describe('export full recording', () => {
   })
 
   it('waits for a background before exporting a whole audio recording', async () => {
-    vi.mocked(api.openVideo).mockResolvedValue('/Users/vicent/Downloads/set.wav')
+    vi.mocked(api.openVideo).mockResolvedValue(['/Users/vicent/Downloads/set.wav'])
     render(<App />)
     await userEvent.click(screen.getByTestId('open-video'))
     const video = screen.getByTestId('video') as HTMLVideoElement

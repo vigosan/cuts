@@ -411,29 +411,34 @@ export function App() {
 
   const exporting = exportState.status === 'running'
 
+  const openPaths = async (paths: string[]) => {
+    const result = await window.api.openVideos(paths, null)
+    if (result.ok) load(result.path)
+  }
+
   const openVideo = async () => {
     if (exporting) return
     if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
-    const path = await window.api.openVideo()
-    if (path) load(path)
+    const paths = await window.api.openVideo()
+    if (paths) await openPaths(paths)
   }
 
   const onMenuOpenVideo = useEffectEvent(() => void openVideo())
   useEffect(() => window.api.onMenuOpenVideo(() => onMenuOpenVideo()), [])
 
-  const onOpenPath = useEffectEvent((path: string) => {
+  const onOpenPaths = useEffectEvent((paths: string[]) => {
     if (exporting) return
     if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
-    load(path)
+    void openPaths(paths)
   })
-  useEffect(() => window.api.onOpenPath((path) => onOpenPath(path)), [])
+  useEffect(() => window.api.onOpenPaths((paths) => onOpenPaths(paths)), [])
 
   const [recents, setRecents] = useState<RecentVideo[]>([])
   useEffect(() => void window.api.recentVideos().then(setRecents), [])
   const openRecent = async (path: string) => {
     const opened = await window.api.openRecent(path)
-    if (opened) load(opened)
-    else setRecents((current) => current.filter((recent) => recent.path !== path))
+    if (opened?.ok) load(opened.path)
+    else if (!opened) setRecents((current) => current.filter((recent) => recent.path !== path))
   }
 
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
@@ -480,7 +485,7 @@ export function App() {
           return
         }
         if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
-        load(window.api.pathForFile(file))
+        void openPaths([window.api.pathForFile(file)])
       }}
     >
       {(window.api.platform === 'darwin' || videoPath) && (

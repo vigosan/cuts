@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { Session } from '../shared/api'
-import { loadSession, saveSession } from './sessions'
+import { loadSession, removeSession, saveSession } from './sessions'
 
 const snapshot: Session = {
   clips: [{ id: 'a', start: 10, end: 20 }],
@@ -32,6 +32,15 @@ describe('sessions', () => {
     await saveSession(dir, '/Movies/a.mov', { ...snapshot, clips: [] })
     expect(await loadSession(dir, '/Movies/a.mov')).toBeNull()
     expect(readdirSync(dir)).toEqual([])
+  })
+
+  it('removes the session of a discarded joined file, leaving the others, so a rejoin never leaves orphaned work behind', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cuts-sessions-'))
+    await saveSession(dir, '/joined/a.mov', snapshot)
+    await saveSession(dir, '/Movies/b.mov', snapshot)
+    await removeSession(dir, '/joined/a.mov')
+    expect(await loadSession(dir, '/joined/a.mov')).toBeNull()
+    expect(await loadSession(dir, '/Movies/b.mov')).toEqual(snapshot)
   })
 
   it('fills settings a session saved by an older version lacks, so a new option never breaks reopening old work', async () => {
