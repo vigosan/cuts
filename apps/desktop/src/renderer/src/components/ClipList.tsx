@@ -9,6 +9,8 @@ import {
   MAX_CLIP_SECONDS,
   type Clip
 } from '@cuts/core/clips'
+import { localTime, partBoundsAt, partStarts } from '@cuts/core/parts'
+import type { Source } from '@shared/api'
 import { t } from '../i18n'
 import { CheckIcon, CloseIcon, CropIcon, FitIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
 
@@ -18,6 +20,7 @@ const selectMode = (e: MouseEvent): SelectMode => (e.shiftKey ? 'range' : e.meta
 
 type Props = {
   clips: Clip[]
+  sources: Source[]
   time: number
   selectedIds: string[]
   loopingId: string | null
@@ -42,6 +45,7 @@ const timeButton =
 
 export function ClipList({
   clips,
+  sources,
   time,
   selectedIds,
   loopingId,
@@ -99,7 +103,13 @@ export function ClipList({
         const over = isOverLimit(clip)
         const past = isPastCarousel(index)
         const dropTarget = dragIndex !== null && overIndex === index && dragIndex !== index
-        const now = formatTime(time)
+        const joined = sources.length >= 2
+        const source = joined ? localTime(sources, clip.start) : null
+        const partStart = source ? partStarts(sources)[source.index] : 0
+        const bounds = joined ? partBoundsAt(sources, clip.start, 0) : null
+        const local = (at: number) => formatTime(at - partStart)
+        const target = (at: number) => (bounds ? Math.min(Math.max(at, bounds.start), bounds.end) : at)
+        const now = local(target(time))
         const selected = selectedIds.includes(clip.id)
         return (
           <li
@@ -147,7 +157,13 @@ export function ClipList({
             >
               {n}
             </span>
-            <span className="flex flex-1 items-center text-sm text-ink">
+            <span className="flex min-w-0 flex-1 flex-col text-sm text-ink">
+            {source && (
+              <span data-testid={`clip-source-${n}`} className="truncate px-1 text-xs text-ink-3" title={sources[source.index].name}>
+                {sources[source.index].name}
+              </span>
+            )}
+            <span className="flex items-center">
               <button
                 data-testid={`clip-set-start-${n}`}
                 className={selected ? timeButton : 'px-1 tabular-nums'}
@@ -155,7 +171,7 @@ export function ClipList({
                 disabled={selected && time >= clip.end}
                 onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetStart(clip) : onSelect(clip))}
               >
-                <span className={selected ? 'group-hover/time:hidden' : undefined}>{formatTime(clip.start)}</span>
+                <span className={selected ? 'group-hover/time:hidden' : undefined}>{local(clip.start)}</span>
                 {selected && (
                   <span data-testid={`clip-set-start-target-${n}`} className="hidden group-hover/time:inline">
                     {now}
@@ -170,13 +186,14 @@ export function ClipList({
                 disabled={selected && time <= clip.start}
                 onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetEnd(clip) : onSelect(clip))}
               >
-                <span className={selected ? 'group-hover/time:hidden' : undefined}>{formatTime(clip.end)}</span>
+                <span className={selected ? 'group-hover/time:hidden' : undefined}>{local(clip.end)}</span>
                 {selected && (
                   <span data-testid={`clip-set-end-target-${n}`} className="hidden group-hover/time:inline">
                     {now}
                   </span>
                 )}
               </button>
+            </span>
             </span>
             {framings && (
               <span

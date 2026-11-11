@@ -28,7 +28,7 @@ import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/c
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { snapToBeat } from '@cuts/core/beats'
-import { orderVideos, removePart } from '@cuts/core/parts'
+import { confineMoment, orderVideos, partBoundsAt, removePart } from '@cuts/core/parts'
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
 import { useWaveform } from './useVideoPreview'
@@ -131,7 +131,15 @@ export function App() {
   const { peaks, analysing } = useWaveform(videoPath)
   const onBeat = (time: number) => (peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
   const markStart = (free = false) => dispatch({ type: 'markStart', time: free ? now() : onBeat(now()) })
-  const markEnd = (free = false) => dispatch({ type: 'markEnd', time: free ? now() : onBeat(now()), id: crypto.randomUUID() })
+  const markEnd = (free = false) => {
+    const time = free ? now() : onBeat(now())
+    const limit = pendingStart === null ? time : partBoundsAt(sources, pendingStart, duration).end
+    dispatch({ type: 'markEnd', time: Math.min(time, limit), id: crypto.randomUUID() })
+  }
+  const clampToPartOf = (clip: Clip) => {
+    const bounds = partBoundsAt(sources, clip.start, duration)
+    return Math.min(Math.max(now(), bounds.start), bounds.end)
+  }
   const split = () => {
     const time = now()
     const inside = (clip: Clip) => clip.start < time && time < clip.end
@@ -419,7 +427,7 @@ export function App() {
     if (!peaks) return setSuggestNotice(t.suggestNoAudio)
     const moments = suggestMoments({ peaks, peaksPerSecond: PEAKS_PER_SECOND, duration, clipLength: MAX_CLIP_SECONDS, existing: clips.filter((clip) => !clip.suggested) })
     if (moments.length === 0) return setSuggestNotice(t.suggestNoneFound)
-    dispatch({ type: 'suggest', clips: moments.map((moment) => ({ id: crypto.randomUUID(), ...moment })) })
+    dispatch({ type: 'suggest', clips: moments.map((moment) => ({ id: crypto.randomUUID(), ...confineMoment(sources, moment) })) })
   }
 
   const exporting = exportState.status === 'running'
@@ -858,6 +866,7 @@ export function App() {
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
               <ClipList
                 clips={clips}
+                sources={sources}
                 time={time}
                 selectedIds={selectedIds}
                 onSelect={pickClip}
@@ -865,8 +874,8 @@ export function App() {
                 suggesting={suggesting}
                 onSuggest={() => void suggest(videoPath)}
                 loopingId={loopingId}
-                onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: now() })}
-                onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: now() })}
+                onSetStart={(clip) => dispatch({ type: 'setStart', id: clip.id, time: clampToPartOf(clip) })}
+                onSetEnd={(clip) => dispatch({ type: 'setEnd', id: clip.id, time: clampToPartOf(clip) })}
                 onDelete={(clip) => dispatch({ type: 'remove', id: clip.id })}
                 onReorder={(from, to) => dispatch({ type: 'reorder', from, to })}
                 exportStatus={exportStatus}

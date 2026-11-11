@@ -2836,6 +2836,62 @@ describe('Several videos as one session', () => {
       expect(screen.getByTestId('remove-video-1')).toHaveAccessibleName(t.removeVideo('IMG_0413.mov'))
     })
 
+    describe('clips stay inside one video', () => {
+      it('ends a clip at the join when O is pressed in the next video, since a clip crossing two files cannot be exported', async () => {
+        const video = await openJoined()
+        await markClip(video, 50, 70)
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:50')
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:00')
+        expect(screen.getByTestId('clip-duration-1')).toHaveTextContent('0:10')
+      })
+
+      it('moves the end of a selected row no further than the end of its video', async () => {
+        const video = await openJoined()
+        await markClip(video, 10, 20)
+        await userEvent.click(screen.getByTestId('clip-row-1'))
+        seek(video, 70)
+        await userEvent.click(screen.getByTestId('clip-set-end-1'))
+        expect(screen.getByTestId('clip-duration-1')).toHaveTextContent('0:50')
+      })
+
+      it('moves the start of a selected row no earlier than the start of its video', async () => {
+        const video = await openJoined()
+        await markClip(video, 70, 80)
+        await userEvent.click(screen.getByTestId('clip-row-1'))
+        seek(video, 20)
+        await userEvent.click(screen.getByTestId('clip-set-start-1'))
+        expect(screen.getByTestId('clip-duration-1')).toHaveTextContent('0:20')
+      })
+
+      it('never suggests a clip across a join, so Suggest does not hand over clips that cannot be exported', async () => {
+        const peaks = new Float32Array(120 * 50).fill(0.2)
+        peaks.fill(0.02, 40 * 50, 60 * 50)
+        peaks.fill(0.3, 60 * 50, 90 * 50)
+        vi.mocked(api.waveform).mockResolvedValue(peaks)
+        await openJoined()
+        await act(async () => userEvent.click(screen.getByTestId('suggest')))
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:01')
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:00')
+        expect(screen.getByTestId('clip-source-1')).toHaveTextContent('IMG_0412.mov')
+      })
+
+      it('shows the source video and the times inside it on every row, so a clip is found where it was filmed', async () => {
+        const video = await openJoined()
+        await markClip(video, 62, 65)
+        expect(screen.getByTestId('clip-source-1')).toHaveTextContent('IMG_0413.mov')
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:02')
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:05')
+      })
+
+      it('shows a single video exactly as before, without a source name', async () => {
+        render(<App />)
+        const video = await loadVideo()
+        await markClip(video, 62, 65)
+        expect(screen.queryByTestId('clip-source-1')).not.toBeInTheDocument()
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:02')
+      })
+    })
+
     it('offers to add videos to a single video but not to remove it, since removing it would leave nothing', async () => {
       render(<App />)
       await loadVideo()
@@ -2883,7 +2939,7 @@ describe('Several videos as one session', () => {
       await userEvent.click(screen.getByTestId('remove-video-1'))
       confirm.mockRestore()
       expect(api.openVideos).toHaveBeenCalledTimes(1)
-      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:10')
+      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
     })
 
     it('keeps the clips and the videos as they were when a video went missing while removing another', async () => {
@@ -2895,7 +2951,7 @@ describe('Several videos as one session', () => {
       expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_1001.mov'))
       expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(JOINED))
       expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
-      expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:01:45')
+      expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:00:05')
       expect(screen.getByTestId('join-2')).toBeInTheDocument()
     })
 
