@@ -158,42 +158,42 @@ export function ClipList({
               {n}
             </span>
             <span className="flex min-w-0 flex-1 flex-col text-sm text-ink">
-            {source && (
-              <span data-testid={`clip-source-${n}`} className="truncate px-1 text-xs text-ink-3" title={sources[source.index].name}>
-                {sources[source.index].name}
+              {source && (
+                <span data-testid={`clip-source-${n}`} className="truncate px-1 text-xs text-ink-3" title={sources[source.index].name}>
+                  {sources[source.index].name}
+                </span>
+              )}
+              <span className="flex items-center">
+                <button
+                  data-testid={`clip-set-start-${n}`}
+                  className={selected ? timeButton : 'px-1 tabular-nums'}
+                  title={selected ? t.moveStartTo(now) : undefined}
+                  disabled={selected && time >= clip.end}
+                  onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetStart(clip) : onSelect(clip))}
+                >
+                  <span className={selected ? 'group-hover/time:hidden' : undefined}>{local(clip.start)}</span>
+                  {selected && (
+                    <span data-testid={`clip-set-start-target-${n}`} className="hidden group-hover/time:inline">
+                      {now}
+                    </span>
+                  )}
+                </button>
+                <span className="text-ink-3">→</span>
+                <button
+                  data-testid={`clip-set-end-${n}`}
+                  className={selected ? timeButton : 'px-1 tabular-nums'}
+                  title={selected ? t.moveEndTo(now) : undefined}
+                  disabled={selected && time <= clip.start}
+                  onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetEnd(clip) : onSelect(clip))}
+                >
+                  <span className={selected ? 'group-hover/time:hidden' : undefined}>{local(clip.end)}</span>
+                  {selected && (
+                    <span data-testid={`clip-set-end-target-${n}`} className="hidden group-hover/time:inline">
+                      {now}
+                    </span>
+                  )}
+                </button>
               </span>
-            )}
-            <span className="flex items-center">
-              <button
-                data-testid={`clip-set-start-${n}`}
-                className={selected ? timeButton : 'px-1 tabular-nums'}
-                title={selected ? t.moveStartTo(now) : undefined}
-                disabled={selected && time >= clip.end}
-                onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetStart(clip) : onSelect(clip))}
-              >
-                <span className={selected ? 'group-hover/time:hidden' : undefined}>{local(clip.start)}</span>
-                {selected && (
-                  <span data-testid={`clip-set-start-target-${n}`} className="hidden group-hover/time:inline">
-                    {now}
-                  </span>
-                )}
-              </button>
-              <span className="text-ink-3">→</span>
-              <button
-                data-testid={`clip-set-end-${n}`}
-                className={selected ? timeButton : 'px-1 tabular-nums'}
-                title={selected ? t.moveEndTo(now) : undefined}
-                disabled={selected && time <= clip.start}
-                onClick={(e) => (selectMode(e) !== 'only' ? onSelect(clip, selectMode(e)) : selected ? onSetEnd(clip) : onSelect(clip))}
-              >
-                <span className={selected ? 'group-hover/time:hidden' : undefined}>{local(clip.end)}</span>
-                {selected && (
-                  <span data-testid={`clip-set-end-target-${n}`} className="hidden group-hover/time:inline">
-                    {now}
-                  </span>
-                )}
-              </button>
-            </span>
             </span>
             {framings && (
               <span

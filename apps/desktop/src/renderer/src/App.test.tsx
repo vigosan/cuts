@@ -2863,6 +2863,24 @@ describe('Several videos as one session', () => {
         expect(screen.getByTestId('clip-duration-1')).toHaveTextContent('0:20')
       })
 
+      it('keeps Shift-O inside the video of the selected clip, so the keyboard cannot push a clip across a join', async () => {
+        const video = await openJoined()
+        await markClip(video, 10, 20)
+        await userEvent.click(screen.getByTestId('clip-row-1'))
+        seek(video, 70)
+        await userEvent.keyboard('{Shift>}O{/Shift}')
+        expect(screen.getByTestId('clip-duration-1')).toHaveTextContent('0:50')
+      })
+
+      it('keeps Shift-I inside the video of the selected clip, so the keyboard cannot push a clip across a join', async () => {
+        const video = await openJoined()
+        await markClip(video, 70, 80)
+        await userEvent.click(screen.getByTestId('clip-row-1'))
+        seek(video, 20)
+        await userEvent.keyboard('{Shift>}I{/Shift}')
+        expect(screen.getByTestId('clip-duration-1')).toHaveTextContent('0:20')
+      })
+
       it('never suggests a clip across a join, so Suggest does not hand over clips that cannot be exported', async () => {
         const peaks = new Float32Array(120 * 50).fill(0.2)
         peaks.fill(0.02, 40 * 50, 60 * 50)

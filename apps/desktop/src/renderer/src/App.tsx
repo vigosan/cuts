@@ -272,7 +272,7 @@ export function App() {
     }
     if (selectedClip && e.shiftKey && (e.code === 'KeyI' || e.code === 'KeyO')) {
       e.preventDefault()
-      dispatch({ type: e.code === 'KeyI' ? 'setStart' : 'setEnd', id: selectedClip.id, time: now() })
+      dispatch({ type: e.code === 'KeyI' ? 'setStart' : 'setEnd', id: selectedClip.id, time: clampToPartOf(selectedClip) })
       return
     }
     const lastSelected = clips.findLastIndex((clip) => selectedIds.includes(clip.id))
