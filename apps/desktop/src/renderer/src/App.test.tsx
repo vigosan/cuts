@@ -2650,3 +2650,124 @@ describe('export full recording', () => {
     expect(screen.getByTestId('export-menu')).toBeDisabled()
   })
 })
+
+describe('Several videos as one session', () => {
+  const FOLDER = '/Users/vicent/Movies/set'
+  const SOURCES = [
+    { path: `${FOLDER}/IMG_0412.mov`, name: 'IMG_0412.mov', duration: 60 },
+    { path: `${FOLDER}/IMG_0413.mov`, name: 'IMG_0413.mov', duration: 40 },
+    { path: `${FOLDER}/IMG_1001.mov`, name: 'IMG_1001.mov', duration: 20 }
+  ]
+  const JOINED = '/Users/vicent/Library/Application Support/Cuts/joined/abc.mov'
+
+  function deferred<T>() {
+    let resolve!: (value: T) => void
+    const promise = new Promise<T>((done) => (resolve = done))
+    return { promise, resolve }
+  }
+
+  it('joins the chosen videos in file name order, so camera clips play back in the order they were filmed', async () => {
+    const join = deferred<Awaited<ReturnType<Api['openVideos']>>>()
+    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[2].path, SOURCES[0].path, SOURCES[1].path])
+    vi.mocked(api.openVideos).mockReturnValue(join.promise)
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    expect(api.openVideos).toHaveBeenCalledWith(SOURCES.map((source) => source.path), null)
+    expect(screen.getByTestId('joining')).toHaveTextContent(t.joiningVideos)
+    await act(async () => join.resolve({ ok: true, path: JOINED, sources: SOURCES }))
+    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
+    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(JOINED))
+  })
+
+  it('shows the names of the videos being joined, so the wait says what is happening', async () => {
+    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
+    vi.mocked(api.openVideos).mockReturnValue(new Promise(() => {}))
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    expect(screen.getByTestId('joining')).toHaveTextContent('IMG_0412.mov')
+    expect(screen.getByTestId('joining')).toHaveTextContent('IMG_0413.mov')
+  })
+
+  it('opens one video without the joining view, since nothing is joined', async () => {
+    const open = deferred<Awaited<ReturnType<Api['openVideos']>>>()
+    vi.mocked(api.openVideos).mockReturnValue(open.promise)
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
+    await act(async () => open.resolve({ ok: true, path: VIDEO, sources: [] }))
+    expect(api.openVideos).toHaveBeenCalledWith([VIDEO], null)
+    expect(api.loadSession).toHaveBeenCalledWith(VIDEO)
+  })
+
+  it('opens the supported videos of a mixed drop once each and says which files it skipped', async () => {
+    vi.mocked(api.pathForFile).mockImplementation((file: File) => `${FOLDER}/${file.name}`)
+    render(<App />)
+    const files = [new File([''], 'IMG_0413.mov'), new File([''], 'notes.txt'), new File([''], 'IMG_0412.mov'), new File([''], 'IMG_0413.mov')]
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files } })
+    await screen.findByTestId('video')
+    expect(api.openVideos).toHaveBeenCalledWith([SOURCES[0].path, SOURCES[1].path], null)
+    expect(screen.getByTestId('unsupported-video')).toHaveTextContent(t.unsupportedVideo)
+  })
+
+  it('keeps the open video and names the file that cannot be joined, so the work is never lost to a bad pick', async () => {
+    render(<App />)
+    await loadVideo()
+    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
+    vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'mismatch', name: 'IMG_0413.mov' })
+    await act(async () => menuOpenVideo())
+    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.cannotJoin('IMG_0413.mov'))
+    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
+    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(VIDEO))
+  })
+
+  it('names a missing video instead of opening a session without it', async () => {
+    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
+    vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_0412.mov' })
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_0412.mov'))
+    expect(screen.queryByTestId('video')).not.toBeInTheDocument()
+  })
+
+  it('says the videos could not be joined when the join itself fails, instead of leaving the window waiting', async () => {
+    render(<App />)
+    await loadVideo()
+    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[1].path, SOURCES[0].path])
+    vi.mocked(api.openVideos).mockRejectedValue(new Error('ffmpeg exited with code 1'))
+    await act(async () => menuOpenVideo())
+    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.cannotJoin('IMG_0412.mov'))
+    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
+    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(VIDEO))
+  })
+
+  it('names a recent session whose video went missing, instead of doing nothing on click', async () => {
+    vi.mocked(api.recentVideos).mockResolvedValue([{ path: JOINED, name: 'IMG_0412.mov +2', folder: 'set', openedAt: Date.now(), clips: 3, poster: null }])
+    vi.mocked(api.openRecent).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_0413.mov' })
+    render(<App />)
+    await userEvent.click(await screen.findByTestId('recent-video-1'))
+    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_0413.mov'))
+  })
+
+  it('titles the session after its first video plus how many follow, listing all of them on hover', async () => {
+    vi.mocked(api.openVideo).mockResolvedValue(SOURCES.map((source) => source.path))
+    vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources: SOURCES })
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    expect(screen.getByTestId('titlebar')).toHaveTextContent('IMG_0412.mov +2')
+    expect(screen.getByTestId('titlebar')).toHaveAttribute('title', 'IMG_0412.mov\nIMG_0413.mov\nIMG_1001.mov')
+    expect(document.title).toBe('IMG_0412.mov +2')
+  })
+
+  it('names the clips and their folder after the first video, not the hidden joined file', async () => {
+    vi.mocked(api.openVideo).mockResolvedValue(SOURCES.map((source) => source.path))
+    vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources: SOURCES })
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 10, 20)
+    expect(screen.getByTestId('base-name')).toHaveValue('IMG_0412')
+    await act(async () => userEvent.click(await inPanel('export')))
+    expect(api.exportClips).toHaveBeenCalledWith(
+      expect.objectContaining({ input: JOINED, baseName: 'IMG_0412', folder: '/Users/vicent/Movies/Cuts/IMG_0412' })
+    )
+  })
+})

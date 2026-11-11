@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useMemo, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
-import type { AudioExtras, ExportResult, ImportedBackground, ImportedOverlay, RecentVideo } from '@shared/api'
+import type { AudioExtras, ExportResult, ImportedBackground, ImportedOverlay, OpenResult, RecentVideo, Session, Source } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { clampPlacement, defaultPlacement, outputFrame, type Overlay } from '@cuts/core/overlay'
 import { mediaUrl } from '@shared/media-url'
@@ -15,6 +15,7 @@ import { OverlayLayer } from './components/OverlayLayer'
 import { BarPreview, WavePreview } from './components/AudioLayers'
 import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement } from '@cuts/core/audio-layers'
 import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
+import { JoiningVideos } from './components/JoiningVideos'
 import { Notice } from './components/Notice'
 import { RecentVideos } from './components/RecentVideos'
 import appIcon from '../../../build/icon.svg'
@@ -27,6 +28,7 @@ import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/c
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { snapToBeat } from '@cuts/core/beats'
+import { orderVideos } from '@cuts/core/parts'
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
 import { useWaveform } from './useVideoPreview'
@@ -47,6 +49,7 @@ function zoomLabel(span: Zoom): string {
 export function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoPath, setVideoPath] = useState<string | null>(null)
+  const [sources, setSources] = useState<Source[]>([])
   const [videoError, setVideoError] = useState(false)
   const [unsupportedDrops, setUnsupportedDrops] = useState(0)
   const [history, dispatch] = useReducer(clipsHistory, { past: [], present: initialClipsState, future: [] })
@@ -138,13 +141,22 @@ export function App() {
     dispatch({ type: 'split', id: clip.id, time, newId })
   }
 
-  const load = (path: string) => {
+  const restore = (session: Session) => {
+    dispatch({ type: 'restore', clips: session.clips, resetHistory: true })
+    setClipSettings(session.clipSettings)
+    setDefaultSettings(session.defaultSettings)
+    setFormat(session.format)
+    setBaseName(session.baseName)
+  }
+
+  const load = ({ path, sources }: { path: string; sources: Source[] }, carry?: Session) => {
     setVideoPath(path)
+    setSources(sources)
     setVideoError(false)
     setTime(0)
     setDuration(0)
     setVideoSize(null)
-    setBaseName(defaultBaseName(path))
+    setBaseName(defaultBaseName(sources[0]?.path ?? path))
     if (!folder) void window.api.moviesDir().then((dir) => setFolder(`${dir}/${APP_FOLDER}`))
     setExportState({ status: 'idle' })
     setViewStart(0)
@@ -154,15 +166,14 @@ export function App() {
     setRestoredFor(null)
     openedPath.current = path
     void window.api.frameRate(path).then((rate) => openedPath.current === path && setFps(rate))
+    if (carry) {
+      restore(carry)
+      setRestoredFor(path)
+      return
+    }
     void window.api.loadSession(path).then((session) => {
       if (openedPath.current !== path) return
-      if (session) {
-        dispatch({ type: 'restore', clips: session.clips, resetHistory: true })
-        setClipSettings(session.clipSettings)
-        setDefaultSettings(session.defaultSettings)
-        setFormat(session.format)
-        setBaseName(session.baseName)
-      }
+      if (session) restore(session)
       setRestoredFor(path)
     })
   }
@@ -303,7 +314,7 @@ export function App() {
     []
   )
 
-  const destination = videoPath && folder ? `${folder}/${defaultBaseName(videoPath)}` : null
+  const destination = videoPath && folder ? `${folder}/${defaultBaseName(sources[0]?.path ?? videoPath)}` : null
 
   const exported = selectedClips.length > 0 ? selectedClips : clips
 
@@ -411,16 +422,25 @@ export function App() {
 
   const exporting = exportState.status === 'running'
 
-  const openPaths = async (paths: string[]) => {
-    const result = await window.api.openVideos(paths, null)
-    if (result.ok) load(result.path)
+  const [joining, setJoining] = useState<string[] | null>(null)
+  const takeOpened = (result: OpenResult, carry?: Session) => {
+    if (result.ok) return load(result, carry)
+    setSuggestNotice(result.problem === 'mismatch' ? t.cannotJoin(result.name) : t.videoMissing(result.name))
+  }
+
+  const openPaths = async (paths: string[], replacing: string | null, carry?: Session) => {
+    if (paths.length > 1) setJoining(paths)
+    const result = await window.api.openVideos(paths, replacing).catch(() => null)
+    setJoining(null)
+    if (!result) return setSuggestNotice(t.cannotJoin(paths[0].split(/[\\/]/).pop() ?? paths[0]))
+    takeOpened(result, carry)
   }
 
   const openVideo = async () => {
     if (exporting) return
     if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
     const paths = await window.api.openVideo()
-    if (paths) await openPaths(paths)
+    if (paths) await openPaths(orderVideos([], paths), null)
   }
 
   const onMenuOpenVideo = useEffectEvent(() => void openVideo())
@@ -429,16 +449,16 @@ export function App() {
   const onOpenPaths = useEffectEvent((paths: string[]) => {
     if (exporting) return
     if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
-    void openPaths(paths)
+    void openPaths(orderVideos([], paths), null)
   })
   useEffect(() => window.api.onOpenPaths((paths) => onOpenPaths(paths)), [])
 
   const [recents, setRecents] = useState<RecentVideo[]>([])
   useEffect(() => void window.api.recentVideos().then(setRecents), [])
   const openRecent = async (path: string) => {
-    const opened = await window.api.openRecent(path)
-    if (opened?.ok) load(opened.path)
-    else if (!opened) setRecents((current) => current.filter((recent) => recent.path !== path))
+    const result = await window.api.openRecent(path)
+    if (result) takeOpened(result)
+    else setRecents((current) => current.filter((recent) => recent.path !== path))
   }
 
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
@@ -458,7 +478,7 @@ export function App() {
   const canExport = clips.length > 0 && folder !== null && baseName.trim() !== '' && hasPicture
   const canExportFull = duration > 0 && folder !== null && baseName.trim() !== '' && hasPicture
 
-  const fileName = videoPath?.split(/[\\/]/).pop()
+  const fileName = sources.length > 0 ? `${sources[0].name} +${sources.length - 1}` : videoPath?.split(/[\\/]/).pop()
 
   useEffect(() => {
     document.title = fileName ?? 'Cuts'
@@ -478,14 +498,13 @@ export function App() {
       onDrop={(e) => {
         e.preventDefault()
         setDragDepth(0)
-        const file = e.dataTransfer.files[0]
-        if (!file || exporting) return
-        if (!isSupportedMedia(file.name)) {
-          setUnsupportedDrops((count) => count + 1)
-          return
-        }
+        const files = Array.from(e.dataTransfer.files)
+        if (files.length === 0 || exporting) return
+        const supported = files.filter((file) => isSupportedMedia(file.name))
+        if (supported.length < files.length) setUnsupportedDrops((count) => count + 1)
+        if (supported.length === 0) return
         if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
-        void openPaths([window.api.pathForFile(file)])
+        void openPaths(orderVideos([], supported.map((file) => window.api.pathForFile(file))), null)
       }}
     >
       {(window.api.platform === 'darwin' || videoPath) && (
@@ -497,7 +516,7 @@ export function App() {
             <span
               data-testid="titlebar"
               className="pointer-events-none absolute inset-x-0 truncate px-72 text-center text-sm font-medium text-ink-2"
-              title={videoPath ?? undefined}
+              title={sources.length > 0 ? sources.map((source) => source.name).join('\n') : (videoPath ?? undefined)}
             >
               {fileName ?? 'Cuts'}
             </span>
@@ -889,6 +908,8 @@ export function App() {
           className="pointer-events-none fixed inset-0 z-40 bg-accent-soft ring-[3px] ring-accent/60 ring-inset"
         />
       )}
+
+      {joining && <JoiningVideos paths={joining} />}
 
       {shortcutsOpen && <ShortcutsPanel platform={window.api.platform} onClose={() => setShortcutsOpen(false)} />}
 
