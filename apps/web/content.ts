@@ -98,6 +98,7 @@ export const content = {
             "Video frames and the audio waveform, like in a video editor.",
             "Drag clips and their edges, and zoom in to fine-tune to the second.",
             "While you mark, the clip's seconds count up and change colour past 59.",
+            "Open all the videos of a session at once: Cuts joins them without re-encoding, shows each name on the timeline, and you cut from all of them.",
           ],
         },
         {
@@ -292,6 +293,7 @@ export const content = {
             "Fotogramas del vídeo y forma de onda del audio, como en un editor de vídeo.",
             "Arrastra los clips y sus bordes, y haz zoom para afinar al segundo.",
             "Mientras marcas, los segundos del clip se cuentan y cambian de color al pasar de 59.",
+            "Abre todos los vídeos de una sesión a la vez: Cuts los junta sin recodificar, muestra cada nombre en la línea de tiempo y cortas de todos.",
           ],
         },
         {
