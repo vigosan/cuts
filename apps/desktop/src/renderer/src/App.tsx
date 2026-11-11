@@ -28,7 +28,7 @@ import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/c
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { snapToBeat } from '@cuts/core/beats'
-import { orderVideos } from '@cuts/core/parts'
+import { orderVideos, removePart } from '@cuts/core/parts'
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
 import { useWaveform } from './useVideoPreview'
@@ -50,6 +50,7 @@ export function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoPath, setVideoPath] = useState<string | null>(null)
   const [sources, setSources] = useState<Source[]>([])
+  const [namePath, setNamePath] = useState<string | null>(null)
   const [videoError, setVideoError] = useState(false)
   const [unsupportedDrops, setUnsupportedDrops] = useState(0)
   const [history, dispatch] = useReducer(clipsHistory, { past: [], present: initialClipsState, future: [] })
@@ -166,6 +167,7 @@ export function App() {
     setRestoredFor(null)
     openedPath.current = path
     void window.api.frameRate(path).then((rate) => openedPath.current === path && setFps(rate))
+    if (!carry) setNamePath(sources[0]?.path ?? path)
     if (carry) {
       restore(carry)
       setRestoredFor(path)
@@ -314,7 +316,7 @@ export function App() {
     []
   )
 
-  const destination = videoPath && folder ? `${folder}/${defaultBaseName(sources[0]?.path ?? videoPath)}` : null
+  const destination = namePath && folder ? `${folder}/${defaultBaseName(namePath)}` : null
 
   const exported = selectedClips.length > 0 ? selectedClips : clips
 
@@ -444,6 +446,35 @@ export function App() {
     if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
     const paths = await window.api.openVideo()
     if (paths) await openPaths(orderVideos([], paths), null)
+  }
+
+  const removeSource = (index: number) => {
+    if (exporting || !videoPath) return
+    const kept = removePart(clips, sources, index)
+    const dropped = clips.length - kept.length
+    if (dropped > 0 && !window.confirm(t.removeVideoConfirm(sources[index].name, dropped))) return
+    const keptIds = new Set(kept.map((clip) => clip.id))
+    void openPaths(
+      sources.filter((_, i) => i !== index).map((source) => source.path),
+      videoPath,
+      {
+        clips: kept,
+        clipSettings: Object.fromEntries(Object.entries(clipSettings).filter(([id]) => keptIds.has(id))),
+        defaultSettings,
+        format,
+        baseName
+      }
+    )
+  }
+
+  const addVideos = async () => {
+    if (exporting || !videoPath) return
+    const chosen = await window.api.openVideo()
+    if (!chosen) return
+    const current = sources.length > 0 ? sources.map((source) => source.path) : [videoPath]
+    const paths = orderVideos(current, chosen)
+    if (paths.length === current.length) return
+    await openPaths(paths, videoPath, { clips, clipSettings, defaultSettings, format, baseName })
   }
 
   const onMenuOpenVideo = useEffectEvent(() => void openVideo())
@@ -793,6 +824,9 @@ export function App() {
                   setViewStart(Math.min(Math.max(0, start), duration - viewSpan))
                   setPanned({ time, zoom })
                 }}
+                sources={sources}
+                onRemoveSource={removeSource}
+                onAddVideos={isAudio ? null : () => void addVideos()}
               />
 
             </div>

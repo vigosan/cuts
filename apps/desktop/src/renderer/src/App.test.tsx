@@ -2801,4 +2801,170 @@ describe('Several videos as one session', () => {
       expect.objectContaining({ input: JOINED, baseName: 'IMG_0412', folder: '/Users/vicent/Movies/Cuts/IMG_0412' })
     )
   })
+
+  describe('removing and adding videos on the timeline', () => {
+    const REJOINED = '/Users/vicent/Library/Application Support/Cuts/joined/def.mov'
+
+    function showDuration(duration: number) {
+      const video = screen.getByTestId('video') as HTMLVideoElement
+      Object.defineProperty(video, 'duration', { configurable: true, value: duration })
+      Object.defineProperty(video, 'videoWidth', { configurable: true, value: 1280 })
+      Object.defineProperty(video, 'videoHeight', { configurable: true, value: 720 })
+      fireEvent(video, new Event('loadedmetadata'))
+      return video
+    }
+
+    async function openJoined() {
+      vi.mocked(api.openVideo).mockResolvedValue(SOURCES.map((source) => source.path))
+      vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources: SOURCES })
+      render(<App />)
+      await userEvent.click(screen.getByTestId('open-video'))
+      return showDuration(120)
+    }
+
+    function timelineOneSecondPerPixel() {
+      screen.getByTestId('timeline').getBoundingClientRect = () => ({ left: 0, width: 120, top: 0, height: 32, right: 120, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    }
+
+    it('draws a join where each video starts and names every video, so the session still reads as the recordings it came from', async () => {
+      await openJoined()
+      expect(screen.queryByTestId('join-0')).not.toBeInTheDocument()
+      expect(screen.getByTestId('join-1').style.left).toBe(`${(60 / 120) * 100}%`)
+      expect(screen.getByTestId('join-2').style.left).toBe(`${(100 / 120) * 100}%`)
+      expect(screen.getByTestId('video-name-0')).toHaveTextContent('IMG_0412.mov')
+      expect(screen.getByTestId('video-name-2')).toHaveTextContent('IMG_1001.mov')
+      expect(screen.getByTestId('remove-video-1')).toHaveAccessibleName(t.removeVideo('IMG_0413.mov'))
+    })
+
+    it('offers to add videos to a single video but not to remove it, since removing it would leave nothing', async () => {
+      render(<App />)
+      await loadVideo()
+      expect(screen.getByTestId('add-videos')).toHaveAccessibleName(t.addVideos)
+      expect(screen.queryByTestId('remove-video-0')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('video-name-0')).not.toBeInTheDocument()
+    })
+
+    it('does not offer to add videos to an audio recording, since audio cannot be joined with video', async () => {
+      vi.mocked(api.openVideo).mockResolvedValue(['/Users/vicent/Downloads/set.wav'])
+      render(<App />)
+      await userEvent.click(screen.getByTestId('open-video'))
+      expect(screen.queryByTestId('add-videos')).not.toBeInTheDocument()
+    })
+
+    it('removes the middle video with its clips and keeps the other clips in their carousel order, settings and shifted times', async () => {
+      const video = await openJoined()
+      await markClip(video, 10, 20)
+      await markClip(video, 70, 80)
+      await markClip(video, 105, 110)
+      await userEvent.click(screen.getByTestId('clip-row-3'))
+      await userEvent.keyboard('{Alt>}{ArrowUp}{ArrowUp}{/Alt}')
+      await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+      vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: REJOINED, sources: [SOURCES[0], SOURCES[2]] })
+      await userEvent.click(screen.getByTestId('remove-video-1'))
+      expect(confirm).toHaveBeenCalledWith(t.removeVideoConfirm('IMG_0413.mov', 1))
+      confirm.mockRestore()
+      expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, SOURCES[2].path], JOINED)
+      expect(api.loadSession).not.toHaveBeenCalledWith(REJOINED)
+      showDuration(80)
+      await act(async () => userEvent.click(await inPanel('export')))
+      const { input, clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+      expect(input).toBe(REJOINED)
+      expect(clips).toEqual([
+        expect.objectContaining({ start: 65, end: 70, videoFade: 'white', position: 0 }),
+        expect.objectContaining({ start: 10, end: 20, videoFade: 'black', position: 1 })
+      ])
+    })
+
+    it('changes nothing when removing a video with clips is cancelled, so a slip of the mouse never loses work', async () => {
+      const video = await openJoined()
+      await markClip(video, 70, 80)
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+      await userEvent.click(screen.getByTestId('remove-video-1'))
+      confirm.mockRestore()
+      expect(api.openVideos).toHaveBeenCalledTimes(1)
+      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:10')
+    })
+
+    it('keeps the clips and the videos as they were when a video went missing while removing another', async () => {
+      const video = await openJoined()
+      await markClip(video, 10, 20)
+      await markClip(video, 105, 110)
+      vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_1001.mov' })
+      await userEvent.click(screen.getByTestId('remove-video-1'))
+      expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_1001.mov'))
+      expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(JOINED))
+      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
+      expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:01:45')
+      expect(screen.getByTestId('join-2')).toBeInTheDocument()
+    })
+
+    it('keeps the clips and the videos as they were when a video went missing while adding another', async () => {
+      const video = await openJoined()
+      await markClip(video, 10, 20)
+      vi.mocked(api.openVideo).mockResolvedValue([`${FOLDER}/IMG_2000.mov`])
+      vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_0413.mov' })
+      await userEvent.click(screen.getByTestId('add-videos'))
+      expect(api.openVideos).toHaveBeenLastCalledWith([...SOURCES.map((source) => source.path), `${FOLDER}/IMG_2000.mov`], JOINED)
+      expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_0413.mov'))
+      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
+      expect(screen.getByTestId('join-2')).toBeInTheDocument()
+    })
+
+    it('adds videos after a single open video and keeps its clips, so a set filmed in parts can be completed later', async () => {
+      const extra = '/Users/vicent/Movies/extra.mov'
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      vi.mocked(api.openVideo).mockResolvedValue([extra])
+      vi.mocked(api.openVideos).mockResolvedValue({
+        ok: true,
+        path: JOINED,
+        sources: [
+          { path: VIDEO, name: '2026-10-22 22-33-13.mov', duration: 4880 },
+          { path: extra, name: 'extra.mov', duration: 30 }
+        ]
+      })
+      await userEvent.click(screen.getByTestId('add-videos'))
+      expect(api.openVideos).toHaveBeenLastCalledWith([VIDEO, extra], VIDEO)
+      expect(api.loadSession).not.toHaveBeenCalledWith(JOINED)
+      showDuration(4910)
+      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
+      expect(screen.getByTestId('remove-video-1')).toHaveAccessibleName(t.removeVideo('extra.mov'))
+    })
+
+    it('keeps exporting into the first video’s folder after that video is removed, so one set never splits across folders', async () => {
+      const video = await openJoined()
+      await markClip(video, 70, 80)
+      vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: REJOINED, sources: [SOURCES[1], SOURCES[2]] })
+      await userEvent.click(screen.getByTestId('remove-video-0'))
+      showDuration(60)
+      await act(async () => userEvent.click(await inPanel('export')))
+      expect(api.exportClips).toHaveBeenCalledWith(
+        expect.objectContaining({ input: REJOINED, baseName: 'IMG_0412', folder: '/Users/vicent/Movies/Cuts/IMG_0412' })
+      )
+    })
+
+    it('stops a dragged clip end at the join, snapped or free, so a clip never spills into the next video', async () => {
+      const video = await openJoined()
+      await markClip(video, 50, 55)
+      timelineOneSecondPerPixel()
+      fireEvent.pointerDown(screen.getByTestId('clip-handle-end-1'), { clientX: 55 })
+      fireEvent.pointerMove(window, { clientX: 80 })
+      expect(video.currentTime).toBe(60)
+      fireEvent.pointerMove(window, { clientX: 80, altKey: true })
+      expect(video.currentTime).toBe(60)
+      fireEvent.pointerUp(window, { clientX: 80 })
+    })
+
+    it('stops a moved clip at the start of its video, so dragging left never carries it into the previous one', async () => {
+      const video = await openJoined()
+      await markClip(video, 65, 70)
+      timelineOneSecondPerPixel()
+      fireEvent.pointerDown(screen.getByTestId('clip-block-1'), { clientX: 67 })
+      fireEvent.pointerMove(window, { clientX: 30 })
+      expect(video.currentTime).toBe(60)
+      fireEvent.pointerUp(window, { clientX: 30 })
+    })
+  })
 })
