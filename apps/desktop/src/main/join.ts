@@ -4,11 +4,13 @@ export type MediaInfo = { duration: number; video: string | null; audio: string 
 
 export function parseMediaInfo(ffmpegOutput: string): MediaInfo {
   const duration = /Duration: (\d+):(\d+):([\d.]+)/.exec(ffmpegOutput)
-  const video = /Video: (\S+).*?, (\d+x\d+)/.exec(ffmpegOutput)
+  const video = /Video: (\S+)[^,\n]*, (\w+(?:\([^)\n]*\))?).*?, (\d+x\d+)/.exec(ffmpegOutput)
+  const videoStream = video ? ffmpegOutput.slice(video.index).split(/\n\s*Stream #/)[0] : ''
+  const rotation = /(?:displaymatrix|Display Matrix): rotation of (-?[\d.]+) degrees/i.exec(videoStream)
   const audio = /Audio: (\S+).*?, (\d+) Hz, ([^,\n]+)/.exec(ffmpegOutput)
   return {
     duration: duration ? Number(duration[1]) * 3600 + Number(duration[2]) * 60 + Number(duration[3]) : 0,
-    video: video ? `${video[1]} ${video[2]}` : null,
+    video: video ? `${video[1]} ${video[2]} ${video[3]} rotated ${Number(rotation?.[1] ?? 0)}` : null,
     audio: audio ? `${audio[1]} ${audio[2]} Hz ${audio[3]}` : null
   }
 }

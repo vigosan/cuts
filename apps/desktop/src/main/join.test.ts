@@ -11,11 +11,24 @@ const iphone = (size: string, fps: string) => `Input #0, mov,mp4,m4a,3gp,3g2,mj2
   Stream #0:2[0x3](und): Data: none (mebx / 0x7862656d), 0 kb/s (default)
 `
 
+const hevc = (profile: string, pixelFormat: string, rotation: string | null) => `Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'IMG_0002.MOV':
+  Duration: 00:00:09.10, start: 0.000000, bitrate: 9105 kb/s
+  Stream #0:0[0x1](und): Video: hevc (${profile}) (hvc1 / 0x31637668), ${pixelFormat}, 1920x1080, 8952 kb/s, 29.97 fps, 29.97 tbr, 600 tbn (default)
+    Metadata:
+      creation_time   : 2026-11-10T18:25:02.000000Z
+      handler_name    : Core Media Video
+      vendor_id       : [0][0][0][0]
+      encoder         : HEVC
+${rotation === null ? '' : `    Side data:\n      ${rotation}\n`}  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706d), 44100 Hz, stereo, fltp, 160 kb/s (default)
+`
+const HDR = 'yuv420p10le(tv, bt2020nc/bt2020/arib-std-b67)'
+const SDR = 'yuv420p(tv, bt709)'
+
 describe('parseMediaInfo', () => {
   it('reads the duration and the codec signatures of an iPhone clip', () => {
     expect(parseMediaInfo(iphone('1920x1080', '29.98'))).toEqual({
       duration: 12.48,
-      video: 'h264 1920x1080',
+      video: 'h264 yuv420p(tv, bt709, progressive) 1920x1080 rotated 0',
       audio: 'aac 48000 Hz stereo'
     })
   })
@@ -48,6 +61,29 @@ describe('firstMismatch', () => {
 
   it('returns -1 when every video matches', () => {
     expect(firstMismatch([hd, hd, hd])).toBe(-1)
+  })
+})
+
+describe('firstMismatch on iPhone clips', () => {
+  it('refuses to join a portrait clip with a landscape one, since both are stored 1920x1080 and one would play sideways', () => {
+    const landscape = parseMediaInfo(hevc('Main', SDR, null))
+    const portrait = parseMediaInfo(hevc('Main', SDR, 'Display Matrix: rotation of -90.00 degrees'))
+    expect(firstMismatch([landscape, portrait])).toBe(1)
+  })
+
+  it('refuses to join an HDR clip with an SDR one, since stream copy would show one of them with the wrong colours', () => {
+    expect(firstMismatch([parseMediaInfo(hevc('Main 10', HDR, null)), parseMediaInfo(hevc('Main', SDR, null))])).toBe(1)
+  })
+
+  it('joins two portrait clips filmed the same way, so a vertical set still opens as one session', () => {
+    const portrait = parseMediaInfo(hevc('Main 10', HDR, 'Display Matrix: rotation of -90.00 degrees'))
+    expect(firstMismatch([portrait, parseMediaInfo(hevc('Main 10', HDR, 'Display Matrix: rotation of -90.00 degrees'))])).toBe(-1)
+  })
+
+  it('reads the rotation as older ffmpeg builds print it too, since outside the App Store a system ffmpeg may be used', () => {
+    expect(parseMediaInfo(hevc('Main', SDR, 'displaymatrix: rotation of -90.00 degrees'))).toEqual(
+      parseMediaInfo(hevc('Main', SDR, 'Display Matrix: rotation of -90.00 degrees'))
+    )
   })
 })
 
