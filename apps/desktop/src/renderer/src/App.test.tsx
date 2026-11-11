@@ -2720,6 +2720,37 @@ describe('Several videos as one session', () => {
     expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(VIDEO))
   })
 
+  it('ignores a join that finishes after a newer open, so a slow join never replaces the video opened since', async () => {
+    const join = deferred<Awaited<ReturnType<Api['openVideos']>>>()
+    const single = deferred<Awaited<ReturnType<Api['openVideos']>>>()
+    const other = '/Users/vicent/Movies/other.mov'
+    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
+    vi.mocked(api.openVideos).mockReturnValueOnce(join.promise).mockReturnValueOnce(single.promise)
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    act(() => openPath(other))
+    await act(async () => single.resolve({ ok: true, path: other, sources: [] }))
+    await act(async () => join.resolve({ ok: false, problem: 'mismatch', name: 'IMG_0413.mov' }))
+    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(other))
+    expect(screen.queryByTestId('suggest-notice')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
+  })
+
+  it('keeps showing a newer join while an older one finishes, so the wait is never hidden early', async () => {
+    const first = deferred<Awaited<ReturnType<Api['openVideos']>>>()
+    const second = deferred<Awaited<ReturnType<Api['openVideos']>>>()
+    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
+    vi.mocked(api.openVideos).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+    render(<App />)
+    await userEvent.click(screen.getByTestId('open-video'))
+    await act(async () => menuOpenVideo())
+    await act(async () => first.resolve({ ok: true, path: JOINED, sources: SOURCES }))
+    expect(screen.getByTestId('joining')).toBeInTheDocument()
+    expect(screen.queryByTestId('video')).not.toBeInTheDocument()
+    await act(async () => second.resolve({ ok: true, path: JOINED, sources: SOURCES }))
+    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
+  })
+
   it('names a missing video instead of opening a session without it', async () => {
     vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
     vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_0412.mov' })

@@ -423,16 +423,19 @@ export function App() {
   const exporting = exportState.status === 'running'
 
   const [joining, setJoining] = useState<string[] | null>(null)
+  const openRequest = useRef(0)
   const takeOpened = (result: OpenResult, carry?: Session) => {
     if (result.ok) return load(result, carry)
     setSuggestNotice(result.problem === 'mismatch' ? t.cannotJoin(result.name) : t.videoMissing(result.name))
   }
 
   const openPaths = async (paths: string[], replacing: string | null, carry?: Session) => {
+    const request = ++openRequest.current
     if (paths.length > 1) setJoining(paths)
     const result = await window.api.openVideos(paths, replacing).catch(() => null)
+    if (openRequest.current !== request) return
     setJoining(null)
-    if (!result) return setSuggestNotice(t.cannotJoin(paths[0].split(/[\\/]/).pop() ?? paths[0]))
+    if (!result) return setSuggestNotice(t.cannotJoin(paths[0].replace(/^.*[\\/]/, '')))
     takeOpened(result, carry)
   }
 
