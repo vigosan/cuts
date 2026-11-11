@@ -16,7 +16,7 @@ import { menuTemplate } from './menu'
 import { importOverlay, isOwnedOverlay, type OverlayDeps } from './overlay'
 import { openVideos, type OpenDeps } from './open-videos'
 import { existingAncestor } from './paths'
-import { forgetRecent, loadRecents, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
+import { canRemember, forgetRecent, loadRecents, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
 import { loadSession, removeSession, saveSession } from './sessions'
 import { UPDATE_CHECK_INTERVAL_MS, updatesEnabled } from './updates'
 import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
@@ -290,7 +290,7 @@ app.whenReady().then(() => {
     removeSession: (videoPath) => removeSession(sessionsDir, videoPath),
     forget: (path) => forgetRecent(recentsFile, path),
     remember: async (entry) => {
-      if (process.mas && !entry.bookmark && !entry.bookmarks) return []
+      if (!canRemember(entry, process.mas === true)) return []
       const evicted = await rememberRecent(recentsFile, entry)
       savePoster(entry.path).catch(() => {})
       return evicted

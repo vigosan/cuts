@@ -22,6 +22,10 @@ async function saveRecents(file: string, recents: RecentEntry[]): Promise<void> 
   await writeFile(file, JSON.stringify(recents))
 }
 
+export function canRemember(entry: RecentEntry, mas: boolean): boolean {
+  return !mas || entry.sources !== undefined || Boolean(entry.bookmark)
+}
+
 export async function rememberRecent(file: string, entry: RecentEntry): Promise<RecentEntry[]> {
   const recents = await loadRecents(file)
   const previous = recents.find((recent) => recent.path === entry.path)

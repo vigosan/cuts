@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { forgetRecent, loadRecents, MAX_RECENTS, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo } from './recents'
+import { canRemember, forgetRecent, loadRecents, MAX_RECENTS, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo } from './recents'
 
 const fileIn = () => join(mkdtempSync(join(tmpdir(), 'cuts-recents-')), 'recent-videos.json')
 
@@ -35,6 +35,16 @@ describe('recents', () => {
     await rememberRecent(file, { path: '/Movies/a.mov', openedAt: 1, bookmark: 'b64' })
     await rememberRecent(file, { path: '/Movies/a.mov', openedAt: 2 })
     expect(await loadRecents(file)).toEqual([{ path: '/Movies/a.mov', openedAt: 2, bookmark: 'b64' }])
+  })
+
+  it('remembers a joined session in the App Store version even without bookmarks, so its joined file is evicted and deleted later instead of piling up', () => {
+    expect(canRemember({ path: '/joined/abc.mov', openedAt: 1, sources: ['/a.mov', '/b.mov'] }, true)).toBe(true)
+  })
+
+  it('remembers a single video in the App Store version only with its bookmark, since without one it cannot be reopened', () => {
+    expect(canRemember({ path: '/a.mov', openedAt: 1 }, true)).toBe(false)
+    expect(canRemember({ path: '/a.mov', openedAt: 1, bookmark: 'bm' }, true)).toBe(true)
+    expect(canRemember({ path: '/a.mov', openedAt: 1 }, false)).toBe(true)
   })
 
   it('forgets a video that is gone, so the list never offers a file that cannot open', async () => {
