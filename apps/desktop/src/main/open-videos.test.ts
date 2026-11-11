@@ -57,6 +57,13 @@ describe('openVideos', () => {
     expect([...fs.keys()]).toEqual([A])
   })
 
+  it('still opens a video when Recents cannot be written, since a full disk or locked list must never block editing', async () => {
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) })
+    deps.remember.mockRejectedValue(new Error('EACCES'))
+    expect(await openVideos([A], null, deps)).toEqual({ ok: true, path: A, sources: [] })
+    expect(await openVideos([A, B], null, deps)).toMatchObject({ ok: true, path: joined })
+  })
+
   it('opens only the first file when the selection has an audio recording, since audio stays single-file', async () => {
     const { deps } = fakeDeps({ '/Music/set.wav': '', [A]: info(12) })
     expect(await openVideos(['/Music/set.wav', A], null, deps)).toEqual({ ok: true, path: '/Music/set.wav', sources: [] })

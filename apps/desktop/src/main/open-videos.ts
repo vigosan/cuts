@@ -87,11 +87,13 @@ export async function openVideos(paths: string[], replacing: string | null, deps
   }
   const sources = result.sources.map((source) => source.path)
   const bookmarks = sources.flatMap((source) => deps.bookmark(source) ?? [])
-  const evicted = await deps.remember(
-    single
-      ? { path: result.path, openedAt: deps.now(), bookmark: deps.bookmark(result.path) }
-      : { path: result.path, openedAt: deps.now(), sources, ...(bookmarks.length === sources.length ? { bookmarks } : {}) }
-  )
+  const evicted = await deps
+    .remember(
+      single
+        ? { path: result.path, openedAt: deps.now(), bookmark: deps.bookmark(result.path) }
+        : { path: result.path, openedAt: deps.now(), sources, ...(bookmarks.length === sources.length ? { bookmarks } : {}) }
+    )
+    .catch((): RecentEntry[] => [])
   await Promise.all(evicted.filter((old) => isJoined(old.path, deps.dir)).map((old) => discardJoined(old.path, deps)))
   return result
 }
