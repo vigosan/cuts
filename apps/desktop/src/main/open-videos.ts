@@ -1,5 +1,5 @@
 import { basename, dirname, extname, join, resolve } from 'node:path'
-import type { OpenResult, Source } from '../shared/api'
+import type { OpenResult, Session, Source } from '../shared/api'
 import { mediaKind } from '../shared/video-formats'
 import { concatList, firstMismatch, joinArgs, joinKey, parseMediaInfo } from './join'
 import type { RecentEntry } from './recents'
@@ -15,6 +15,7 @@ export type OpenDeps = {
   write(path: string, text: string): Promise<void>
   rename(from: string, to: string): Promise<void>
   remove(path: string): Promise<void>
+  saveSession(videoPath: string, session: Session): Promise<void>
   removeSession(videoPath: string): Promise<void>
   forget(path: string): Promise<void>
   remember(entry: RecentEntry): Promise<RecentEntry[]>
@@ -74,10 +75,11 @@ async function discardJoined(path: string, deps: OpenDeps): Promise<void> {
   await deps.remove(manifestFor(path))
 }
 
-export async function openVideos(paths: string[], replacing: string | null, deps: OpenDeps): Promise<OpenResult> {
+export async function openVideos(paths: string[], replacing: string | null, deps: OpenDeps, carry?: Session): Promise<OpenResult> {
   const single = paths.length === 1 || paths.some((path) => mediaKind(path) === 'audio')
   const result: OpenResult = single ? { ok: true, path: paths[0], sources: [] } : await joinVideos(paths, deps)
   if (!result.ok) return result
+  if (carry) await deps.saveSession(result.path, carry)
   if (replacing && replacing !== result.path && isJoined(replacing, deps.dir)) {
     await discardJoined(replacing, deps)
     await deps.removeSession(replacing)

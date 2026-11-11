@@ -442,7 +442,7 @@ export function App() {
   const openPaths = async (paths: string[], replacing: string | null, carry?: Session) => {
     const request = ++openRequest.current
     if (paths.length > 1) setJoining(paths)
-    const result = await window.api.openVideos(paths, replacing).catch(() => null)
+    const result = await window.api.openVideos(paths, replacing, carry).catch(() => null)
     if (openRequest.current !== request) return
     setJoining(null)
     if (!result) return setSuggestNotice(t.cannotJoin(paths[0].replace(/^.*[\\/]/, '')))

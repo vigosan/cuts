@@ -2672,7 +2672,7 @@ describe('Several videos as one session', () => {
     vi.mocked(api.openVideos).mockReturnValue(join.promise)
     render(<App />)
     await userEvent.click(screen.getByTestId('open-video'))
-    expect(api.openVideos).toHaveBeenCalledWith(SOURCES.map((source) => source.path), null)
+    expect(api.openVideos).toHaveBeenCalledWith(SOURCES.map((source) => source.path), null, undefined)
     expect(screen.getByTestId('joining')).toHaveTextContent(t.joiningVideos)
     await act(async () => join.resolve({ ok: true, path: JOINED, sources: SOURCES }))
     expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
@@ -2695,7 +2695,7 @@ describe('Several videos as one session', () => {
     await userEvent.click(screen.getByTestId('open-video'))
     expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
     await act(async () => open.resolve({ ok: true, path: VIDEO, sources: [] }))
-    expect(api.openVideos).toHaveBeenCalledWith([VIDEO], null)
+    expect(api.openVideos).toHaveBeenCalledWith([VIDEO], null, undefined)
     expect(api.loadSession).toHaveBeenCalledWith(VIDEO)
   })
 
@@ -2705,7 +2705,7 @@ describe('Several videos as one session', () => {
     const files = [new File([''], 'IMG_0413.mov'), new File([''], 'notes.txt'), new File([''], 'IMG_0412.mov'), new File([''], 'IMG_0413.mov')]
     fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files } })
     await screen.findByTestId('video')
-    expect(api.openVideos).toHaveBeenCalledWith([SOURCES[0].path, SOURCES[1].path], null)
+    expect(api.openVideos).toHaveBeenCalledWith([SOURCES[0].path, SOURCES[1].path], null, undefined)
     expect(screen.getByTestId('unsupported-video')).toHaveTextContent(t.unsupportedVideo)
   })
 
@@ -2938,7 +2938,11 @@ describe('Several videos as one session', () => {
       await userEvent.click(screen.getByTestId('remove-video-1'))
       expect(confirm).toHaveBeenCalledWith(t.removeVideoConfirm('IMG_0413.mov', 1))
       confirm.mockRestore()
-      expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, SOURCES[2].path], JOINED)
+      expect(api.openVideos).toHaveBeenLastCalledWith(
+        [SOURCES[0].path, SOURCES[2].path],
+        JOINED,
+        expect.objectContaining({ clips: [expect.objectContaining({ start: 65, end: 70 }), expect.objectContaining({ start: 10, end: 20 })] })
+      )
       expect(api.loadSession).not.toHaveBeenCalledWith(REJOINED)
       showDuration(80)
       await act(async () => userEvent.click(await inPanel('export')))
@@ -2979,7 +2983,7 @@ describe('Several videos as one session', () => {
       vi.mocked(api.openVideo).mockResolvedValue([`${FOLDER}/IMG_2000.mov`])
       vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_0413.mov' })
       await userEvent.click(screen.getByTestId('add-videos'))
-      expect(api.openVideos).toHaveBeenLastCalledWith([...SOURCES.map((source) => source.path), `${FOLDER}/IMG_2000.mov`], JOINED)
+      expect(api.openVideos).toHaveBeenLastCalledWith([...SOURCES.map((source) => source.path), `${FOLDER}/IMG_2000.mov`], JOINED, expect.anything())
       expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_0413.mov'))
       expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
       expect(screen.getByTestId('join-2')).toBeInTheDocument()
@@ -3000,7 +3004,7 @@ describe('Several videos as one session', () => {
         ]
       })
       await userEvent.click(screen.getByTestId('add-videos'))
-      expect(api.openVideos).toHaveBeenLastCalledWith([VIDEO, extra], VIDEO)
+      expect(api.openVideos).toHaveBeenLastCalledWith([VIDEO, extra], VIDEO, expect.objectContaining({ clips: [expect.objectContaining({ start: 100, end: 150 })] }))
       expect(api.loadSession).not.toHaveBeenCalledWith(JOINED)
       showDuration(4910)
       expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
@@ -3039,7 +3043,7 @@ describe('Several videos as one session', () => {
       expect(api.openVideos).toHaveBeenCalledTimes(1)
       vi.mocked(api.openVideo).mockResolvedValue(['/Users/vicent/Downloads/set.wav', `${FOLDER}/IMG_2000.mov`])
       await userEvent.click(screen.getByTestId('add-videos'))
-      expect(api.openVideos).toHaveBeenLastCalledWith([...SOURCES.map((source) => source.path), `${FOLDER}/IMG_2000.mov`], JOINED)
+      expect(api.openVideos).toHaveBeenLastCalledWith([...SOURCES.map((source) => source.path), `${FOLDER}/IMG_2000.mov`], JOINED, expect.anything())
     })
 
     it('shows a video’s X while the pointer is over one of its clips, so a video covered by clips can still be removed', async () => {
@@ -3054,7 +3058,7 @@ describe('Several videos as one session', () => {
       vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: REJOINED, sources: [SOURCES[0], SOURCES[2]] })
       await userEvent.click(screen.getByTestId('remove-video-1'))
       confirm.mockRestore()
-      expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, SOURCES[2].path], JOINED)
+      expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, SOURCES[2].path], JOINED, expect.anything())
       fireEvent.pointerLeave(screen.getByTestId('timeline'))
     })
 

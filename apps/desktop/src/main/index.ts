@@ -286,6 +286,7 @@ app.whenReady().then(() => {
     },
     rename,
     remove: (path) => rm(path, { force: true }),
+    saveSession: (videoPath, session) => saveSession(sessionsDir, videoPath, session),
     removeSession: (videoPath) => removeSession(sessionsDir, videoPath),
     forget: (path) => forgetRecent(recentsFile, path),
     remember: async (entry) => {
@@ -297,13 +298,13 @@ app.whenReady().then(() => {
     bookmark: (path) => bookmarks.get(path),
     now: Date.now
   }
-  const open = async (paths: string[], replacing: string | null) => {
-    const result = await openVideos(paths, replacing, openDeps)
+  const open = async (paths: string[], replacing: string | null, carry?: Session) => {
+    const result = await openVideos(paths, replacing, openDeps, carry)
     if (result.ok) openedVideos.add(result.path)
     return result
   }
-  ipcMain.handle('open-videos', (_event, paths: string[], replacing: string | null) =>
-    open(paths.map(opened), replacing === null ? null : opened(replacing))
+  ipcMain.handle('open-videos', (_event, paths: string[], replacing: string | null, carry?: Session) =>
+    open(paths.map(opened), replacing === null ? null : opened(replacing), carry)
   )
 
   const exists = (entry: RecentEntry) => {

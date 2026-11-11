@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import { joinKey } from './join'
 import { openVideos, type OpenDeps } from './open-videos'
+import type { Session } from '../shared/api'
 import type { RecentEntry } from './recents'
 
 const DIR = '/userData/joined'
@@ -31,7 +33,8 @@ function fakeDeps(files: Record<string, string>, evicted: RecentEntry[] = []) {
     remove: vi.fn(async (path: string) => {
       fs.delete(path)
     }),
-    removeSession: vi.fn(async () => {}),
+    saveSession: vi.fn(async (_path: string, _session: Session) => {}),
+    removeSession: vi.fn(async (_path: string) => {}),
     forget: vi.fn(async () => {}),
     remember: vi.fn(async () => evicted),
     bookmark: () => undefined,
@@ -112,6 +115,29 @@ describe('openVideos', () => {
     expect(fs.has(`${DIR}/old.json`)).toBe(false)
     expect(deps.removeSession).toHaveBeenCalledWith(old)
     expect(deps.forget).toHaveBeenCalledWith(old)
+  })
+
+  it('saves the carried clips under the new video before discarding the old session, so a quit right after X or + never loses them', async () => {
+    const old = `${DIR}/old.mov`
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8), [old]: 'joined' })
+    const calls: string[] = []
+    deps.saveSession.mockImplementation(async (path: string) => {
+      calls.push(`save ${path}`)
+    })
+    deps.removeSession.mockImplementation(async (path: string) => {
+      calls.push(`remove ${path}`)
+    })
+    const carry = { clips: [{ id: 'c1', start: 1, end: 2 }], clipSettings: {}, defaultSettings: DEFAULT_SETTINGS, format: '9:16' as const, baseName: 'IMG_0412' }
+    await openVideos([A, B], old, deps, carry)
+    expect(deps.saveSession).toHaveBeenCalledWith(joined, carry)
+    expect(calls).toEqual([`save ${joined}`, `remove ${old}`])
+  })
+
+  it('saves no session when nothing is carried, so a plain open keeps whatever was saved for that video', async () => {
+    const old = `${DIR}/old.mov`
+    const { deps } = fakeDeps({ [A]: info(12), [old]: 'joined' })
+    await openVideos([A], old, deps)
+    expect(deps.saveSession).not.toHaveBeenCalled()
   })
 
   it('never deletes an original it replaces, since those are the user\'s own videos', async () => {

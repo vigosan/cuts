@@ -62,7 +62,7 @@ export type Api = {
   platform: NodeJS.Platform
   pathForFile(file: File): string
   openVideo(): Promise<string[] | null>
-  openVideos(paths: string[], replacing: string | null): Promise<OpenResult>
+  openVideos(paths: string[], replacing: string | null, carry?: Session): Promise<OpenResult>
   chooseOverlay(): Promise<ImportedOverlay | 'invalid' | null>
   importOverlayFile(file: File): Promise<ImportedOverlay | 'invalid'>
   chooseBackground(): Promise<ImportedBackground | 'invalid' | 'too-big' | null>

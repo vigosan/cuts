@@ -9,7 +9,7 @@ const api: Api = {
     return path
   },
   openVideo: () => ipcRenderer.invoke('open-video'),
-  openVideos: (paths, replacing) => ipcRenderer.invoke('open-videos', paths, replacing),
+  openVideos: (paths, replacing, carry) => ipcRenderer.invoke('open-videos', paths, replacing, carry),
   chooseOverlay: () => ipcRenderer.invoke('choose-overlay'),
   importOverlayFile: (file) => ipcRenderer.invoke('import-overlay', webUtils.getPathForFile(file)),
   chooseBackground: () => ipcRenderer.invoke('choose-background'),
