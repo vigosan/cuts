@@ -14,6 +14,7 @@ import { cancelFfmpeg, captureFfmpeg, readFfmpegInfo, runFfmpeg, stopAllFfmpeg }
 import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { importOverlay, isOwnedOverlay, type OverlayDeps } from './overlay'
+import { openFileBatch } from './open-file-batch'
 import { openVideos, type OpenDeps } from './open-videos'
 import { existingAncestor } from './paths'
 import { canRemember, forgetRecent, loadRecents, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
@@ -24,15 +25,10 @@ import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from '.
 registerMediaScheme()
 
 const OPEN_FILE_BATCH_MS = 300
-const pendingPaths: string[] = []
-let sendPaths: ((paths: string[]) => void) | null = null
-let batchTimer: NodeJS.Timeout | undefined
+const openedFiles = openFileBatch(OPEN_FILE_BATCH_MS)
 app.on('open-file', (event, path) => {
   event.preventDefault()
-  pendingPaths.push(path)
-  if (!sendPaths) return
-  clearTimeout(batchTimer)
-  batchTimer = setTimeout(() => sendPaths?.(pendingPaths.splice(0)), OPEN_FILE_BATCH_MS)
+  openedFiles.add(path)
 })
 
 const THUMBNAIL_HEIGHT = 96
@@ -358,15 +354,14 @@ app.whenReady().then(() => {
 
   const win = createWindow()
   win.webContents.once('did-finish-load', () => {
-    sendPaths = (paths) => {
+    openedFiles.ready((paths) => {
       paths.forEach((path) => allowVideo(path))
       const target = mainWindow()
       if (!target) return
       if (target.isMinimized()) target.restore()
       target.focus()
       target.webContents.send('open-paths', paths)
-    }
-    if (pendingPaths.length > 0) sendPaths(pendingPaths.splice(0))
+    })
   })
   if (updates) {
     autoUpdater.on('update-downloaded', ({ version }) => mainWindow()?.webContents.send('update-ready', version))
