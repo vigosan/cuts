@@ -469,8 +469,8 @@ export function App() {
 
   const addVideos = async () => {
     if (exporting || !videoPath) return
-    const chosen = await window.api.openVideo()
-    if (!chosen) return
+    const chosen = (await window.api.openVideo())?.filter((path) => mediaKind(path) !== 'audio')
+    if (!chosen?.length) return
     const current = sources.length > 0 ? sources.map((source) => source.path) : [videoPath]
     const paths = orderVideos(current, chosen)
     if (paths.length === current.length) return

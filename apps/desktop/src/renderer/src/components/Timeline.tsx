@@ -4,7 +4,7 @@ import { audioGain, nearestFadeSeconds, type ClipFade } from '@cuts/core/fades'
 import { dragClip, type DragMode } from '@cuts/core/drag-clip'
 import { filmstripTiles, PEAKS_PER_SECOND, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
 import { spacedLabels } from '@cuts/core/timeline-view'
-import { partBoundsAt, partStarts } from '@cuts/core/parts'
+import { localTime, partBoundsAt, partStarts } from '@cuts/core/parts'
 import type { Source } from '@shared/api'
 import { t } from '../i18n'
 import { useThumbnails } from '../useVideoPreview'
@@ -88,6 +88,7 @@ export function Timeline({
   const barRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [width, setWidth] = useState(0)
+  const [hoveredSource, setHoveredSource] = useState<number | null>(null)
   const tiles = thumbnails ? filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration) : []
   const frames = useThumbnails(
     videoPath,
@@ -223,6 +224,12 @@ export function Timeline({
         onPointerDown={startPan}
         data-testid="timeline"
         title={t.timelineHelp}
+        onPointerMove={(e) => {
+          if (stretches.length === 0) return
+          const rect = e.currentTarget.getBoundingClientRect()
+          setHoveredSource(localTime(sources, viewStart + ((e.clientX - rect.left) / rect.width) * viewSpan).index)
+        }}
+        onPointerLeave={() => setHoveredSource(null)}
         className="relative h-22 min-w-0 flex-1 cursor-pointer touch-none select-none overflow-hidden rounded-lg bg-sunken"
         onClick={(e) => {
           if (justDragged.current) return
@@ -269,33 +276,6 @@ export function Timeline({
             className="pointer-events-none absolute inset-y-0 bg-black/25 dark:bg-black/40"
             style={{ left: pct(range.start - viewStart), width: pct(range.end - range.start) }}
           />
-        ))}
-        {stretches.map(({ source, index, start, end }) => (
-          <div
-            key={source.path}
-            className="group absolute inset-y-0 hover:ring-2 hover:ring-white/40 hover:ring-inset"
-            style={{ left: pct(start - viewStart), width: pct(end - start) }}
-          >
-            <span
-              data-testid={`video-name-${index}`}
-              className="pointer-events-none absolute top-1 left-1.5 z-20 max-w-[calc(100%-2.25rem)] truncate rounded bg-black/60 px-1.5 text-[11px] leading-4 text-white"
-            >
-              {source.name}
-            </span>
-            <button
-              data-testid={`remove-video-${index}`}
-              aria-label={t.removeVideo(source.name)}
-              title={t.removeVideo(source.name)}
-              className="absolute top-1 right-1 z-30 grid size-5 place-items-center rounded-full bg-black/80 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black focus-visible:opacity-100"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemoveSource(index)
-              }}
-            >
-              <CloseIcon className="size-3" />
-            </button>
-          </div>
         ))}
         {starts.map((start, index) =>
           index > 0 && sources.length > 1 && start >= viewStart && start <= viewEnd ? (
@@ -369,7 +349,7 @@ export function Timeline({
               {numbered[index] && (
                 <span
                   data-testid={`clip-block-number-${index + 1}`}
-                  className="pointer-events-none absolute top-1 left-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold text-white tabular-nums"
+                  className={`pointer-events-none absolute left-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold text-white tabular-nums ${stretches.length > 0 ? 'top-6' : 'top-1'}`}
                 >
                   {index + 1}
                 </span>
@@ -387,6 +367,34 @@ export function Timeline({
             </div>
           )
         })}
+        {stretches.map(({ source, index, start, end }) => (
+          <div
+            key={source.path}
+            className={`pointer-events-none absolute inset-y-0 z-20 ${hoveredSource === index ? 'ring-2 ring-white/40 ring-inset' : ''}`}
+            style={{ left: pct(start - viewStart), width: pct(end - start) }}
+          >
+            <span
+              data-testid={`video-name-${index}`}
+              className="absolute top-1 left-1.5 max-w-[calc(100%-2.25rem)] truncate rounded bg-black/60 px-1.5 text-[11px] leading-4 text-white"
+            >
+              {source.name}
+            </span>
+            <button
+              data-testid={`remove-video-${index}`}
+              aria-label={t.removeVideo(source.name)}
+              title={t.removeVideo(source.name)}
+              data-shown={hoveredSource === index}
+              className={`pointer-events-auto absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/80 text-white transition-opacity hover:bg-black focus-visible:opacity-100 ${hoveredSource === index ? 'opacity-100' : 'opacity-0'}`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemoveSource(index)
+              }}
+            >
+              <CloseIcon className="size-3" />
+            </button>
+          </div>
+        ))}
         {pendingStart !== null && (
           <PendingClip
             elapsed={Math.max(0, time - pendingStart)}

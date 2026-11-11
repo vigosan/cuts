@@ -2957,6 +2957,42 @@ describe('Several videos as one session', () => {
       fireEvent.pointerUp(window, { clientX: 80 })
     })
 
+    it('never sends an audio file picked with + to the join, so a joined session is not collapsed into its first video', async () => {
+      const video = await openJoined()
+      await markClip(video, 70, 80)
+      vi.mocked(api.openVideo).mockResolvedValue(['/Users/vicent/Downloads/set.wav'])
+      await userEvent.click(screen.getByTestId('add-videos'))
+      expect(api.openVideos).toHaveBeenCalledTimes(1)
+      vi.mocked(api.openVideo).mockResolvedValue(['/Users/vicent/Downloads/set.wav', `${FOLDER}/IMG_2000.mov`])
+      await userEvent.click(screen.getByTestId('add-videos'))
+      expect(api.openVideos).toHaveBeenLastCalledWith([...SOURCES.map((source) => source.path), `${FOLDER}/IMG_2000.mov`], JOINED)
+    })
+
+    it('shows a video’s X while the pointer is over one of its clips, so a video covered by clips can still be removed', async () => {
+      const video = await openJoined()
+      await markClip(video, 62, 98)
+      timelineOneSecondPerPixel()
+      expect(screen.getByTestId('remove-video-1')).toHaveAttribute('data-shown', 'false')
+      fireEvent.pointerMove(screen.getByTestId('clip-block-1'), { clientX: 80 })
+      expect(screen.getByTestId('remove-video-1')).toHaveAttribute('data-shown', 'true')
+      expect(screen.getByTestId('remove-video-0')).toHaveAttribute('data-shown', 'false')
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+      vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: REJOINED, sources: [SOURCES[0], SOURCES[2]] })
+      await userEvent.click(screen.getByTestId('remove-video-1'))
+      confirm.mockRestore()
+      expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, SOURCES[2].path], JOINED)
+      fireEvent.pointerLeave(screen.getByTestId('timeline'))
+    })
+
+    it('hides the X once the pointer leaves the timeline, so the strip stays quiet while working elsewhere', async () => {
+      const video = await openJoined()
+      await markClip(video, 62, 98)
+      timelineOneSecondPerPixel()
+      fireEvent.pointerMove(screen.getByTestId('clip-block-1'), { clientX: 80 })
+      fireEvent.pointerLeave(screen.getByTestId('timeline'))
+      expect(screen.getByTestId('remove-video-1')).toHaveAttribute('data-shown', 'false')
+    })
+
     it('stops a moved clip at the start of its video, so dragging left never carries it into the previous one', async () => {
       const video = await openJoined()
       await markClip(video, 65, 70)
