@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { confineMoment, localTime, orderVideos, partBoundsAt, partStarts, removePart } from './parts'
+import { confineMoment, joinPeaks, localTime, nextAvailable, orderVideos, partBoundsAt, partStarts, removePart } from './parts'
 
 const parts = [{ duration: 10 }, { duration: 20 }, { duration: 5 }]
 const total = 35
@@ -68,5 +68,27 @@ describe('orderVideos', () => {
     expect(
       orderVideos(['/a/IMG_0412.mov'], ['/b/IMG_0410.mov', '/a/IMG_0412.mov', '/b/IMG_09.mov']),
     ).toEqual(['/a/IMG_0412.mov', '/b/IMG_09.mov', '/b/IMG_0410.mov'])
+  })
+})
+
+describe('joinPeaks', () => {
+  it('keeps the waveform lined up with session time even when a file is short or missing', () => {
+    const a = new Float32Array([1, 2, 3])
+    const b = new Float32Array([1, 2, 3, 4, 5, 6])
+    const joined = joinPeaks([a, null, b], [0.1, 0.04, 0.08], 50)
+    expect(joined.length).toBe(11)
+    expect(Array.from(joined)).toEqual([1, 2, 3, 0, 0, 0, 0, 1, 2, 3, 4])
+  })
+})
+
+describe('nextAvailable', () => {
+  const sources = [{ duration: 1 }, { duration: 1, missing: true }, { duration: 1 }]
+
+  it('skips missing videos so playback never stalls on a file that is gone', () => {
+    expect(nextAvailable(sources, 1)).toBe(2)
+  })
+
+  it('reports the end of the session when nothing playable remains', () => {
+    expect(nextAvailable(sources, 3)).toBeNull()
   })
 })

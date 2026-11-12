@@ -1,4 +1,4 @@
-export type Part = { duration: number }
+export type Part = { duration: number; missing?: boolean }
 
 type Span = { start: number; end: number }
 
@@ -63,4 +63,20 @@ export function orderVideos(existing: string[], added: string[]): string[] {
     .filter((path, i) => !existing.includes(path) && added.indexOf(path) === i)
     .sort((a, b) => basename(a).localeCompare(basename(b), undefined, { numeric: true }))
   return [...existing, ...fresh]
+}
+
+export function joinPeaks(peaks: (Float32Array | null)[], durations: number[], peaksPerSecond: number): Float32Array {
+  const lengths = durations.map((duration) => Math.round(duration * peaksPerSecond))
+  const joined = new Float32Array(lengths.reduce((sum, length) => sum + length, 0))
+  let at = 0
+  peaks.forEach((source, i) => {
+    if (source) joined.set(source.subarray(0, lengths[i]), at)
+    at += lengths[i]
+  })
+  return joined
+}
+
+export function nextAvailable(parts: Part[], from: number): number | null {
+  for (let i = from; i < parts.length; i++) if (!parts[i].missing) return i
+  return null
 }
