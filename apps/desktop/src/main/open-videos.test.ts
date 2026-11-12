@@ -85,6 +85,12 @@ describe('openVideos', () => {
     expect(await openVideos([A, B], null, deps)).toMatchObject({ path: id, sources: [{ path: B }, { path: A }] })
   })
 
+  it('keeps the carried order when X, + or Locate lands on a set saved in another order, so clips stay on the videos they were marked on', async () => {
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) }, { [id]: { ...carry, sources: [source(B, 8), source(A, 12)] } })
+    const opened = await openVideos([A, B], null, deps, { ...carry, sources: [source(A, 12), source(B, 8)] })
+    expect(opened.sources.map((source) => source.path)).toEqual([A, B])
+  })
+
   it('flags a video that is gone with the length saved for it, so its stretch and clips keep their place on the timeline', async () => {
     const { deps } = fakeDeps({ [A]: info(12) }, { [id]: { ...carry, sources: [source(A, 12), source(B, 8, { width: 1080, height: 1920, hdr: true })] } })
     expect(await openVideos([A, B], null, deps)).toEqual({

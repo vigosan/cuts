@@ -49,7 +49,7 @@ async function openSession(paths: string[], deps: OpenDeps, carry?: Session): Pr
   const id = sessionId(paths)
   const session = await deps.loadSession(id)
   const saved = session?.sources
-  const order = saved && sameSet(saved.map((source) => source.path), paths) ? saved.map((source) => source.path) : paths
+  const order = !carry && saved && sameSet(saved.map((source) => source.path), paths) ? saved.map((source) => source.path) : paths
   const known = (path: string) => saved?.find((source) => source.path === path) ?? carry?.sources?.find((source) => source.path === path)
   const sources = await Promise.all(order.map((path) => probe(path, known(path), deps)))
   if (session || carry) return { ok: true, path: id, sources }
