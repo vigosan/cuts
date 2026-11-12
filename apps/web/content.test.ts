@@ -24,10 +24,14 @@ describe("site content", () => {
     }
   });
 
-  it("says joining a session's videos is on Mac, so Windows, Linux and iPhone visitors do not look for it", () => {
+  it("says opening a session's videos together is on Mac, so Windows, Linux and iPhone visitors do not look for it", () => {
     const items = (lang: (typeof LANGS)[number]) => content[lang].home.features.flatMap((group) => group.items);
-    expect(items("en")).toContainEqual(expect.stringMatching(/^On Mac, open all the videos of a session at once/));
-    expect(items("es")).toContainEqual(expect.stringMatching(/^En Mac, abre todos los vídeos de una sesión a la vez/));
+    expect(items("en")).toContainEqual(
+      "On Mac, open all the videos of a session at once: each name shows on the timeline and you cut from all of them.",
+    );
+    expect(items("es")).toContainEqual(
+      "En Mac, abre todos los vídeos de una sesión a la vez: cada nombre aparece en la línea de tiempo y cortas de todos.",
+    );
   });
 
   it("links every route to a page that exists, so the App Store privacy and support URLs never 404", () => {
