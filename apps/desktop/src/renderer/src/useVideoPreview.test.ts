@@ -22,14 +22,14 @@ async function finishAll() {
 
 describe('useThumbnails', () => {
   it('stops reading frames that scrolled out of view, so zooming never queues ffmpeg work nobody will see', async () => {
-    const { rerender } = renderHook(({ times }) => useThumbnails(times.map((time) => ({ path: VIDEO, time }))), { initialProps: { times: [1, 2, 3] } })
+    const { rerender } = renderHook(({ times }) => useThumbnails(times.map((time) => ({ path: VIDEO, time })), VIDEO), { initialProps: { times: [1, 2, 3] } })
     rerender({ times: [10, 20] })
     await finishAll()
     expect(thumbnail.mock.calls.map(([, time]) => time)).toEqual([1, 10, 20])
   })
 
   it('reads the skipped frames again when they come back into view', async () => {
-    const { rerender, result } = renderHook(({ times }) => useThumbnails(times.map((time) => ({ path: VIDEO, time }))), { initialProps: { times: [1, 2] } })
+    const { rerender, result } = renderHook(({ times }) => useThumbnails(times.map((time) => ({ path: VIDEO, time })), VIDEO), { initialProps: { times: [1, 2] } })
     rerender({ times: [10] })
     await finishAll()
     rerender({ times: [1, 2] })
@@ -44,7 +44,7 @@ describe('useThumbnails across videos', () => {
       useThumbnails([
         { path: '/a.mov', time: 5 },
         { path: '/b.mov', time: 5 }
-      ])
+      ], 'session')
     )
     await finishAll()
     expect(thumbnail.mock.calls).toEqual([
@@ -55,14 +55,28 @@ describe('useThumbnails across videos', () => {
 })
 
 describe('useThumbnails memory', () => {
-  it('drops the frames of videos no longer shown, so a long run does not keep every session in memory', async () => {
-    const { rerender } = renderHook(({ path }) => useThumbnails([{ path, time: 1 }]), { initialProps: { path: '/a.mov' } })
+  it('keeps the frames of a video still in view while panning across a join, so tiles never go blank', async () => {
+    const { rerender } = renderHook(({ paths }) => useThumbnails(paths.map((path) => ({ path, time: 1 })), 'session'), {
+      initialProps: { paths: ['/a.mov'] }
+    })
     await finishAll()
-    rerender({ path: '/b.mov' })
+    rerender({ paths: ['/a.mov', '/b.mov'] })
     await finishAll()
-    rerender({ path: '/a.mov' })
+    rerender({ paths: ['/b.mov'] })
     await finishAll()
-    expect(thumbnail.mock.calls.map(([path]) => path)).toEqual(['/a.mov', '/b.mov', '/a.mov'])
+    rerender({ paths: ['/a.mov'] })
+    await finishAll()
+    expect(thumbnail.mock.calls.map(([path]) => path)).toEqual(['/a.mov', '/b.mov'])
+  })
+
+  it('drops every frame when the session changes, so a long run does not keep old sessions in memory', async () => {
+    const { rerender } = renderHook(({ session }) => useThumbnails([{ path: '/a.mov', time: 1 }], session), {
+      initialProps: { session: 'one' }
+    })
+    await finishAll()
+    rerender({ session: 'two' })
+    await finishAll()
+    expect(thumbnail.mock.calls.map(([path]) => path)).toEqual(['/a.mov', '/a.mov'])
   })
 })
 

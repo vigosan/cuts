@@ -95,7 +95,10 @@ export function Timeline({
     const local = localTime(sources, tile.time)
     return { tile, request: sources[local.index].missing ? null : { path: sources[local.index].path, time: local.time } }
   })
-  const frames = useThumbnails(tileFrames.flatMap(({ request }) => (request ? [request] : [])))
+  const frames = useThumbnails(
+    tileFrames.flatMap(({ request }) => (request ? [request] : [])),
+    sources.length > 0 ? sources.map((source) => source.path).join('\n') : videoPath
+  )
 
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))

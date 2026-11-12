@@ -44,14 +44,13 @@ const NO_FRAMES = new Map<string, string>()
 
 export type ThumbnailRequest = { path: string; time: number }
 
-export function useThumbnails(requests: ThumbnailRequest[]): Map<string, string> {
-  const cache = useRef({ paths: '', frames: new Map<string, string>(), pending: new Set<string>() })
+export function useThumbnails(requests: ThumbnailRequest[], sessionKey: string): Map<string, string> {
+  const cache = useRef({ sessionKey, frames: new Map<string, string>(), pending: new Set<string>() })
   const [shown, setShown] = useState(NO_FRAMES)
 
   const key = requests.map((request) => `${request.path}|${request.time}`).join('\n')
   useEffect(() => {
-    const paths = [...new Set(key === '' ? [] : key.split('\n').map((frame) => frame.slice(0, frame.lastIndexOf('|'))))].join('\n')
-    if (paths !== '' && cache.current.paths !== paths) cache.current = { paths, frames: new Map(), pending: new Set() }
+    if (cache.current.sessionKey !== sessionKey) cache.current = { sessionKey, frames: new Map(), pending: new Set() }
     const entry = cache.current
     const wanted = key === '' ? [] : key.split('\n')
     const missing = wanted.filter((frame) => !entry.frames.has(frame) && !entry.pending.has(frame))
@@ -72,7 +71,7 @@ export function useThumbnails(requests: ThumbnailRequest[]): Map<string, string>
       current = false
       missing.forEach((frame) => entry.frames.has(frame) || entry.pending.delete(frame))
     }
-  }, [key])
+  }, [key, sessionKey])
 
   return shown
 }
