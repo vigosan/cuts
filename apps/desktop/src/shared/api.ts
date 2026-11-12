@@ -5,7 +5,7 @@ import type { ClipFraming } from '@cuts/core/framing'
 import type { OutputFormat } from '@cuts/core/formats'
 import type { ExportOverlay, Size } from '@cuts/core/overlay'
 
-export type ExportClip = Clip & ClipSettings & { position: number; input?: string; frame?: Size }
+export type ExportClip = Clip & ClipSettings & { position: number; input?: string; frame?: Size; overlay?: ExportOverlay | null }
 
 export type Session = {
   clips: Clip[]

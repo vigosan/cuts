@@ -3423,6 +3423,33 @@ describe('Several videos as one session', () => {
         )
       })
 
+      const LOGO = { path: '/data/overlays/logo.png', aspect: 1, name: 'logo.png', x: 0.1, y: 0.8, width: 0.25 }
+      const inLandscape = clampPlacement(LOGO, LOGO.aspect, { width: 1920, height: 1080 })
+
+      function playheadOnPortrait(video: HTMLVideoElement) {
+        seekOnTimeline(video, 70, 40)
+        Object.defineProperty(video, 'videoWidth', { configurable: true, value: 1080 })
+        Object.defineProperty(video, 'videoHeight', { configurable: true, value: 1920 })
+        fireEvent(video, new Event('loadedmetadata'))
+      }
+
+      it('fits the overlay inside each clip\'s own frame, so a landscape clip exported while the playhead is on a portrait video keeps the logo in shot', async () => {
+        localStorage.setItem('preferences', JSON.stringify({ overlay: LOGO }))
+        const video = await openMixed(undefined, [{ id: 'l', start: 10, end: 20 }])
+        playheadOnPortrait(video)
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
+        expect(clips[0].overlay).toEqual({ path: LOGO.path, ...inLandscape })
+      })
+
+      it('fits the overlay inside the first video\'s frame for the full recording, whatever video the playhead is on', async () => {
+        localStorage.setItem('preferences', JSON.stringify({ overlay: LOGO }))
+        const video = await openMixed()
+        playheadOnPortrait(video)
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        expect(vi.mocked(api.exportClips).mock.calls[0][0].overlay).toEqual({ path: LOGO.path, ...inLandscape })
+      })
+
       it('turns off the full recording and says why when HDR and non-HDR videos are mixed, since their colours cannot be matched', async () => {
         await openMixed([SOURCES[0], { ...PORTRAIT, hdr: true }, SOURCES[2]])
         expect(screen.getByTestId('export')).toBeDisabled()

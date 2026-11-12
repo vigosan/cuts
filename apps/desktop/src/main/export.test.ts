@@ -229,6 +229,14 @@ describe('sessions of several videos', () => {
     expect(args[args.indexOf('-t') + 1]).toBe('10')
   })
 
+  it('places the overlay fitted to the clip\'s own video, so clips of differently shaped videos each keep the logo in shot', async () => {
+    const d = deps()
+    const own = { path: '/o.png', x: 0.1, y: 0.55, width: 0.25 }
+    await exportClips({ ...request, overlay: { ...own, y: 0.8 }, clips: [{ ...request.clips[0], input: sources[1].path, overlay: own }] }, d)
+    const args = vi.mocked(d.run).mock.calls[0][1]
+    expect(args.join(' ')).toContain("overlay=x='main_w*0.1':y='main_h*0.55'")
+  })
+
   it('keeps clips without their own video on the request input, so a single video exports as before', async () => {
     const d = deps()
     await exportClips(request, d)
