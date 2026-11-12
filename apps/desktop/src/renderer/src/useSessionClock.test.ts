@@ -83,6 +83,28 @@ describe('useSessionClock', () => {
     expect(video.play).toHaveBeenCalled()
   })
 
+  it('stays paused once the next video is ready when paused while it loads, so Space, K or a stop during a switch is honoured', () => {
+    const video = fakeVideo({ paused: false })
+    const { result } = clockOver(TWO, video)
+    act(() => result.current.seekTo(65))
+    video.paused = true
+    expect(result.current.playing()).toBe(true)
+    act(() => result.current.pause())
+    expect(result.current.playing()).toBe(false)
+    act(() => result.current.onLoadedMetadata())
+    expect(video.currentTime).toBe(5)
+    expect(video.play).not.toHaveBeenCalled()
+  })
+
+  it('pauses the video itself when nothing is loading, so a single video pauses exactly as before', () => {
+    const video = fakeVideo({ paused: false })
+    const { result } = clockOver([{ path: '/set/a.mov', duration: 0 }], video)
+    expect(result.current.playing()).toBe(true)
+    act(() => result.current.pause())
+    expect(video.pause).toHaveBeenCalled()
+    expect(result.current.playing()).toBe(false)
+  })
+
   it('plays on into the next video when one ends, so the session is heard without a stop at the join', () => {
     const video = fakeVideo({ paused: false })
     const { result } = clockOver(TWO, video)

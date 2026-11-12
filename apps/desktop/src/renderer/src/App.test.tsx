@@ -3122,6 +3122,57 @@ describe('Several videos as one session', () => {
         expectAt(video, 0, 10)
       })
 
+      function seekWhilePlaying(video: HTMLVideoElement, time: number) {
+        const play = vi.fn(async () => {})
+        Object.assign(video, { play, pause: vi.fn() })
+        Object.defineProperty(video, 'paused', { configurable: true, value: false })
+        fireEvent(video, new Event('play'))
+        timelineOneSecondPerPixel()
+        fireEvent.click(screen.getByTestId('timeline'), { clientX: time })
+        Object.defineProperty(video, 'paused', { configurable: true, value: true })
+        return play
+      }
+
+      it('pauses with Space while the next video loads, instead of playing it once it is ready', async () => {
+        const video = await openJoined()
+        const play = seekWhilePlaying(video, 70)
+        fireEvent.keyDown(window, { key: ' ', code: 'Space' })
+        expectAt(video, 1, 10)
+        expect(play).not.toHaveBeenCalled()
+        expect(screen.getByTestId('play')).toHaveAccessibleName(t.play)
+      })
+
+      it('stops with K while the next video loads, instead of playing it once it is ready', async () => {
+        const video = await openJoined()
+        const play = seekWhilePlaying(video, 70)
+        fireEvent.keyDown(window, { key: 'k', code: 'KeyK' })
+        expectAt(video, 1, 10)
+        expect(play).not.toHaveBeenCalled()
+        expect(screen.getByTestId('play')).toHaveAccessibleName(t.play)
+      })
+
+      it('stays paused after a frame step while the next video loads, since stepping is for looking at one frame', async () => {
+        const video = await openJoined()
+        const play = seekWhilePlaying(video, 70)
+        fireEvent.keyDown(window, { key: '.', code: 'Period' })
+        showDuration(40)
+        expect(play).not.toHaveBeenCalled()
+        expect(screen.getByTestId('play')).toHaveAccessibleName(t.play)
+      })
+
+      it('stops a clip from its row while its video loads, instead of playing it once it is ready', async () => {
+        const video = await openJoined()
+        await markClip(video, 10, 20)
+        seekOnTimeline(video, 105, 20)
+        const play = vi.fn(async () => {})
+        Object.assign(video, { play, pause: vi.fn() })
+        await userEvent.click(screen.getByTestId('clip-play-1'))
+        await userEvent.click(screen.getByTestId('clip-play-1'))
+        expectAt(video, 0, 10)
+        expect(play).not.toHaveBeenCalled()
+        expect(screen.getByTestId('clip-play-1')).toHaveAttribute('aria-pressed', 'false')
+      })
+
       it('plays on into the next video when one ends, without stopping at the join', async () => {
         const video = await openJoined()
         Object.assign(video, { play: vi.fn(async () => {}) })

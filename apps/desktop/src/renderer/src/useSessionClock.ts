@@ -49,6 +49,13 @@ export function useSessionClock(videoRef: RefObject<HTMLVideoElement | null>, pa
     else void videoRef.current?.play()
   }
 
+  const pause = () => {
+    if (target.current) target.current.play = false
+    videoRef.current?.pause()
+  }
+
+  const playing = () => (target.current ? target.current.play : videoRef.current?.paused === false)
+
   const onLoadedMetadata = () => {
     const video = videoRef.current
     const landing = target.current
@@ -67,5 +74,5 @@ export function useSessionClock(videoRef: RefObject<HTMLVideoElement | null>, pa
   const continuing = () =>
     Boolean(target.current?.play) || (Boolean(videoRef.current?.ended) && nextAvailable(parts, committed.current + 1) !== null)
 
-  return { src: parts[index]?.path ?? '', index, now, seekTo, play, onLoadedMetadata, onEnded, continuing }
+  return { src: parts[index]?.path ?? '', index, now, seekTo, play, pause, playing, onLoadedMetadata, onEnded, continuing }
 }

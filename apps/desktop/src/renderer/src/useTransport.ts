@@ -2,18 +2,21 @@ import { useRef, type RefObject } from 'react'
 
 const MAX_SHUTTLE = 4
 
-export function useTransport(now: () => number, seek: (time: number) => void, videoRef: RefObject<HTMLVideoElement | null>, duration: number) {
+type Playback = { playing: () => boolean; play: () => void; pause: () => void }
+
+export function useTransport(
+  now: () => number,
+  seek: (time: number) => void,
+  videoRef: RefObject<HTMLVideoElement | null>,
+  duration: number,
+  playback: Playback
+) {
   const shuttle = useRef(0)
 
   const seekTo = (t: number) => seek(Math.max(0, Math.min(t, duration || t)))
-  const togglePlay = () => {
-    const video = videoRef.current
-    if (!video) return
-    if (video.paused) void video.play()
-    else video.pause()
-  }
+  const togglePlay = () => (playback.playing() ? playback.pause() : playback.play())
   const stepTo = (t: number) => {
-    videoRef.current?.pause()
+    playback.pause()
     seekTo(t)
   }
   const shuttleForward = () => {
@@ -26,7 +29,7 @@ export function useTransport(now: () => number, seek: (time: number) => void, vi
   const stopShuttle = () => {
     const video = videoRef.current
     if (!video) return
-    video.pause()
+    playback.pause()
     shuttle.current = 0
     video.playbackRate = 1
   }

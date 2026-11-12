@@ -1,16 +1,16 @@
-import { useEffect, useEffectEvent, useRef, useState, type RefObject } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import type { Clip } from '@cuts/core/clips'
 
 type Options = {
-  videoRef: RefObject<HTMLVideoElement | null>
   clips: Clip[]
   playing: boolean
   now: () => number
   seekTo: (time: number) => void
   play: () => void
+  pause: () => void
 }
 
-export function useClipLoop({ videoRef, clips, playing, now, seekTo, play }: Options) {
+export function useClipLoop({ clips, playing, now, seekTo, play, pause }: Options) {
   const [loopingId, setLoopingId] = useState<string | null>(null)
   const looping = useRef<string | null>(null)
   const loopingClip = clips.find((clip) => clip.id === loopingId) ?? null
@@ -22,7 +22,7 @@ export function useClipLoop({ videoRef, clips, playing, now, seekTo, play }: Opt
 
   const playClip = (clip: Clip) => {
     if (loopingId === clip.id) {
-      videoRef.current?.pause()
+      pause()
       loop(null)
       return
     }

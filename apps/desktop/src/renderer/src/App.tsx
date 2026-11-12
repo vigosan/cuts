@@ -133,7 +133,20 @@ export function App() {
 
   const parts = sources.length > 0 ? sources : [{ path: videoPath ?? '', duration }]
   const clock = useSessionClock(videoRef, parts)
-  const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(clock.now, clock.seekTo, videoRef, duration)
+  const stopped = () => {
+    setPlaying(false)
+    loop(null)
+  }
+  const pause = () => {
+    const silent = clock.continuing()
+    clock.pause()
+    if (silent) stopped()
+  }
+  const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(clock.now, clock.seekTo, videoRef, duration, {
+    playing: clock.playing,
+    play: clock.play,
+    pause
+  })
   const { peaks, analysing } = useWaveform(videoPath ? parts : [])
   const onBeat = (time: number) => (peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
   const markStart = (free = false) => dispatch({ type: 'markStart', time: free ? now() : onBeat(now()) })
@@ -232,7 +245,7 @@ export function App() {
   const exportState: ExportState =
     outdated && (lastExport.status === 'done' || lastExport.status === 'error') ? { status: 'idle' } : lastExport
 
-  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, now, seekTo, play: clock.play })
+  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ clips, playing, now, seekTo, play: clock.play, pause })
 
   const selectClip = (clip: Clip, mode: SelectMode = 'only') => {
     const from = clips.findIndex((other) => other.id === selectionAnchor.current)
@@ -706,9 +719,7 @@ export function App() {
                 onEnded={clock.onEnded}
                 onPlay={() => setPlaying(true)}
                 onPause={() => {
-                  if (clock.continuing()) return
-                  setPlaying(false)
-                  loop(null)
+                  if (!clock.continuing()) stopped()
                 }}
                 onError={() => {
                   setFailedSrc(clock.src)
