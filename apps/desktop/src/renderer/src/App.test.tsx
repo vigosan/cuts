@@ -3283,6 +3283,16 @@ describe('Several videos as one session', () => {
         expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[2].path))
       })
 
+      it('plays on from the next video that is there when Space is pressed on the placeholder, instead of doing nothing', async () => {
+        const video = await openWithMissing()
+        const play = vi.fn(async () => {})
+        Object.assign(video, { play, pause: vi.fn() })
+        seekOnTimeline(video, 70, 40)
+        fireEvent.keyDown(window, { key: ' ', code: 'Space' })
+        expectAt(video, 2, 0)
+        expect(play).toHaveBeenCalled()
+      })
+
       it('clears the placeholder when the window comes back and the video is there again, so plugging the drive back in is enough', async () => {
         const video = await openWithMissing()
         seekOnTimeline(video, 70, 40)

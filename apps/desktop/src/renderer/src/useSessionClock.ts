@@ -45,7 +45,13 @@ export function useSessionClock(videoRef: RefObject<HTMLVideoElement | null>, pa
   }
 
   const play = () => {
-    if (target.current) target.current.play = !parts[target.current.index].missing
+    const at = target.current?.index ?? committed.current
+    if (parts[at]?.missing) {
+      const next = nextAvailable(parts, at + 1)
+      if (next !== null) aim({ index: next, time: starts[next], local: 0, play: true })
+      return
+    }
+    if (target.current) target.current.play = true
     else void videoRef.current?.play()
   }
 

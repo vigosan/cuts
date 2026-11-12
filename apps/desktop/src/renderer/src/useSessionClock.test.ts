@@ -150,6 +150,26 @@ describe('useSessionClock', () => {
     expect(result.current.now()).toBe(70)
   })
 
+  it('plays on from the next video that is there when play is pressed on a missing one, since its own file cannot play', () => {
+    const { video, result } = clockOver([TWO[0], { path: '/set/gone.mov', duration: 20, missing: true }, { path: '/set/c.mov', duration: 10 }])
+    act(() => result.current.seekTo(70))
+    act(() => result.current.play())
+    expect(result.current.src).toBe('/set/c.mov')
+    expect(result.current.now()).toBe(80)
+    act(() => result.current.onLoadedMetadata())
+    expect(video.currentTime).toBe(0)
+    expect(video.play).toHaveBeenCalled()
+  })
+
+  it('does nothing when play is pressed on a missing video at the end of the session, since nothing after it can play', () => {
+    const { video, result } = clockOver([TWO[0], { path: '/set/gone.mov', duration: 20, missing: true }])
+    act(() => result.current.seekTo(70))
+    act(() => result.current.play())
+    expect(result.current.src).toBe('/set/gone.mov')
+    expect(result.current.now()).toBe(70)
+    expect(video.play).not.toHaveBeenCalled()
+  })
+
   it('starts on the first video that is still there', () => {
     const { result } = clockOver([{ ...TWO[0], missing: true }, TWO[1]])
     expect(result.current.src).toBe('/set/b.mov')
