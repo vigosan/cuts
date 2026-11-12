@@ -3173,6 +3173,18 @@ describe('Several videos as one session', () => {
         expect(screen.getByTestId('clip-play-1')).toHaveAttribute('aria-pressed', 'false')
       })
 
+      it('keeps the shuttle speed when the next video loads, since loading a file resets the speed to the default one', async () => {
+        const video = await openJoined()
+        Object.assign(video, { play: vi.fn(async () => {}), pause: vi.fn() })
+        fireEvent.keyDown(window, { key: 'l', code: 'KeyL' })
+        fireEvent.keyDown(window, { key: 'l', code: 'KeyL' })
+        expect(video.playbackRate).toBe(2)
+        expect(video.defaultPlaybackRate).toBe(2)
+        fireEvent.keyDown(window, { key: 'k', code: 'KeyK' })
+        expect(video.playbackRate).toBe(1)
+        expect(video.defaultPlaybackRate).toBe(1)
+      })
+
       it('plays on into the next video when one ends, without stopping at the join', async () => {
         const video = await openJoined()
         Object.assign(video, { play: vi.fn(async () => {}) })

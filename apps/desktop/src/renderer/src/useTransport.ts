@@ -23,7 +23,7 @@ export function useTransport(
     const video = videoRef.current
     if (!video) return
     shuttle.current = shuttle.current === 0 ? 1 : Math.min(shuttle.current * 2, MAX_SHUTTLE)
-    video.playbackRate = shuttle.current
+    video.playbackRate = video.defaultPlaybackRate = shuttle.current
     if (shuttle.current === 1) void video.play()
   }
   const stopShuttle = () => {
@@ -31,7 +31,7 @@ export function useTransport(
     if (!video) return
     playback.pause()
     shuttle.current = 0
-    video.playbackRate = 1
+    video.playbackRate = video.defaultPlaybackRate = 1
   }
 
   return { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle }
