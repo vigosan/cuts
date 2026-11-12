@@ -8,9 +8,10 @@ type Options = {
   seekTo: (time: number) => void
   play: () => void
   pause: () => void
+  playable: (clip: Clip) => boolean
 }
 
-export function useClipLoop({ clips, playing, now, seekTo, play, pause }: Options) {
+export function useClipLoop({ clips, playing, now, seekTo, play, pause, playable }: Options) {
   const [loopingId, setLoopingId] = useState<string | null>(null)
   const looping = useRef<string | null>(null)
   const loopingClip = clips.find((clip) => clip.id === loopingId) ?? null
@@ -20,21 +21,26 @@ export function useClipLoop({ clips, playing, now, seekTo, play, pause }: Option
     setLoopingId(id)
   }
 
+  const nextPlayable = (from: number) => clips.map((_, i) => clips[(from + i) % clips.length]).find(playable)
+
   const playClip = (clip: Clip) => {
     if (loopingId === clip.id) {
       pause()
       loop(null)
       return
     }
-    loop(clip.id)
-    seekTo(clip.start)
+    const start = nextPlayable(clips.findIndex((other) => other.id === clip.id))
+    if (!start) return
+    loop(start.id)
+    seekTo(start.start)
     play()
   }
 
   const keepLooping = () => {
     const index = clips.findIndex((clip) => clip.id === looping.current)
     if (index < 0 || now() < clips[index].end) return
-    const next = clips[(index + 1) % clips.length]
+    const next = nextPlayable(index + 1)
+    if (!next) return
     loop(next.id)
     seekTo(next.start)
   }

@@ -3265,6 +3265,24 @@ describe('Several videos as one session', () => {
         expect(screen.queryByTestId('video-error')).not.toBeInTheDocument()
       })
 
+      it('plays all clips on past the clips of a missing video, so one moved file never stops the carousel', async () => {
+        const video = await openWithMissing()
+        Object.assign(video, { play: vi.fn(async () => {}), pause: vi.fn() })
+        await userEvent.click(screen.getByTestId('clip-play-1'))
+        Object.defineProperty(video, 'paused', { configurable: true, value: false })
+        seek(video, 20.1)
+        expect(screen.getByTestId('clip-play-3')).toHaveAttribute('aria-pressed', 'true')
+        expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[2].path))
+      })
+
+      it('starts playing all clips at the next clip that is still there when a clip of a missing video is played', async () => {
+        const video = await openWithMissing()
+        Object.assign(video, { play: vi.fn(async () => {}), pause: vi.fn() })
+        await userEvent.click(screen.getByTestId('clip-play-2'))
+        expect(screen.getByTestId('clip-play-3')).toHaveAttribute('aria-pressed', 'true')
+        expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[2].path))
+      })
+
       it('clears the placeholder when the window comes back and the video is there again, so plugging the drive back in is enough', async () => {
         const video = await openWithMissing()
         seekOnTimeline(video, 70, 40)

@@ -245,7 +245,7 @@ export function App() {
   const exportState: ExportState =
     outdated && (lastExport.status === 'done' || lastExport.status === 'error') ? { status: 'idle' } : lastExport
 
-  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ clips, playing, now, seekTo, play: clock.play, pause })
+  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ clips, playing, now, seekTo, play: clock.play, pause, playable: (clip) => !inMissingSource(clip) })
 
   const selectClip = (clip: Clip, mode: SelectMode = 'only') => {
     const from = clips.findIndex((other) => other.id === selectionAnchor.current)
