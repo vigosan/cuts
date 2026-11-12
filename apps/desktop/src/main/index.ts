@@ -1,5 +1,5 @@
-import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
+import { constants, existsSync } from 'node:fs'
+import { access, copyFile, mkdir, readdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
@@ -15,7 +15,7 @@ import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { importOverlay, isOwnedOverlay, type OverlayDeps } from './overlay'
 import { openFileBatch } from './open-file-batch'
-import { openVideos, type OpenDeps } from './open-videos'
+import { matchesDuration, openVideos, type OpenDeps } from './open-videos'
 import { existingAncestor } from './paths'
 import { canRemember, forgetRecent, isListed, loadRecents, posterFile, posterFrame, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
 import { listSessions, loadSession, removeSession, saveSession } from './sessions'
@@ -140,6 +140,36 @@ app.whenReady().then(() => {
     result.filePaths.forEach((path, index) => allowVideo(path, result.bookmarks?.[index]))
     return result.filePaths
   })
+
+  ipcMain.handle('locate-video', async (event, duration: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)!
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters: [{ name: t.videoFilter, extensions: [...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS] }],
+      securityScopedBookmarks: process.mas === true
+    })
+    if (result.canceled) return null
+    const path = result.filePaths[0]
+    if (!matchesDuration(await readFfmpegInfo(bundledFfmpeg()!, path), duration)) return 'mismatch'
+    allowVideo(path, result.bookmarks?.[0])
+    return { path }
+  })
+
+  const readable = async (path: string) => {
+    const bookmark = bookmarks.get(path)
+    const stop = bookmark ? (app.startAccessingSecurityScopedResource(bookmark) as () => void) : undefined
+    try {
+      await access(path, constants.R_OK)
+      return true
+    } catch {
+      return false
+    } finally {
+      stop?.()
+    }
+  }
+  ipcMain.handle('check-sources', (_event, paths: string[]) =>
+    Promise.all(paths.map(async (path) => openedVideos.has(path) && (await readable(path))))
+  )
 
   const overlayDeps: OverlayDeps = {
     read: async (path) => new Uint8Array(await readFile(path)),

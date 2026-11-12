@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import { joinKey } from './join'
-import { openVideos, type OpenDeps } from './open-videos'
+import { matchesDuration, openVideos, type OpenDeps } from './open-videos'
 import type { Session, Source } from '../shared/api'
 import { loadSession, saveSession } from './sessions'
 
@@ -177,5 +177,17 @@ describe('openVideos', () => {
     await saveSession(dir, opened.path, { ...carry, clips: [], sources: opened.sources })
     fs.delete(B)
     expect((await openVideos([A, B], null, real)).sources[1]).toEqual(source(B, 8, { missing: true }))
+  })
+})
+
+describe('matchesDuration', () => {
+  it('accepts a located file within half a second of the missing one, since re-saving a file can shift its length slightly', () => {
+    expect(matchesDuration(info(40), 40.5)).toBe(true)
+    expect(matchesDuration(info(40), 39.5)).toBe(true)
+  })
+
+  it('rejects a located file of another length, so clips are never placed on a different recording', () => {
+    expect(matchesDuration(info(40), 40.6)).toBe(false)
+    expect(matchesDuration('', 40)).toBe(false)
   })
 })

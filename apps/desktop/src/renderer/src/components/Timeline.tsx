@@ -55,6 +55,7 @@ type Props = {
   onPan: (viewStart: number) => void
   sources: Source[]
   onRemoveSource: (index: number) => void
+  onLocateSource: (index: number) => void
   onAddVideos: (() => void) | null
 }
 
@@ -82,6 +83,7 @@ export function Timeline({
   onPan,
   sources,
   onRemoveSource,
+  onLocateSource,
   onAddVideos
 }: Props) {
   const justDragged = useRef(false)
@@ -282,6 +284,15 @@ export function Timeline({
             style={{ left: pct(range.start - viewStart), width: pct(range.end - range.start) }}
           />
         ))}
+        {stretches.map(({ source, start, end }) =>
+          source.missing ? (
+            <div
+              key={source.path}
+              className="pointer-events-none absolute inset-y-0 bg-sunken bg-[repeating-linear-gradient(135deg,var(--line)_0_6px,transparent_6px_12px)]"
+              style={{ left: pct(start - viewStart), width: pct(end - start) }}
+            />
+          ) : null
+        )}
         {starts.map((start, index) =>
           index > 0 && sources.length > 1 && start >= viewStart && start <= viewEnd ? (
             <div
@@ -297,6 +308,7 @@ export function Timeline({
           const selected = selectedIds.includes(clip.id)
           const roomy = ((clip.end - clip.start) / viewSpan) * width >= ROOMY_CLIP_PX
           const fadeColor = fade.videoFade === 'white' ? 'from-white/80' : 'from-black/80'
+          const unavailable = sources.length > 1 && sources[localTime(sources, clip.start).index].missing
           const handle = `absolute inset-y-0 w-3 cursor-ew-resize after:absolute after:inset-y-3 after:w-1 after:rounded-full after:bg-white after:shadow-[0_0_0_1px_rgb(0_0_0/0.4)] ${!roomy ? 'after:hidden' : selected ? '' : 'after:opacity-0 group-hover:after:opacity-100'}`
           return (
             <div
@@ -305,7 +317,7 @@ export function Timeline({
               data-fade-in={fades[index].videoFade !== 'none' && index > 0}
               data-fade-out={fades[index].videoFade !== 'none'}
               aria-current={selected}
-              className={`group absolute inset-y-0.5 min-w-3 cursor-grab rounded-md shadow-[0_0_0_1px_rgb(0_0_0/0.5)] active:cursor-grabbing ${selected ? 'z-10 border-[3px] border-white' : 'border-2 border-white/70 hover:border-white'}`}
+              className={`group absolute inset-y-0.5 min-w-3 cursor-grab rounded-md shadow-[0_0_0_1px_rgb(0_0_0/0.5)] active:cursor-grabbing ${selected ? 'z-10 border-[3px] border-white' : 'border-2 border-white/70 hover:border-white'} ${unavailable ? 'opacity-50' : ''}`}
               style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => startDrag(e, clip, 'move')}
@@ -375,6 +387,7 @@ export function Timeline({
         {stretches.map(({ source, index, start, end }) => (
           <div
             key={source.path}
+            data-testid={source.missing ? `missing-${index}` : undefined}
             className={`pointer-events-none absolute inset-y-0 z-20 ${hoveredSource === index ? 'ring-2 ring-white/40 ring-inset' : ''}`}
             style={{ left: pct(start - viewStart), width: pct(end - start) }}
           >
@@ -398,6 +411,22 @@ export function Timeline({
             >
               <CloseIcon className="size-3" />
             </button>
+            {source.missing && (
+              <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-center gap-2 px-2 text-xs text-ink-2">
+                <span className="truncate">{t.notFound(source.name)}</span>
+                <button
+                  data-testid={`locate-${index}`}
+                  className="pointer-events-auto h-6 shrink-0 rounded-md bg-surface px-2 font-medium text-ink shadow-sm ring-1 ring-line transition-colors hover:bg-canvas"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onLocateSource(index)
+                  }}
+                >
+                  {t.locate}
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {pendingStart !== null && (

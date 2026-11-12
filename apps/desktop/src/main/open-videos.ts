@@ -20,6 +20,9 @@ export type OpenDeps = {
 const SESSION_PREFIX = 'session:'
 const DURATION_TOLERANCE_SECONDS = 0.5
 
+export const matchesDuration = (info: string, duration: number) =>
+  Math.abs(parseMediaInfo(info).duration - duration) <= DURATION_TOLERANCE_SECONDS
+
 const sessionId = (paths: string[]) => `${SESSION_PREFIX}${joinKey(paths)}`
 
 const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((path) => b.includes(path))

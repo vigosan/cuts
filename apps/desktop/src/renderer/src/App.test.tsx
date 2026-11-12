@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Api, ExportResult } from '@shared/api'
 import { clampPlacement, moveOverlay, overlayBox, previewFrame, resizeOverlay } from '@cuts/core/overlay'
 import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement } from '@cuts/core/audio-layers'
+import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import { App } from './App'
 import { t } from './i18n'
 
@@ -3143,6 +3144,103 @@ describe('Several videos as one session', () => {
         fireEvent(video, new Event('ended'))
         expect(screen.getByTestId('play')).toHaveAccessibleName(t.play)
         expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[2].path))
+      })
+    })
+
+    describe('a missing video', () => {
+      const LOCATED = '/Volumes/Backup/set/IMG_0413.mov'
+      const CLIPS = [
+        { id: 'a', start: 10, end: 20 },
+        { id: 'b', start: 70, end: 80 },
+        { id: 'c', start: 105, end: 110 }
+      ]
+
+      async function openWithMissing() {
+        vi.mocked(api.loadSession).mockResolvedValue({ clips: CLIPS, clipSettings: {}, defaultSettings: DEFAULT_SETTINGS, format: '9:16', baseName: 'IMG_0412' })
+        vi.mocked(api.openVideo).mockResolvedValue(SOURCES.map((source) => source.path))
+        vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources: [SOURCES[0], { ...SOURCES[1], missing: true }, SOURCES[2]] })
+        render(<App />)
+        await userEvent.click(screen.getByTestId('open-video'))
+        await screen.findByTestId('clip-row-3')
+        return showDuration(60)
+      }
+
+      it('keeps its place on the timeline as a placeholder you can locate, and keeps its clips, so moving a drive never loses work', async () => {
+        await openWithMissing()
+        expect(screen.getByTestId('missing-1')).toHaveTextContent(t.notFound('IMG_0413.mov'))
+        expect(screen.getByTestId('locate-1')).toHaveTextContent(t.locate)
+        expect(screen.queryByTestId('missing-0')).not.toBeInTheDocument()
+        expect(screen.queryByTestId('missing-2')).not.toBeInTheDocument()
+        expect(screen.getByTestId('clip-row-2')).toBeInTheDocument()
+        expect(screen.getByTestId('clip-unavailable-2')).toBeInTheDocument()
+        expect(screen.queryByTestId('clip-unavailable-1')).not.toBeInTheDocument()
+        expect(screen.queryByTestId('clip-unavailable-3')).not.toBeInTheDocument()
+      })
+
+      it('says the video is not found in the preview while the playhead is in it, and forgets that once the playhead leaves', async () => {
+        const video = await openWithMissing()
+        seekOnTimeline(video, 70, 40)
+        fireEvent(video, new Event('error'))
+        expect(screen.getByTestId('preview-missing')).toHaveTextContent(t.notFound('IMG_0413.mov'))
+        expect(screen.queryByTestId('video-error')).not.toBeInTheDocument()
+        seekOnTimeline(video, 105, 20)
+        expect(screen.queryByTestId('preview-missing')).not.toBeInTheDocument()
+        expect(screen.queryByTestId('video-error')).not.toBeInTheDocument()
+      })
+
+      it('checks the videos again when the one playing fails to read and plays on in the next, instead of stopping on an error', async () => {
+        const video = await openJoined()
+        const play = vi.fn(async () => {})
+        Object.assign(video, { play })
+        fireEvent(video, new Event('play'))
+        vi.mocked(api.checkSources).mockResolvedValue([false, true, true])
+        await act(async () => fireEvent(video, new Event('error')))
+        expect(api.checkSources).toHaveBeenCalledWith(SOURCES.map((source) => source.path))
+        expect(screen.getByTestId('missing-0')).toHaveTextContent(t.notFound('IMG_0412.mov'))
+        expectAt(video, 1, 0)
+        expect(play).toHaveBeenCalled()
+        expect(screen.queryByTestId('video-error')).not.toBeInTheDocument()
+      })
+
+      it('clears the placeholder when the window comes back and the video is there again, so plugging the drive back in is enough', async () => {
+        const video = await openWithMissing()
+        seekOnTimeline(video, 70, 40)
+        const load = vi.fn()
+        Object.assign(video, { load })
+        await act(async () => fireEvent.focus(window))
+        expect(api.checkSources).toHaveBeenCalledWith(SOURCES.map((source) => source.path))
+        expect(screen.queryByTestId('missing-1')).not.toBeInTheDocument()
+        expect(screen.queryByTestId('clip-unavailable-2')).not.toBeInTheDocument()
+        expect(screen.queryByTestId('preview-missing')).not.toBeInTheDocument()
+        expect(load).toHaveBeenCalled()
+      })
+
+      it('does not check a single video when the window comes back, since a single video never shows a placeholder', async () => {
+        render(<App />)
+        await loadVideo()
+        await act(async () => fireEvent.focus(window))
+        expect(api.checkSources).not.toHaveBeenCalled()
+      })
+
+      it('replaces the missing video with the located file and keeps every clip, so a moved recording is relinked in one step', async () => {
+        await openWithMissing()
+        vi.mocked(api.locateVideo).mockResolvedValue({ path: LOCATED })
+        vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: REJOINED, sources: [SOURCES[0], { ...SOURCES[1], path: LOCATED }, SOURCES[2]] })
+        await userEvent.click(screen.getByTestId('locate-1'))
+        expect(api.locateVideo).toHaveBeenCalledWith(40)
+        expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, LOCATED, SOURCES[2].path], JOINED, expect.objectContaining({ clips: CLIPS }))
+        expect(screen.queryByTestId('missing-1')).not.toBeInTheDocument()
+        expect(screen.getByTestId('clip-row-3')).toBeInTheDocument()
+        expect(screen.queryByTestId('clip-unavailable-2')).not.toBeInTheDocument()
+      })
+
+      it('keeps the placeholder and says so when the located file is another video, so clips never land on the wrong recording', async () => {
+        await openWithMissing()
+        vi.mocked(api.locateVideo).mockResolvedValue('mismatch')
+        await userEvent.click(screen.getByTestId('locate-1'))
+        expect(screen.getByTestId('suggest-notice')).toHaveTextContent(t.locateMismatch('IMG_0413.mov'))
+        expect(screen.getByTestId('missing-1')).toBeInTheDocument()
+        expect(api.openVideos).toHaveBeenCalledTimes(1)
       })
     })
   })

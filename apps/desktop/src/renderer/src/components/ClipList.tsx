@@ -106,6 +106,7 @@ export function ClipList({
         const joined = sources.length >= 2
         const source = joined ? localTime(sources, clip.start) : null
         const partStart = source ? partStarts(sources)[source.index] : 0
+        const unavailable = source !== null && sources[source.index].missing
         const bounds = joined ? partBoundsAt(sources, clip.start, 0) : null
         const local = (at: number) => formatTime(at - partStart)
         const target = (at: number) => (bounds ? Math.min(Math.max(at, bounds.start), bounds.end) : at)
@@ -157,7 +158,11 @@ export function ClipList({
             >
               {n}
             </span>
-            <span className="flex min-w-0 flex-1 flex-col text-sm text-ink">
+            <span
+              data-testid={unavailable ? `clip-unavailable-${n}` : undefined}
+              title={unavailable ? t.notFound(sources[source.index].name) : undefined}
+              className={`flex min-w-0 flex-1 flex-col text-sm text-ink ${unavailable ? 'opacity-50' : ''}`}
+            >
               {source && (
                 <span data-testid={`clip-source-${n}`} className="truncate px-1 text-xs text-ink-3" title={sources[source.index].name}>
                   {sources[source.index].name}

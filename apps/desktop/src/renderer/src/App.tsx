@@ -27,7 +27,7 @@ import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/c
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { snapToBeat } from '@cuts/core/beats'
-import { confineMoment, orderVideos, partBoundsAt, removePart } from '@cuts/core/parts'
+import { confineMoment, nextAvailable, orderVideos, partBoundsAt, partStarts, removePart } from '@cuts/core/parts'
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
 import { useSessionClock } from './useSessionClock'
@@ -54,7 +54,7 @@ export function App() {
   const [sources, setSources] = useState<Source[]>([])
   const [namePath, setNamePath] = useState<string | null>(null)
   const mediaPath = videoPath && playablePath(videoPath, sources)
-  const [videoError, setVideoError] = useState(false)
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
   const [unsupportedDrops, setUnsupportedDrops] = useState(0)
   const [history, dispatch] = useReducer(clipsHistory, { past: [], present: initialClipsState, future: [] })
   const { clips, pendingStart } = history.present
@@ -167,7 +167,7 @@ export function App() {
   const load = ({ path, sources }: { path: string; sources: Source[] }, carry?: Session) => {
     setVideoPath(path)
     setSources(sources)
-    setVideoError(false)
+    setFailedSrc(null)
     setTime(0)
     setDuration(0)
     setVideoSize(null)
@@ -194,6 +194,7 @@ export function App() {
   }
 
   const missingSource = sources[clock.index]?.missing ?? false
+  const videoError = failedSrc !== null && failedSrc === clock.src && !missingSource
   useEffect(() => {
     if (!clock.src || missingSource) return
     let current = true
@@ -446,6 +447,34 @@ export function App() {
 
   const exporting = exportState.status === 'running'
 
+  const recheckSources = async () => {
+    const path = videoPath
+    const index = clock.index
+    const wasPlaying = playing
+    const available = await window.api.checkSources(sources.map((source) => source.path))
+    if (openedPath.current !== path) return
+    const checked = sources.map((source, i) => ({ ...source, missing: !available[i] }))
+    if (checked.every((source, i) => source.missing === sources[i].missing)) return
+    setSources(checked)
+    if (sources[index].missing && !checked[index].missing) videoRef.current?.load()
+    if (!checked[index].missing || sources[index].missing || !wasPlaying) return
+    const next = nextAvailable(checked, index + 1)
+    if (next === null) return videoRef.current?.pause()
+    const start = partStarts(checked)[next]
+    setTime(start)
+    seekTo(start)
+    clock.play()
+  }
+
+  const onWindowFocus = useEffectEvent(() => void recheckSources())
+  const severalSources = sources.length > 1
+  useEffect(() => {
+    if (!severalSources) return
+    const listener = () => onWindowFocus()
+    window.addEventListener('focus', listener)
+    return () => window.removeEventListener('focus', listener)
+  }, [severalSources])
+
   const openRequest = useRef(0)
   const openPaths = async (paths: string[], replacing: string | null, carry?: Session) => {
     const request = ++openRequest.current
@@ -488,6 +517,18 @@ export function App() {
     const paths = orderVideos(current, chosen)
     if (paths.length === current.length) return
     await openPaths(paths, videoPath, { clips, clipSettings, defaultSettings, format, baseName })
+  }
+
+  const locateSource = async (index: number) => {
+    if (exporting || !videoPath) return
+    const found = await window.api.locateVideo(sources[index].duration)
+    if (found === 'mismatch') return setSuggestNotice(t.locateMismatch(sources[index].name))
+    if (!found) return
+    await openPaths(
+      sources.map((source, i) => (i === index ? found.path : source.path)),
+      videoPath,
+      { clips, clipSettings, defaultSettings, format, baseName }
+    )
   }
 
   const onMenuOpenVideo = useEffectEvent(() => void openVideo())
@@ -639,7 +680,10 @@ export function App() {
                   setPlaying(false)
                   loop(null)
                 }}
-                onError={() => setVideoError(true)}
+                onError={() => {
+                  setFailedSrc(clock.src)
+                  if (severalSources && !missingSource) void recheckSources()
+                }}
               />
               {isAudio && background?.kind === 'video' && (
                 <video
@@ -692,7 +736,7 @@ export function App() {
                   onChange={changeSettings}
                 />
               )}
-              {loadedDuration === 0 && !videoError && !(isAudio && !background) && (
+              {loadedDuration === 0 && !videoError && !missingSource && !(isAudio && !background) && (
                 <p data-testid="video-loading" className="absolute flex items-center gap-2 text-sm text-white/70">
                   <SpinnerIcon className="size-4" />
                   {t.loadingVideo}
@@ -748,6 +792,11 @@ export function App() {
                 >
                   <BarPreview color={extras.barColor} opacity={extras.barOpacity} progress={duration > 0 ? time / duration : 0} />
                 </OverlayLayer>
+              )}
+              {missingSource && (
+                <p data-testid="preview-missing" className="absolute mx-6 truncate text-sm text-white/70">
+                  {t.notFound(sources[clock.index].name)}
+                </p>
               )}
               {videoError && (
                 <p data-testid="video-error" className="absolute rounded-lg bg-black/70 px-3 py-2 text-sm text-white">
@@ -842,6 +891,7 @@ export function App() {
                 }}
                 sources={sources}
                 onRemoveSource={removeSource}
+                onLocateSource={(index) => void locateSource(index)}
                 onAddVideos={isAudio ? null : () => void addVideos()}
               />
 
