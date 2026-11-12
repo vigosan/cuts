@@ -61,6 +61,7 @@ describe('joining the videos of a session with real ffmpeg', () => {
         cropY: 0.5,
         format: 'original',
         frame: { width: 320, height: 180 },
+        fps: 30,
         inputs: [
           { path: landscape, duration: 2, audio: true },
           { path: portrait, duration: 2, audio: false }

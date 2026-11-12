@@ -5,6 +5,7 @@ import type { Messages } from '@cuts/core/i18n'
 import { mediaKind } from '../shared/video-formats'
 import { buildAudioArgs, buildConcatArgs, buildFfmpegArgs, buildFrameArgs } from './ffmpeg-args'
 import { parseMediaInfo } from './join'
+import { parseFrameRate } from './preview'
 
 export type ExportDeps = {
   ffmpeg: string | null
@@ -32,8 +33,12 @@ function folderProblem(error: Error & { code?: string }, folder: string, deps: E
   return null
 }
 
-async function withAudio(inputs: NonNullable<ExportRequest['inputs']>, deps: ExportDeps) {
-  return Promise.all(inputs.map(async (input) => ({ ...input, audio: parseMediaInfo(await deps.info(input.path)).audio !== null })))
+async function probeInputs(inputs: NonNullable<ExportRequest['inputs']>, deps: ExportDeps) {
+  const infos = await Promise.all(inputs.map((input) => deps.info(input.path)))
+  return {
+    inputs: inputs.map((input, i) => ({ ...input, audio: parseMediaInfo(infos[i]).audio !== null })),
+    fps: parseFrameRate(infos[0])
+  }
 }
 
 export async function exportClips(request: ExportRequest, deps: ExportDeps): Promise<ExportResult> {
@@ -62,7 +67,7 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
       const args = background
         ? buildAudioArgs({ ...cut, background, bitrate: '4M' })
         : request.inputs
-          ? buildConcatArgs({ ...cut, inputs: await withAudio(request.inputs, deps) })
+          ? buildConcatArgs({ ...cut, ...(await probeInputs(request.inputs, deps)) })
           : buildFfmpegArgs(cut)
       await deps.run(ffmpeg, args, (seconds) => deps.onProgress({ index, ratio: Math.min(1, seconds / length) }))
     } catch (error) {

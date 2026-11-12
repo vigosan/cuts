@@ -196,7 +196,7 @@ describe('buildConcatArgs', () => {
     { path: '/Movies/set/IMG_0412.mov', duration: 60, audio: true },
     { path: '/Movies/set/IMG_0413.mov', duration: 40, audio: true }
   ]
-  const full = { ...base, start: 0, end: 100, inputs, frame: { width: 1920, height: 1080 } }
+  const full = { ...base, start: 0, end: 100, inputs, frame: { width: 1920, height: 1080 }, fps: 30 }
   const graph = (args: string[]) => valueAfter(args, '-filter_complex')
 
   it('reads every video of the session in order, so the full recording plays them back to back', () => {
@@ -212,6 +212,12 @@ describe('buildConcatArgs', () => {
         `[${i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1`
       )
     }
+  })
+
+  it('plays every video at the first one\'s frame rate, so a 25 fps video after a 30 fps one does not leave a variable frame rate file', () => {
+    const g = graph(buildConcatArgs(full))
+    expect(g).toContain('setsar=1,fps=30,trim=duration=60,setpts=PTS-STARTPTS[v0]')
+    expect(g).toContain('setsar=1,fps=30,trim=duration=40,setpts=PTS-STARTPTS[v1]')
   })
 
   it('cuts each video to its own length so sound and picture stay together after every join', () => {

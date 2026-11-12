@@ -248,6 +248,16 @@ describe('sessions of several videos', () => {
     expect(graph).toContain('scale=1920:1080:force_original_aspect_ratio=decrease')
     expect(d.onProgress).toHaveBeenCalledWith({ index: 0, ratio: 0.5 })
   })
+
+  it('reads the frame rate of the first video for the full recording, so every video is played at that rate', async () => {
+    const info = vi.fn(async (path: string) => `Stream #0:0: Video: h264, yuv420p, 1920x1080, ${path === sources[0].path ? 29.97 : 25} fps`)
+    const d = deps({ info })
+    await exportClips({ ...request, kind: 'full', inputs: sources, clips: [{ ...request.clips[0], start: 0, end: 100, position: 0 }] }, d)
+    const args = vi.mocked(d.run).mock.calls[0][1]
+    const graph = args[args.indexOf('-filter_complex') + 1]
+    expect(graph).toContain('fps=29.97,trim=duration=40')
+    expect(graph).not.toContain('fps=25')
+  })
 })
 
 describe('audio recordings and full recordings', () => {

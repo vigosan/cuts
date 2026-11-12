@@ -130,7 +130,7 @@ export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = proce
 
 export type ConcatInput = { path: string; duration: number; audio: boolean }
 
-export type ConcatOptions = CutOptions & { inputs: ConcatInput[]; frame: Size }
+export type ConcatOptions = CutOptions & { inputs: ConcatInput[]; frame: Size; fps: number | null }
 
 export function buildConcatArgs(o: ConcatOptions, platform: NodeJS.Platform = process.platform): string[] {
   const { width: w, height: h } = o.frame
@@ -144,7 +144,7 @@ export function buildConcatArgs(o: ConcatOptions, platform: NodeJS.Platform = pr
   const segments = o.inputs.flatMap((input, i) => {
     const d = num(input.duration)
     return [
-      `[${i}:v]scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${d},setpts=PTS-STARTPTS[v${i}]`,
+      `[${i}:v]scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1,${o.fps ? `fps=${num(o.fps)},` : ''}trim=duration=${d},setpts=PTS-STARTPTS[v${i}]`,
       input.audio
         ? `[${i}:a]aformat=sample_rates=48000:channel_layouts=stereo,apad=whole_dur=${d},atrim=duration=${d},asetpts=PTS-STARTPTS[a${i}]`
         : `anullsrc=r=48000:cl=stereo,atrim=duration=${d}[a${i}]`
