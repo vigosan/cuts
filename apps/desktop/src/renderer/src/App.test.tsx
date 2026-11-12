@@ -3374,6 +3374,38 @@ describe('Several videos as one session', () => {
         ])
       })
 
+      it('checks the videos again when an export fails, so a video gone since opening shows as missing instead of a bare error', async () => {
+        vi.mocked(api.loadSession).mockResolvedValue({ clips: CLIPS, clipSettings: {}, defaultSettings: DEFAULT_SETTINGS, format: '9:16', baseName: 'IMG_0412' })
+        await openJoined()
+        await screen.findByTestId('clip-row-3')
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        vi.mocked(api.exportClips).mockResolvedValue({ ok: false, error: 'No such file or directory' })
+        vi.mocked(api.checkSources).mockResolvedValue([true, false, true])
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        expect(api.checkSources).toHaveBeenCalledWith(SOURCES.map((source) => source.path))
+        expect(screen.getByTestId('missing-1')).toHaveTextContent(t.notFound('IMG_0413.mov'))
+      })
+
+      it('checks the videos again when the full recording fails, since one of them may be gone', async () => {
+        await openJoined()
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        vi.mocked(api.exportClips).mockResolvedValue({ ok: false, error: 'No such file or directory' })
+        vi.mocked(api.checkSources).mockResolvedValue([true, false, true])
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        expect(screen.getByTestId('missing-1')).toBeInTheDocument()
+      })
+
+      it('does not check a single video when its export fails, since a single video never shows a placeholder', async () => {
+        vi.mocked(api.exportClips).mockResolvedValue({ ok: false, error: 'No such file or directory' })
+        render(<App />)
+        const video = await loadVideo()
+        await markClip(video, 100, 150)
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        expect(screen.getByTestId('export-error')).toBeInTheDocument()
+        expect(api.checkSources).not.toHaveBeenCalled()
+      })
+
       it('exports nothing when skipping the missing clips is cancelled', async () => {
         await openWithMissing()
         await userEvent.click(screen.getByTestId('choose-folder'))

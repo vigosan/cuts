@@ -421,6 +421,7 @@ export function App() {
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
+    if (!result.ok && severalSources) void recheckSources()
   }
 
   const runExportFull = async () => {
@@ -449,6 +450,7 @@ export function App() {
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
+    if (!result.ok && severalSources) void recheckSources()
   }
 
   const runExportFrame = async () => {
