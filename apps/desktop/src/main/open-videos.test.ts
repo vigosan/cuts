@@ -145,6 +145,15 @@ describe('openVideos', () => {
     expect(opened.sources).toEqual([source(located, 12), source(B, 8, { width: 1080, height: 1920, missing: true }), source(C, 5)])
   })
 
+  it('keeps the stored length of a located video that is slightly longer, so every later clip stays where it was marked', async () => {
+    const located = '/Volumes/Backup/IMG_0412.MOV'
+    const { deps } = fakeDeps({ [located]: info(12).replace('12.00', '12.30'), [B]: info(8) })
+    const stored = [source(located, 12, { missing: true }), source(B, 8)]
+    const opened = await openVideos([located, B], `session:${joinKey([A, B])}`, deps, { ...carry, sources: stored })
+    expect(opened.sources.map((source) => source.duration)).toEqual([12, 8])
+    expect(opened.sources[0].missing).toBe(false)
+  })
+
   it('stores no video list when X leaves a single video, so its session is never mistaken for a moved multi-video one', async () => {
     const { deps, saved } = fakeDeps({ [A]: info(12) })
     await openVideos([A], id, deps, { ...carry, sources: [source(A, 12), source(B, 8)] })

@@ -34,7 +34,8 @@ async function probe(path: string, saved: Source | undefined, deps: OpenDeps): P
     return { path, name, duration, width, height, hdr, missing: true }
   }
   const { duration, width, height, hdr } = parseMediaInfo(await deps.info(path))
-  return { path, name, duration, width, height, hdr, missing: false }
+  const stored = saved && Math.abs(saved.duration - duration) <= DURATION_TOLERANCE_SECONDS ? saved.duration : duration
+  return { path, name, duration: stored, width, height, hdr, missing: false }
 }
 
 const sameVideos = (saved: Source[] | undefined, sources: Source[]) =>

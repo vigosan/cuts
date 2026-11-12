@@ -3222,7 +3222,7 @@ describe('Several videos as one session', () => {
         expect(api.checkSources).not.toHaveBeenCalled()
       })
 
-      it('replaces the missing video with the located file and keeps every clip, so a moved recording is relinked in one step', async () => {
+      it('replaces the missing video with the located file and keeps every clip and its stored length, so a moved recording is relinked in one step', async () => {
         await openWithMissing()
         vi.mocked(api.locateVideo).mockResolvedValue({ path: LOCATED })
         vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: REJOINED, sources: [SOURCES[0], { ...SOURCES[1], path: LOCATED }, SOURCES[2]] })
@@ -3231,7 +3231,7 @@ describe('Several videos as one session', () => {
         expect(api.openVideos).toHaveBeenLastCalledWith(
           [SOURCES[0].path, LOCATED, SOURCES[2].path],
           JOINED,
-          expect.objectContaining({ clips: CLIPS, sources: [SOURCES[0], { ...SOURCES[1], missing: true }, SOURCES[2]] })
+          expect.objectContaining({ clips: CLIPS, sources: [SOURCES[0], { ...SOURCES[1], path: LOCATED, missing: true }, SOURCES[2]] })
         )
         expect(screen.queryByTestId('missing-1')).not.toBeInTheDocument()
         expect(screen.getByTestId('clip-row-3')).toBeInTheDocument()

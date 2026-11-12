@@ -552,7 +552,7 @@ export function App() {
     await openPaths(
       sources.map((source, i) => (i === index ? found.path : source.path)),
       videoPath,
-      { clips, clipSettings, defaultSettings, format, baseName, sources }
+      { clips, clipSettings, defaultSettings, format, baseName, sources: sources.map((source, i) => (i === index ? { ...source, path: found.path } : source)) }
     )
   }
 
