@@ -41,6 +41,7 @@ type Props = {
   onChooseFolder: () => void
   onExport: () => void
   canExportFull: boolean
+  fullUnavailable: string | null
   onExportFull: () => void
   onCancel: () => void
   onReveal: (path: string) => void
@@ -182,6 +183,13 @@ export function ExportPanel(p: Props) {
         </p>
       )}
 
+      {!clipsMode && p.fullUnavailable && (
+        <p data-testid="full-unavailable" className="flex items-center gap-1.5 text-xs text-warn">
+          <span className="size-1.5 shrink-0 rounded-full bg-warn" />
+          {p.fullUnavailable}
+        </p>
+      )}
+
       <div className="flex gap-2">
         {p.state.status === 'done' && p.canShare && (
           <button
@@ -260,7 +268,7 @@ export function ExportPanel(p: Props) {
                 <MenuItem testId="export-option-clips" disabled={!p.canExport} onClick={() => choose(p.onExport)}>
                   {exportLabel(p.positions, p.partial)}
                 </MenuItem>
-                <MenuItem testId="export-full" disabled={!p.canExportFull} onClick={() => choose(p.onExportFull)}>
+                <MenuItem testId="export-full" disabled={!p.canExportFull} note={p.fullUnavailable} onClick={() => choose(p.onExportFull)}>
                   {t.exportFull}
                 </MenuItem>
               </div>
@@ -355,7 +363,19 @@ function AudioRows({ audio, disabled }: { audio: NonNullable<Props['audio']>; di
   )
 }
 
-function MenuItem({ testId, disabled, onClick, children }: { testId: string; disabled: boolean; onClick: () => void; children: string }) {
+function MenuItem({
+  testId,
+  disabled,
+  note,
+  onClick,
+  children
+}: {
+  testId: string
+  disabled: boolean
+  note?: string | null
+  onClick: () => void
+  children: string
+}) {
   return (
     <button
       role="menuitem"
@@ -365,6 +385,7 @@ function MenuItem({ testId, disabled, onClick, children }: { testId: string; dis
       onClick={onClick}
     >
       {children}
+      {note && <span className="block text-xs">{note}</span>}
     </button>
   )
 }

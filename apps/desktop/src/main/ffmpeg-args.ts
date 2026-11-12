@@ -128,6 +128,56 @@ export function buildFfmpegArgs(o: CutOptions, platform: NodeJS.Platform = proce
   ]
 }
 
+export type ConcatInput = { path: string; duration: number; audio: boolean }
+
+export type ConcatOptions = CutOptions & { inputs: ConcatInput[]; frame: Size }
+
+export function buildConcatArgs(o: ConcatOptions, platform: NodeJS.Platform = process.platform): string[] {
+  const { width: w, height: h } = o.frame
+  const duration = o.inputs.reduce((sum, input) => sum + input.duration, 0)
+  const videoFades =
+    o.videoFade === 'none'
+      ? []
+      : fadeFilters('fade', duration, o.fadeSeconds, o.videoFade === 'white' ? ':color=white' : '').slice(o.videoFadeIn ? 0 : 1)
+  const audioFades =
+    o.audioFade === 'none' ? [] : fadeFilters('afade', duration, o.fadeSeconds, o.audioFade === 'natural' ? ':curve=qsin' : '')
+  const segments = o.inputs.flatMap((input, i) => {
+    const d = num(input.duration)
+    return [
+      `[${i}:v]scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${d},setpts=PTS-STARTPTS[v${i}]`,
+      input.audio
+        ? `[${i}:a]aformat=sample_rates=48000:channel_layouts=stereo,apad=whole_dur=${d},atrim=duration=${d},asetpts=PTS-STARTPTS[a${i}]`
+        : `anullsrc=r=48000:cl=stereo,atrim=duration=${d}[a${i}]`
+    ]
+  })
+  const joined = `${o.inputs.map((_, i) => `[v${i}][a${i}]`).join('')}concat=n=${o.inputs.length}:v=1:a=1[cv][ca]`
+  const framing = framingFilters(o)
+  const video = o.overlay
+    ? `[cv]${framing.length ? `${framing.join(',')},` : ''}split[base][ref];` +
+      `[${o.inputs.length}:v][ref]scale=w='rw*${num(o.overlay.width)}':h=-1[ov];` +
+      `[base][ov]overlay=x='main_w*${num(o.overlay.x)}':y='main_h*${num(o.overlay.y)}'` +
+      `${videoFades.map((f) => `,${f}`).join('')}[v]`
+    : `[cv]${[...framing, ...videoFades].join(',') || 'null'}[v]`
+  const audio = `[ca]${audioFades.join(',') || 'anull'}[a]`
+  return [
+    '-hide_banner',
+    '-y',
+    ...o.inputs.flatMap((input) => ['-i', input.path]),
+    ...overlayInput(o.overlay),
+    '-filter_complex', [...segments, joined, video, audio].join(';'),
+    '-map', '[v]',
+    '-map', '[a]',
+    ...VIDEO_ENCODERS[platform]!,
+    '-b:v', o.bitrate ?? '12M',
+    '-c:a', 'aac',
+    '-b:a', '320k',
+    '-movflags', '+faststart',
+    '-progress', 'pipe:1',
+    '-nostats',
+    o.output
+  ]
+}
+
 const even = (n: number) => Math.round(n / 2) * 2
 
 const positive = (value: number, fallback: number) => {

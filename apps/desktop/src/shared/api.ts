@@ -5,7 +5,7 @@ import type { ClipFraming } from '@cuts/core/framing'
 import type { OutputFormat } from '@cuts/core/formats'
 import type { ExportOverlay, Size } from '@cuts/core/overlay'
 
-export type ExportClip = Clip & ClipSettings & { position: number }
+export type ExportClip = Clip & ClipSettings & { position: number; input?: string; frame?: Size }
 
 export type Session = {
   clips: Clip[]
@@ -27,6 +27,7 @@ export type ExportRequest = {
   background: ExportBackground | null
   extras: AudioExtras
   frame: Size
+  inputs?: { path: string; duration: number }[]
 }
 
 export type FrameRequest = ClipFraming & {

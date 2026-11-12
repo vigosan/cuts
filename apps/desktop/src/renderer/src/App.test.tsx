@@ -2958,8 +2958,8 @@ describe('Several videos as one session', () => {
       await act(async () => userEvent.click(await inPanel('export')))
       const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
       expect(clips).toEqual([
-        expect.objectContaining({ start: 65, end: 70, videoFade: 'white', position: 0 }),
-        expect.objectContaining({ start: 10, end: 20, videoFade: 'black', position: 1 })
+        expect.objectContaining({ input: SOURCES[2].path, start: 5, end: 10, videoFade: 'white', position: 0 }),
+        expect.objectContaining({ input: SOURCES[0].path, start: 10, end: 20, videoFade: 'black', position: 1 })
       ])
     })
 
@@ -3266,6 +3266,111 @@ describe('Several videos as one session', () => {
         expect(screen.getByTestId('suggest-notice')).toHaveTextContent(t.locateMismatch('IMG_0413.mov'))
         expect(screen.getByTestId('missing-1')).toBeInTheDocument()
         expect(api.openVideos).toHaveBeenCalledTimes(1)
+      })
+
+      it('asks to skip the clips of the missing video and exports the others, so one moved file never blocks the carousel', async () => {
+        await openWithMissing()
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        expect(confirm).toHaveBeenCalledWith(t.skipMissingConfirm(2, 1))
+        confirm.mockRestore()
+        const { clips, inputs } = vi.mocked(api.exportClips).mock.calls[0][0]
+        expect(inputs).toBeUndefined()
+        expect(clips).toEqual([
+          expect.objectContaining({ id: 'a', input: SOURCES[0].path, start: 10, end: 20, position: 0 }),
+          expect.objectContaining({ id: 'c', input: SOURCES[2].path, start: 5, end: 10, position: 2 })
+        ])
+      })
+
+      it('exports nothing when skipping the missing clips is cancelled', async () => {
+        await openWithMissing()
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        confirm.mockRestore()
+        expect(api.exportClips).not.toHaveBeenCalled()
+      })
+
+      it('says videos are missing instead of asking when every chosen clip is in a missing video', async () => {
+        await openWithMissing()
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        await userEvent.click(screen.getByTestId('clip-row-2'))
+        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        expect(confirm).not.toHaveBeenCalled()
+        confirm.mockRestore()
+        expect(api.exportClips).not.toHaveBeenCalled()
+        expect(screen.getByTestId('export-error')).toHaveTextContent(t.fullNeedsAllVideos)
+      })
+
+      it('turns off the full recording and says why, since it would have a hole where the missing video is', async () => {
+        await openWithMissing()
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        await userEvent.click(screen.getByTestId('export-menu'))
+        expect(screen.getByTestId('export-full')).toBeDisabled()
+        expect(screen.getByTestId('export-full')).toHaveTextContent(t.fullNeedsAllVideos)
+      })
+
+      it('says the video is not found instead of saving a frame when the playhead is on the missing video', async () => {
+        const video = await openWithMissing()
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        seekOnTimeline(video, 70, 40)
+        await act(async () => menuExportFrame())
+        expect(api.exportFrame).not.toHaveBeenCalled()
+        expect(screen.getByTestId('export-error')).toHaveTextContent(t.notFound('IMG_0413.mov'))
+      })
+    })
+
+    describe('exporting from the original videos', () => {
+      const PORTRAIT = { ...SOURCES[1], width: 1080, height: 1920 }
+
+      async function openMixed(sources = [SOURCES[0], PORTRAIT, SOURCES[2]], clips: { id: string; start: number; end: number }[] = []) {
+        vi.mocked(api.loadSession).mockResolvedValue({ clips, clipSettings: {}, defaultSettings: DEFAULT_SETTINGS, format: 'original', baseName: 'IMG_0412' })
+        vi.mocked(api.openVideo).mockResolvedValue(sources.map((source) => source.path))
+        vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources })
+        render(<App />)
+        await userEvent.click(screen.getByTestId('open-video'))
+        if (clips.length > 0) await screen.findByTestId(`clip-row-${clips.length}`)
+        const video = showDuration(60)
+        await userEvent.click(screen.getByTestId('choose-folder'))
+        return video
+      }
+
+      it('exports a clip of a portrait video at its own size and orientation, not the first video\'s', async () => {
+        await openMixed(undefined, [{ id: 'p', start: 70, end: 80 }])
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        expect(api.exportClips).toHaveBeenCalledWith(
+          expect.objectContaining({
+            clips: [expect.objectContaining({ input: PORTRAIT.path, start: 10, end: 20, frame: { width: 1080, height: 1920 }, position: 0 })]
+          })
+        )
+      })
+
+      it('joins every video into the full recording at the first video\'s size', async () => {
+        await openMixed()
+        await act(async () => userEvent.click(screen.getByTestId('export')))
+        expect(api.exportClips).toHaveBeenCalledWith(
+          expect.objectContaining({
+            kind: 'full',
+            inputs: [SOURCES[0], PORTRAIT, SOURCES[2]].map(({ path, duration }) => ({ path, duration })),
+            frame: { width: 1920, height: 1080 },
+            clips: [expect.objectContaining({ start: 0, end: 120, position: 0 })]
+          })
+        )
+      })
+
+      it('turns off the full recording and says why when HDR and non-HDR videos are mixed, since their colours cannot be matched', async () => {
+        await openMixed([SOURCES[0], { ...PORTRAIT, hdr: true }, SOURCES[2]])
+        expect(screen.getByTestId('export')).toBeDisabled()
+        expect(screen.getByTestId('full-unavailable')).toHaveTextContent(t.fullMixesHdr)
+      })
+
+      it('saves the frame of the video under the playhead at its local time', async () => {
+        const video = await openMixed()
+        seekOnTimeline(video, 70, 40)
+        await act(async () => menuExportFrame())
+        expect(api.exportFrame).toHaveBeenCalledWith(expect.objectContaining({ input: PORTRAIT.path, time: 10 }))
       })
     })
   })

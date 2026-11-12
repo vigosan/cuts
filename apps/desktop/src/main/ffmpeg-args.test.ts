@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFfmpegArgs, buildFrameArgs, bundledFfmpegPath, findFfmpeg, parseProgressSeconds } from './ffmpeg-args'
+import { buildConcatArgs, buildFfmpegArgs, buildFrameArgs, bundledFfmpegPath, findFfmpeg, parseProgressSeconds } from './ffmpeg-args'
 
 const base = {
   input: '/Users/vicent/Movies/2026-10-22 22-33-13.mov',
@@ -188,6 +188,63 @@ describe('buildFfmpegArgs', () => {
     expect(valueAfter(args, '-c:v')).toBe('libopenh264')
     expect(args).not.toContain('-allow_sw')
     expect(valueAfter(args, '-b:v')).toBe('12M')
+  })
+})
+
+describe('buildConcatArgs', () => {
+  const inputs = [
+    { path: '/Movies/set/IMG_0412.mov', duration: 60, audio: true },
+    { path: '/Movies/set/IMG_0413.mov', duration: 40, audio: true }
+  ]
+  const full = { ...base, start: 0, end: 100, inputs, frame: { width: 1920, height: 1080 } }
+  const graph = (args: string[]) => valueAfter(args, '-filter_complex')
+
+  it('reads every video of the session in order, so the full recording plays them back to back', () => {
+    const args = buildConcatArgs(full)
+    expect(args.flatMap((a, i) => (a === '-i' ? [args[i + 1]] : []))).toEqual(inputs.map((input) => input.path))
+    expect(graph(args)).toContain('[v0][a0][v1][a1]concat=n=2:v=1:a=1')
+  })
+
+  it('fits a portrait video into the landscape frame of the first one with bars, since one file has one size', () => {
+    const args = buildConcatArgs(full)
+    for (const i of [0, 1]) {
+      expect(graph(args)).toContain(
+        `[${i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1`
+      )
+    }
+  })
+
+  it('cuts each video to its own length so sound and picture stay together after every join', () => {
+    const g = graph(buildConcatArgs(full))
+    expect(g).toContain('trim=duration=60,setpts=PTS-STARTPTS[v0]')
+    expect(g).toContain('[1:a]aformat=sample_rates=48000:channel_layouts=stereo,apad=whole_dur=40,atrim=duration=40,asetpts=PTS-STARTPTS[a1]')
+  })
+
+  it('adds silence for a video without sound, so the videos after it keep their sound in place', () => {
+    const g = graph(buildConcatArgs({ ...full, inputs: [inputs[0], { ...inputs[1], audio: false }] }))
+    expect(g).not.toContain('[1:a]')
+    expect(g).toContain('anullsrc=r=48000:cl=stereo,atrim=duration=40[a1]')
+  })
+
+  it('fades the whole recording in and out once, not at every join', () => {
+    const g = graph(buildConcatArgs({ ...full, videoFade: 'black', audioFade: 'natural' }))
+    expect(g).toContain('[cv]fade=t=in:st=0:d=1,fade=t=out:st=99:d=1[v]')
+    expect(g).toContain('[ca]afade=t=in:st=0:d=1:curve=qsin,afade=t=out:st=99:d=1:curve=qsin[a]')
+  })
+
+  it('applies the chosen format and the overlay on the joined picture, as for a single video', () => {
+    const args = buildConcatArgs({ ...full, format: '9:16', overlay })
+    const inputPaths = args.flatMap((a, i) => (a === '-i' ? [args[i + 1]] : []))
+    expect(inputPaths[2]).toBe('/o.png')
+    expect(graph(args)).toContain(
+      "[cv]crop='min(iw,ih*1080/1920)':'min(ih,iw*1920/1080)':'(iw-ow)*0.5':'(ih-oh)*0.5',scale=1080:1920,setsar=1,split[base][ref];[2:v][ref]scale=w='rw*0.25':h=-1[ov];[base][ov]overlay=x='main_w*0.5':y='main_h*0.1'[v]"
+    )
+  })
+
+  it('writes the same H.264/AAC mp4 as a single export', () => {
+    const args = buildConcatArgs(full, 'darwin')
+    expect(args).toEqual(expect.arrayContaining(['-map', '[v]', '-map', '[a]', '-c:v', 'h264_videotoolbox', '-c:a', 'aac', '-movflags', '+faststart']))
+    expect(args.at(-1)).toBe(base.output)
   })
 })
 

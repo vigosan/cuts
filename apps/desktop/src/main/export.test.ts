@@ -33,6 +33,7 @@ function deps(overrides: Partial<ExportDeps> = {}): ExportDeps {
     confirmOverwrite: vi.fn(async () => true),
     run: vi.fn(async (_ffmpeg: string, _args: string[], onSeconds: (s: number) => void) => onSeconds(25)),
     onProgress: vi.fn(),
+    info: vi.fn(async () => 'Stream #0:0: Video: h264, yuv420p, 1920x1080\n  Stream #0:1: Audio: aac, 48000 Hz, stereo'),
     ...overrides
   }
 }
@@ -212,6 +213,42 @@ describe('exportClips', () => {
 })
 
 const frameRequest = { input: '/Movies/session.mov', folder: '/Movies/Instagram', baseName: 'sesion', format: '4:5' as const, time: 120, framing: 'crop' as const, cropX: 0.5, cropY: 0.5, overlay: null, background: null }
+
+describe('sessions of several videos', () => {
+  const sources = [
+    { path: '/Movies/set/IMG_0412.mov', duration: 60 },
+    { path: '/Movies/set/IMG_0413.mov', duration: 40 }
+  ]
+
+  it('cuts a clip from its own video at its local times, since nothing is joined on disk', async () => {
+    const d = deps()
+    await exportClips({ ...request, clips: [{ ...request.clips[0], start: 5, end: 15, input: sources[1].path, frame: { width: 1080, height: 1920 } }] }, d)
+    const args = vi.mocked(d.run).mock.calls[0][1]
+    expect(args[args.indexOf('-i') + 1]).toBe(sources[1].path)
+    expect(args[args.indexOf('-ss') + 1]).toBe('5')
+    expect(args[args.indexOf('-t') + 1]).toBe('10')
+  })
+
+  it('keeps clips without their own video on the request input, so a single video exports as before', async () => {
+    const d = deps()
+    await exportClips(request, d)
+    for (const [, args] of vi.mocked(d.run).mock.calls) expect(args[args.indexOf('-i') + 1]).toBe(request.input)
+  })
+
+  it('joins every video into the full recording, adding silence only where a video has no sound', async () => {
+    const info = vi.fn(async (path: string) => (path === sources[1].path ? 'Stream #0:0: Video: h264, yuv420p, 1080x1920' : 'Stream #0:1: Audio: aac, 48000 Hz, stereo'))
+    const d = deps({ info, run: vi.fn(async (_f: string, _a: string[], onSeconds: (s: number) => void) => onSeconds(50)) })
+    const result = await exportClips({ ...request, kind: 'full', inputs: sources, clips: [{ ...request.clips[0], start: 0, end: 100, position: 0 }] }, d)
+    expect(result).toEqual({ ok: true, files: [join('/Movies/Instagram', 'sesion-full.mp4')] })
+    const args = vi.mocked(d.run).mock.calls[0][1]
+    expect(args.flatMap((a, i) => (a === '-i' ? [args[i + 1]] : []))).toEqual(sources.map((source) => source.path))
+    const graph = args[args.indexOf('-filter_complex') + 1]
+    expect(graph).toContain('[0:a]')
+    expect(graph).toContain('anullsrc=r=48000:cl=stereo,atrim=duration=40[a1]')
+    expect(graph).toContain('scale=1920:1080:force_original_aspect_ratio=decrease')
+    expect(d.onProgress).toHaveBeenCalledWith({ index: 0, ratio: 0.5 })
+  })
+})
 
 describe('audio recordings and full recordings', () => {
   const audioRequest: ExportRequest = {

@@ -3,7 +3,8 @@ import type { ExportProgress, ExportRequest, ExportResult, FrameRequest } from '
 import { clipDuration, frameFileName, fullFileName, outputFileName, safeBaseName } from '@cuts/core/clips'
 import type { Messages } from '@cuts/core/i18n'
 import { mediaKind } from '../shared/video-formats'
-import { buildAudioArgs, buildFfmpegArgs, buildFrameArgs } from './ffmpeg-args'
+import { buildAudioArgs, buildConcatArgs, buildFfmpegArgs, buildFrameArgs } from './ffmpeg-args'
+import { parseMediaInfo } from './join'
 
 export type ExportDeps = {
   ffmpeg: string | null
@@ -14,6 +15,7 @@ export type ExportDeps = {
   confirmOverwrite: (names: string[]) => Promise<boolean>
   run: (ffmpeg: string, args: string[], onSeconds: (seconds: number) => void) => Promise<void>
   onProgress: (progress: ExportProgress) => void
+  info: (path: string) => Promise<string>
   t: Messages
 }
 
@@ -28,6 +30,10 @@ function folderProblem(error: Error & { code?: string }, folder: string, deps: E
     return t.folderNotWritable
   }
   return null
+}
+
+async function withAudio(inputs: NonNullable<ExportRequest['inputs']>, deps: ExportDeps) {
+  return Promise.all(inputs.map(async (input) => ({ ...input, audio: parseMediaInfo(await deps.info(input.path)).audio !== null })))
 }
 
 export async function exportClips(request: ExportRequest, deps: ExportDeps): Promise<ExportResult> {
@@ -51,9 +57,13 @@ export async function exportClips(request: ExportRequest, deps: ExportDeps): Pro
 
   for (const [index, clip] of request.clips.entries()) {
     const cut = { ...request, ...clip, videoFadeIn: request.kind === 'full' || clip.position > 0, output: files[index] }
-    const args = background ? buildAudioArgs({ ...cut, background, bitrate: '4M' }) : buildFfmpegArgs(cut)
     const length = clipDuration(clip)
     try {
+      const args = background
+        ? buildAudioArgs({ ...cut, background, bitrate: '4M' })
+        : request.inputs
+          ? buildConcatArgs({ ...cut, inputs: await withAudio(request.inputs, deps) })
+          : buildFfmpegArgs(cut)
       await deps.run(ffmpeg, args, (seconds) => deps.onProgress({ index, ratio: Math.min(1, seconds / length) }))
     } catch (error) {
       await deps.remove(files[index]).catch(() => {})

@@ -243,6 +243,7 @@ app.whenReady().then(() => {
       },
       remove: (path) => rm(path, { force: true }),
       run: runFfmpeg,
+      info: (path) => readFfmpegInfo(bundledFfmpeg()!, path),
       onProgress: (progress) => event.sender.send('export-progress', progress),
       t,
       confirmOverwrite: async (names) => {
@@ -265,7 +266,17 @@ app.whenReady().then(() => {
 
   ipcMain.handle('export-clips', (event, request: ExportRequest) => {
     cancelled = false
-    return exportClips({ ...request, overlay: ownedOverlay(request.overlay), background: ownedBackground(request.background) }, exportDeps(event))
+    return exportClips(
+      {
+        ...request,
+        input: opened(request.input),
+        clips: request.clips.map((clip) => (clip.input === undefined ? clip : { ...clip, input: opened(clip.input) })),
+        ...(request.inputs ? { inputs: request.inputs.map((input) => ({ ...input, path: opened(input.path) })) } : {}),
+        overlay: ownedOverlay(request.overlay),
+        background: ownedBackground(request.background)
+      },
+      exportDeps(event)
+    )
   })
 
   ipcMain.handle('export-frame', (event, request: FrameRequest) => exportFrame({ ...request, input: opened(request.input), overlay: ownedOverlay(request.overlay), background: ownedBackground(request.background) }, exportDeps(event)))

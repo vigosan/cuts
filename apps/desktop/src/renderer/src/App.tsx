@@ -27,7 +27,7 @@ import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/c
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { snapToBeat } from '@cuts/core/beats'
-import { confineMoment, nextAvailable, orderVideos, partBoundsAt, partStarts, removePart } from '@cuts/core/parts'
+import { confineMoment, localTime, nextAvailable, orderVideos, partBoundsAt, partStarts, removePart } from '@cuts/core/parts'
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
 import { useSessionClock } from './useSessionClock'
@@ -376,18 +376,30 @@ export function App() {
   const chooseBackground = () => void window.api.chooseBackground().then(takeBackground, () => takeBackground('invalid'))
   const exportBackground = () => (isAudio && background ? { path: background.path, kind: background.kind } : null)
 
+  const fromSource = (clip: Clip) => {
+    if (sources.length === 0) return {}
+    const { index, time } = localTime(sources, clip.start)
+    const { path, width, height } = sources[index]
+    return { input: path, start: time, end: time + clip.end - clip.start, frame: { width, height } }
+  }
+  const inMissingSource = (clip: Clip) => sources.length > 0 && sources[localTime(sources, clip.start).index].missing
+
   const runExport = async () => {
     if (!mediaPath || !destination) return
+    const available = exported.filter((clip) => !inMissingSource(clip))
+    const skipped = exported.length - available.length
+    if (available.length > 0 && skipped > 0 && !window.confirm(t.skipMissingConfirm(available.length, skipped))) return
     setExportedWith(exportInputs)
-    setExportState({ status: 'running', progress: exported.map(() => 0) })
-    setExportIds(exported.map((clip) => clip.id))
+    if (available.length === 0) return setExportState({ status: 'error', error: t.fullNeedsAllVideos })
+    setExportState({ status: 'running', progress: available.map(() => 0) })
+    setExportIds(available.map((clip) => clip.id))
     const result = await window.api
       .exportClips({
         input: mediaPath,
         folder: destination,
         baseName,
         format,
-        clips: exported.map((clip) => ({ ...clip, ...settingsOf(clip), position: clips.indexOf(clip) })),
+        clips: available.map((clip) => ({ ...clip, ...settingsOf(clip), position: clips.indexOf(clip), ...fromSource(clip) })),
         overlay: exportOverlay(),
         kind: 'clips',
         background: exportBackground(),
@@ -414,7 +426,13 @@ export function App() {
         kind: 'full',
         background: exportBackground(),
         extras: isAudio ? extras : { ...extras, waveform: false, progressBar: false },
-        frame: videoSize ?? { width: 1920, height: 1080 }
+        frame: videoSize ?? { width: 1920, height: 1080 },
+        ...(sources.length > 0
+          ? {
+              inputs: sources.map(({ path, duration }) => ({ path, duration })),
+              frame: { width: sources[0].width, height: sources[0].height }
+            }
+          : {})
       })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     setExportState(result.ok ? { status: 'done', files: result.files } : { status: 'error', error: result.error })
@@ -423,8 +441,14 @@ export function App() {
   const runExportFrame = async () => {
     if (!mediaPath || !destination || exporting) return
     const { framing, cropX, cropY } = shownSettings
+    const at = localTime(sources, now())
+    const source = sources[at.index]
+    if (source?.missing) {
+      setExportedWith(exportInputs)
+      return setExportState({ status: 'error', error: t.notFound(source.name) })
+    }
     const result = await window.api
-      .exportFrame({ input: mediaPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY, overlay: exportOverlay(), background: exportBackground() })
+      .exportFrame({ input: source?.path ?? mediaPath, folder: destination, baseName, format, time: at.time, framing, cropX, cropY, overlay: exportOverlay(), background: exportBackground() })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     if (result.ok) return window.api.reveal(result.files[0])
     setExportedWith(exportInputs)
@@ -565,7 +589,12 @@ export function App() {
 
   const hasPicture = !isAudio || (background !== null && videoSize !== null)
   const canExport = clips.length > 0 && folder !== null && baseName.trim() !== '' && hasPicture
-  const canExportFull = duration > 0 && folder !== null && baseName.trim() !== '' && hasPicture
+  const fullUnavailable = sources.some((source) => source.missing)
+    ? t.fullNeedsAllVideos
+    : new Set(sources.map((source) => source.hdr)).size > 1
+      ? t.fullMixesHdr
+      : null
+  const canExportFull = duration > 0 && folder !== null && baseName.trim() !== '' && hasPicture && fullUnavailable === null
 
   const fileName = sources.length > 0 ? `${sources[0].name} +${sources.length - 1}` : videoPath?.split(/[\\/]/).pop()
 
@@ -997,6 +1026,7 @@ export function App() {
               }}
               onExport={runExport}
               canExportFull={canExportFull}
+              fullUnavailable={fullUnavailable}
               onExportFull={runExportFull}
               onCancel={window.api.cancelExport}
               onReveal={window.api.reveal}
