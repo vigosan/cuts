@@ -15,6 +15,7 @@ import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { importOverlay, isOwnedOverlay, type OverlayDeps } from './overlay'
 import { openFileBatch } from './open-file-batch'
+import { videosInFolder } from './folder-videos'
 import { matchesMissing, openVideos, type OpenDeps } from './open-videos'
 import { existingAncestor } from './paths'
 import { canRemember, forgetRecent, isListed, loadRecents, posterFile, posterFrame, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
@@ -124,6 +125,11 @@ app.whenReady().then(() => {
   const overlaysDir = join(app.getPath('userData'), 'overlays')
   const backgroundsDir = join(app.getPath('userData'), 'backgrounds')
   handleMediaProtocol((path) => openedVideos.has(path) || isOwnedOverlay(path, overlaysDir) || isOwnedBackground(path, backgroundsDir))
+  ipcMain.handle('videos-in-folder', async (_event, folder: string) => {
+    const videos = await videosInFolder(folder).catch(() => [])
+    videos.forEach((path) => allowVideo(path))
+    return videos
+  })
   ipcMain.on('allow-video', (event, path: string) => {
     allowVideo(path)
     event.returnValue = null

@@ -571,6 +571,18 @@ export function App() {
     )
   }
 
+  const dropFiles = async (files: File[], folders: File[]) => {
+    const supported = files.filter((file) => isSupportedMedia(file.name))
+    if (supported.length < files.length) setUnsupportedDrops((count) => count + 1)
+    const loose = supported.map((file) => window.api.pathForFile(file))
+    const inFolders = folders.length > 0 ? (await Promise.all(folders.map((folder) => window.api.videosInFolder(folder)))).flat() : []
+    if (folders.length > 0 && inFolders.length === 0) setUnsupportedDrops((count) => count + 1)
+    const paths = [...loose, ...inFolders]
+    if (paths.length === 0) return
+    if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
+    void openPaths(orderVideos([], paths), null)
+  }
+
   const onMenuOpenVideo = useEffectEvent(() => void openVideo())
   useEffect(() => window.api.onMenuOpenVideo(() => onMenuOpenVideo()), [])
 
@@ -633,11 +645,12 @@ export function App() {
         setDragDepth(0)
         const files = Array.from(e.dataTransfer.files)
         if (files.length === 0 || exporting) return
-        const supported = files.filter((file) => isSupportedMedia(file.name))
-        if (supported.length < files.length) setUnsupportedDrops((count) => count + 1)
-        if (supported.length === 0) return
-        if (clips.length > 0 && !window.confirm(t.replaceVideoConfirm)) return
-        void openPaths(orderVideos([], supported.map((file) => window.api.pathForFile(file))), null)
+        const items = Array.from(e.dataTransfer.items ?? [])
+        const isFolder = (index: number) => items[index]?.webkitGetAsEntry()?.isDirectory === true
+        void dropFiles(
+          files.filter((_, i) => !isFolder(i)),
+          files.filter((_, i) => isFolder(i))
+        )
       }}
     >
       {(window.api.platform === 'darwin' || videoPath) && (

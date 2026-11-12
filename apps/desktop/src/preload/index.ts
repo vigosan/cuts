@@ -8,6 +8,7 @@ const api: Api = {
     ipcRenderer.sendSync('allow-video', path)
     return path
   },
+  videosInFolder: (folder) => ipcRenderer.invoke('videos-in-folder', webUtils.getPathForFile(folder)),
   openVideo: () => ipcRenderer.invoke('open-video'),
   openVideos: (paths, replacing, carry) => ipcRenderer.invoke('open-videos', paths, replacing, carry),
   chooseOverlay: () => ipcRenderer.invoke('choose-overlay'),

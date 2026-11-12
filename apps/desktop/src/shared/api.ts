@@ -63,6 +63,7 @@ export { WAVE_OPACITIES, type AudioExtras } from '@cuts/core/audio-layers'
 export type Api = {
   platform: NodeJS.Platform
   pathForFile(file: File): string
+  videosInFolder(folder: File): Promise<string[]>
   openVideo(): Promise<string[] | null>
   openVideos(paths: string[], replacing: string | null, carry?: Session): Promise<OpenResult>
   chooseOverlay(): Promise<ImportedOverlay | 'invalid' | null>

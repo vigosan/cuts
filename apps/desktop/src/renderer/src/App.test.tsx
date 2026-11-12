@@ -14,6 +14,7 @@ function makeApi(): Api {
   return {
     platform: 'darwin',
     pathForFile: vi.fn(() => VIDEO),
+    videosInFolder: vi.fn(async () => []),
     openVideo: vi.fn(async () => [VIDEO]),
     openVideos: vi.fn(async (paths: string[]) => ({ ok: true as const, path: paths[0], sources: [] })),
     chooseOverlay: vi.fn(async () => null),
@@ -231,6 +232,30 @@ describe('App', () => {
     render(<App />)
     fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'IMG_0042.MOV')] } })
     expect(await screen.findByTestId('video')).toBeInTheDocument()
+  })
+
+  it('opens the videos inside a dropped folder as one session, so a recording session opens with a single drag', async () => {
+    const folder = new File([''], 'sesion 8 nov')
+    const loose = new File([''], 'IMG_0042.MOV')
+    vi.mocked(api.videosInFolder).mockResolvedValue(['/Users/vicent/Desktop/sesion 8 nov/a.mp4', '/Users/vicent/Desktop/sesion 8 nov/b.mp4'])
+    render(<App />)
+    fireEvent.drop(screen.getByTestId('app'), {
+      dataTransfer: { files: [folder, loose], items: [{ webkitGetAsEntry: () => ({ isDirectory: true }) }, { webkitGetAsEntry: () => ({ isDirectory: false }) }] }
+    })
+    await waitFor(() =>
+      expect(api.openVideos).toHaveBeenCalledWith([VIDEO, '/Users/vicent/Desktop/sesion 8 nov/a.mp4', '/Users/vicent/Desktop/sesion 8 nov/b.mp4'], null, undefined)
+    )
+    expect(api.videosInFolder).toHaveBeenCalledWith(folder)
+    expect(screen.queryByTestId('unsupported-video')).not.toBeInTheDocument()
+  })
+
+  it('says what Cuts opens when a dropped folder has no videos, instead of doing nothing', async () => {
+    render(<App />)
+    fireEvent.drop(screen.getByTestId('app'), {
+      dataTransfer: { files: [new File([''], 'fotos')], items: [{ webkitGetAsEntry: () => ({ isDirectory: true }) }] }
+    })
+    expect(await screen.findByTestId('unsupported-video')).toHaveTextContent(t.unsupportedVideo)
+    expect(api.openVideos).not.toHaveBeenCalled()
   })
 
   it('ignores a dropped file that is not a supported video, so a stray drop never threatens the marked clips', async () => {
