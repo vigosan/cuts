@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
 import electronUpdater from 'electron-updater'
@@ -17,8 +17,8 @@ import { importOverlay, isOwnedOverlay, type OverlayDeps } from './overlay'
 import { openFileBatch } from './open-file-batch'
 import { openVideos, type OpenDeps } from './open-videos'
 import { existingAncestor } from './paths'
-import { canRemember, forgetRecent, loadRecents, posterFile, posterTime, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
-import { loadSession, removeSession, saveSession } from './sessions'
+import { canRemember, forgetRecent, isListed, loadRecents, posterFile, posterFrame, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
+import { listSessions, loadSession, removeSession, saveSession } from './sessions'
 import { UPDATE_CHECK_INTERVAL_MS, updatesEnabled } from './updates'
 import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
 
@@ -95,19 +95,21 @@ app.whenReady().then(() => {
     )
   )
   app.setAboutPanelOptions({ credits: t.aboutCredits })
+  void rm(join(app.getPath('userData'), 'joined'), { recursive: true, force: true })
   const openedVideos = new Set<string>()
   const recentsFile = join(app.getPath('userData'), 'recent-videos.json')
   const sessionsDir = join(app.getPath('userData'), 'sessions')
   const postersDir = join(app.getPath('userData'), 'posters')
-  const savePoster = async (path: string) => {
-    if (mediaKind(path) === 'audio') return
+  const savePoster = async (entry: RecentEntry) => {
+    if (mediaKind(entry.path) === 'audio') return
     const ffmpeg = bundledFfmpeg()
     if (!ffmpeg) return
-    const session = await loadSession(sessionsDir, path)
-    const jpeg = await captureFfmpeg(ffmpeg, thumbnailArgs(path, posterTime(session?.clips ?? []), POSTER_HEIGHT))
+    const frame = posterFrame(entry, await loadSession(sessionsDir, entry.path), existsSync)
+    if (!frame) return
+    const jpeg = await captureFfmpeg(ffmpeg, thumbnailArgs(frame.path, frame.time, POSTER_HEIGHT))
     if (jpeg.byteLength === 0) return
     await mkdir(postersDir, { recursive: true })
-    await writeFile(posterFile(postersDir, path), jpeg)
+    await writeFile(posterFile(postersDir, entry.path), jpeg)
   }
   const bookmarks = new Map<string, string>()
   const allowVideo = (path: string, bookmark?: string) => {
@@ -269,50 +271,42 @@ app.whenReady().then(() => {
   ipcMain.handle('load-session', (_event, videoPath: string) => loadSession(sessionsDir, videoPath))
   ipcMain.on('save-session', (_event, videoPath: string, session: Session) => void saveSession(sessionsDir, videoPath, session))
 
-  const joinedDir = join(app.getPath('userData'), 'joined')
   const openDeps: OpenDeps = {
-    dir: joinedDir,
     exists: existsSync,
     info: (path) => readFfmpegInfo(bundledFfmpeg()!, path),
-    run: (args) => runFfmpeg(bundledFfmpeg()!, args, () => {}),
-    read: (path) => readFile(path, 'utf8').catch(() => null),
-    write: async (path, text) => {
-      await mkdir(joinedDir, { recursive: true })
-      await writeFile(path, text)
-    },
-    rename,
-    remove: (path) => rm(path, { force: true }),
+    loadSession: (id) => loadSession(sessionsDir, id),
+    savedSessions: () => listSessions(sessionsDir),
     saveSession: (videoPath, session) => saveSession(sessionsDir, videoPath, session),
     removeSession: (videoPath) => removeSession(sessionsDir, videoPath),
     forget: (path) => forgetRecent(recentsFile, path),
     remember: async (entry) => {
-      if (!canRemember(entry, process.mas === true)) return []
-      const evicted = await rememberRecent(recentsFile, entry)
-      savePoster(entry.path).catch(() => {})
-      return evicted
+      if (!canRemember(entry, process.mas === true)) return
+      await rememberRecent(recentsFile, entry)
+      savePoster(entry).catch(() => {})
     },
     bookmark: (path) => bookmarks.get(path),
     now: Date.now
   }
   const open = async (paths: string[], replacing: string | null, carry?: Session) => {
     const result = await openVideos(paths, replacing, openDeps, carry)
-    if (result.ok) openedVideos.add(result.path)
+    openedVideos.add(result.path)
+    result.sources.filter((source) => !source.missing).forEach((source) => openedVideos.add(source.path))
     return result
   }
   ipcMain.handle('open-videos', (_event, paths: string[], replacing: string | null, carry?: Session) =>
     open(paths.map(opened), replacing === null ? null : opened(replacing), carry)
   )
 
-  const exists = (entry: RecentEntry) => {
-    const stop = entry.bookmark ? (app.startAccessingSecurityScopedResource(entry.bookmark) as () => void) : undefined
+  const exists = (path: string, bookmark?: string) => {
+    const stop = bookmark ? (app.startAccessingSecurityScopedResource(bookmark) as () => void) : undefined
     try {
-      return existsSync(entry.path)
+      return existsSync(path)
     } finally {
       stop?.()
     }
   }
   ipcMain.handle('recent-videos', async () => {
-    const recents = (await loadRecents(recentsFile)).filter(exists)
+    const recents = (await loadRecents(recentsFile)).filter((entry) => isListed(entry, exists))
     return Promise.all(
       recents.map(async (entry) =>
         toRecentVideo(
@@ -327,11 +321,8 @@ app.whenReady().then(() => {
     const entry = (await loadRecents(recentsFile)).find((recent) => recent.path === path)
     if (!entry) return null
     if (entry.sources) {
-      entry.sources.forEach((source, index) => {
-        const bookmark = entry.bookmarks?.[index]
-        if (bookmark) app.startAccessingSecurityScopedResource(bookmark)
-        allowVideo(source, bookmark)
-      })
+      entry.bookmarks?.forEach((bookmark) => app.startAccessingSecurityScopedResource(bookmark))
+      entry.sources.forEach((source, index) => allowVideo(source, entry.bookmarks?.[index]))
       return open(entry.sources, null)
     }
     if (entry.bookmark) app.startAccessingSecurityScopedResource(entry.bookmark)

@@ -63,7 +63,9 @@ const api: Api = {
   },
   restartToUpdate: () => ipcRenderer.send('restart-to-update'),
   recentVideos: () => ipcRenderer.invoke('recent-videos'),
-  openRecent: (path) => ipcRenderer.invoke('open-recent', path)
+  openRecent: (path) => ipcRenderer.invoke('open-recent', path),
+  checkSources: (paths) => ipcRenderer.invoke('check-sources', paths),
+  locateVideo: (duration) => ipcRenderer.invoke('locate-video', duration)
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useMemo, useReducer, useRef, useState } from 'react'
 import { defaultBaseName, formatTime, isOverLimit, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import type { ClipSettings } from '@cuts/core/fades'
-import type { AudioExtras, ExportResult, ImportedBackground, ImportedOverlay, OpenResult, RecentVideo, Session, Source } from '@shared/api'
+import type { AudioExtras, ExportResult, ImportedBackground, ImportedOverlay, RecentVideo, Session, Source } from '@shared/api'
 import { formatSize, type OutputFormat } from '@cuts/core/formats'
 import { clampPlacement, defaultPlacement, outputFrame, type Overlay } from '@cuts/core/overlay'
 import { mediaUrl } from '@shared/media-url'
@@ -15,7 +15,6 @@ import { OverlayLayer } from './components/OverlayLayer'
 import { BarPreview, WavePreview } from './components/AudioLayers'
 import { BAR_ASPECT, WAVE_ASPECT, defaultBarPlacement, defaultWavePlacement } from '@cuts/core/audio-layers'
 import { PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon, TrashIcon } from './components/icons'
-import { JoiningVideos } from './components/JoiningVideos'
 import { Notice } from './components/Notice'
 import { RecentVideos } from './components/RecentVideos'
 import appIcon from '../../../build/icon.svg'
@@ -41,6 +40,8 @@ const DEFAULT_FPS = 30
 const clipsHistory = withHistory(clipsReducer)
 const APP_FOLDER = 'Cuts'
 
+const playablePath = (path: string, sources: Source[]) => (sources.find((source) => !source.missing) ?? sources[0])?.path ?? path
+
 function zoomLabel(span: Zoom): string {
   if (span === null) return t.zoomAll
   return span >= 60 ? `${span / 60} min` : `${span} s`
@@ -51,6 +52,7 @@ export function App() {
   const [videoPath, setVideoPath] = useState<string | null>(null)
   const [sources, setSources] = useState<Source[]>([])
   const [namePath, setNamePath] = useState<string | null>(null)
+  const mediaPath = videoPath && playablePath(videoPath, sources)
   const [videoError, setVideoError] = useState(false)
   const [unsupportedDrops, setUnsupportedDrops] = useState(0)
   const [history, dispatch] = useReducer(clipsHistory, { past: [], present: initialClipsState, future: [] })
@@ -128,7 +130,7 @@ export function App() {
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
   const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(videoRef, duration)
-  const { peaks, analysing } = useWaveform(videoPath)
+  const { peaks, analysing } = useWaveform(mediaPath)
   const onBeat = (time: number) => (peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
   const markStart = (free = false) => dispatch({ type: 'markStart', time: free ? now() : onBeat(now()) })
   const markEnd = (free = false) => {
@@ -174,7 +176,7 @@ export function App() {
     dispatch({ type: 'reset', resetHistory: true })
     setRestoredFor(null)
     openedPath.current = path
-    void window.api.frameRate(path).then((rate) => openedPath.current === path && setFps(rate))
+    void window.api.frameRate(playablePath(path, sources)).then((rate) => openedPath.current === path && setFps(rate))
     if (!carry) setNamePath(sources[0]?.path ?? path)
     if (carry) {
       restore(carry)
@@ -204,11 +206,11 @@ export function App() {
   useEffect(() => {
     if (!videoPath || restoredFor !== videoPath) return
     const timer = setTimeout(
-      () => window.api.saveSession(videoPath, { clips, clipSettings, defaultSettings, format, baseName }),
+      () => window.api.saveSession(videoPath, { clips, clipSettings, defaultSettings, format, baseName, ...(sources.length > 0 ? { sources } : {}) }),
       SAVE_DELAY_MS
     )
     return () => clearTimeout(timer)
-  }, [videoPath, restoredFor, clips, clipSettings, defaultSettings, format, baseName])
+  }, [videoPath, sources, restoredFor, clips, clipSettings, defaultSettings, format, baseName])
 
   const exportInputs = [clips, clipSettings, defaultSettings, format, baseName, folder, selectedIds, overlay, background, extras]
   const [exportedWith, setExportedWith] = useState(exportInputs)
@@ -361,13 +363,13 @@ export function App() {
   const exportBackground = () => (isAudio && background ? { path: background.path, kind: background.kind } : null)
 
   const runExport = async () => {
-    if (!videoPath || !destination) return
+    if (!mediaPath || !destination) return
     setExportedWith(exportInputs)
     setExportState({ status: 'running', progress: exported.map(() => 0) })
     setExportIds(exported.map((clip) => clip.id))
     const result = await window.api
       .exportClips({
-        input: videoPath,
+        input: mediaPath,
         folder: destination,
         baseName,
         format,
@@ -383,13 +385,13 @@ export function App() {
   }
 
   const runExportFull = async () => {
-    if (!videoPath || !destination) return
+    if (!mediaPath || !destination) return
     setExportedWith(exportInputs)
     setExportState({ status: 'running', progress: [0] })
     setExportIds([])
     const result = await window.api
       .exportClips({
-        input: videoPath,
+        input: mediaPath,
         folder: destination,
         baseName,
         format,
@@ -405,10 +407,10 @@ export function App() {
   }
 
   const runExportFrame = async () => {
-    if (!videoPath || !destination || exporting) return
+    if (!mediaPath || !destination || exporting) return
     const { framing, cropX, cropY } = shownSettings
     const result = await window.api
-      .exportFrame({ input: videoPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY, overlay: exportOverlay(), background: exportBackground() })
+      .exportFrame({ input: mediaPath, folder: destination, baseName, format, time: now(), framing, cropX, cropY, overlay: exportOverlay(), background: exportBackground() })
       .catch((error: Error): ExportResult => ({ ok: false, error: error.message }))
     if (result.ok) return window.api.reveal(result.files[0])
     setExportedWith(exportInputs)
@@ -420,7 +422,7 @@ export function App() {
   const suggest = async (path: string) => {
     setSuggesting(true)
     const peaks = await window.api
-      .waveform(path)
+      .waveform(playablePath(path, sources))
       .catch(() => null)
       .finally(() => setSuggesting(false))
     if (openedPath.current !== path) return
@@ -432,21 +434,12 @@ export function App() {
 
   const exporting = exportState.status === 'running'
 
-  const [joining, setJoining] = useState<string[] | null>(null)
   const openRequest = useRef(0)
-  const takeOpened = (result: OpenResult, carry?: Session) => {
-    if (result.ok) return load(result, carry)
-    setSuggestNotice(result.problem === 'mismatch' ? t.cannotJoin(result.name) : t.videoMissing(result.name))
-  }
-
   const openPaths = async (paths: string[], replacing: string | null, carry?: Session) => {
     const request = ++openRequest.current
-    if (paths.length > 1) setJoining(paths)
     const result = await window.api.openVideos(paths, replacing, carry).catch(() => null)
-    if (openRequest.current !== request) return
-    setJoining(null)
-    if (!result) return setSuggestNotice(t.cannotJoin(paths[0].replace(/^.*[\\/]/, '')))
-    takeOpened(result, carry)
+    if (openRequest.current !== request || !result) return
+    load(result, carry)
   }
 
   const openVideo = async () => {
@@ -499,7 +492,7 @@ export function App() {
   useEffect(() => void window.api.recentVideos().then(setRecents), [])
   const openRecent = async (path: string) => {
     const result = await window.api.openRecent(path)
-    if (result) takeOpened(result)
+    if (result) load(result)
     else setRecents((current) => current.filter((recent) => recent.path !== path))
   }
 
@@ -615,7 +608,7 @@ export function App() {
               <video
                 ref={videoRef}
                 data-testid="video"
-                src={mediaUrl(videoPath)}
+                src={mediaUrl(playablePath(videoPath, sources))}
                 className={`max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none ${isAudio ? 'hidden' : ''} ${target && shownSettings.framing === 'fit' ? 'opacity-0' : ''}`}
                 onClick={togglePlay}
                 onTimeUpdate={(e) => {
@@ -808,7 +801,7 @@ export function App() {
               </div>
 
               <Timeline
-                videoPath={videoPath}
+                videoPath={playablePath(videoPath, sources)}
                 thumbnails={!isAudio}
                 peaks={peaks}
                 analysingAudio={analysing}
@@ -954,8 +947,6 @@ export function App() {
           className="pointer-events-none fixed inset-0 z-40 bg-accent-soft ring-[3px] ring-accent/60 ring-inset"
         />
       )}
-
-      {joining && <JoiningVideos paths={joining} />}
 
       {shortcutsOpen && <ShortcutsPanel platform={window.api.platform} onClose={() => setShortcutsOpen(false)} />}
 

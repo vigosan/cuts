@@ -13,6 +13,7 @@ export type Session = {
   defaultSettings: ClipSettings
   format: OutputFormat
   baseName: string
+  sources?: Source[]
 }
 
 export type ExportRequest = {
@@ -42,9 +43,9 @@ export type ExportResult = { ok: true; files: string[] } | { ok: false; error: s
 
 export type ExportProgress = { index: number; ratio: number }
 
-export type Source = { path: string; name: string; duration: number }
+export type Source = { path: string; name: string; duration: number; width: number; height: number; hdr: boolean; missing: boolean }
 
-export type OpenResult = { ok: true; path: string; sources: Source[] } | { ok: false; problem: 'mismatch' | 'missing'; name: string }
+export type OpenResult = { ok: true; path: string; sources: Source[] }
 
 export type RecentVideo = { path: string; name: string; folder: string; openedAt: number; clips: number; poster: string | null }
 
@@ -89,4 +90,6 @@ export type Api = {
   frameRate(path: string): Promise<number>
   recentVideos(): Promise<RecentVideo[]>
   openRecent(path: string): Promise<OpenResult | null>
+  checkSources(paths: string[]): Promise<boolean[]>
+  locateVideo(duration: number): Promise<{ path: string } | 'mismatch' | null>
 }

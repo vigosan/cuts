@@ -58,7 +58,9 @@ function makeApi(): Api {
     }),
     restartToUpdate: vi.fn(),
     recentVideos: vi.fn(async () => []),
-    openRecent: vi.fn(async () => null)
+    openRecent: vi.fn(async () => null),
+    checkSources: vi.fn(async (paths: string[]) => paths.map(() => true)),
+    locateVideo: vi.fn(async () => null)
   }
 }
 
@@ -2654,11 +2656,11 @@ describe('export full recording', () => {
 describe('Several videos as one session', () => {
   const FOLDER = '/Users/vicent/Movies/set'
   const SOURCES = [
-    { path: `${FOLDER}/IMG_0412.mov`, name: 'IMG_0412.mov', duration: 60 },
-    { path: `${FOLDER}/IMG_0413.mov`, name: 'IMG_0413.mov', duration: 40 },
-    { path: `${FOLDER}/IMG_1001.mov`, name: 'IMG_1001.mov', duration: 20 }
+    { path: `${FOLDER}/IMG_0412.mov`, name: 'IMG_0412.mov', duration: 60, width: 1920, height: 1080, hdr: false, missing: false },
+    { path: `${FOLDER}/IMG_0413.mov`, name: 'IMG_0413.mov', duration: 40, width: 1920, height: 1080, hdr: false, missing: false },
+    { path: `${FOLDER}/IMG_1001.mov`, name: 'IMG_1001.mov', duration: 20, width: 1920, height: 1080, hdr: false, missing: false }
   ]
-  const JOINED = '/Users/vicent/Library/Application Support/Cuts/joined/abc.mov'
+  const JOINED = 'session:abc'
 
   function deferred<T>() {
     let resolve!: (value: T) => void
@@ -2666,29 +2668,42 @@ describe('Several videos as one session', () => {
     return { promise, resolve }
   }
 
-  it('joins the chosen videos in file name order, so camera clips play back in the order they were filmed', async () => {
-    const join = deferred<Awaited<ReturnType<Api['openVideos']>>>()
+  it('opens the chosen videos in file name order and plays the first one at once, since nothing is joined any more', async () => {
     vi.mocked(api.openVideo).mockResolvedValue([SOURCES[2].path, SOURCES[0].path, SOURCES[1].path])
-    vi.mocked(api.openVideos).mockReturnValue(join.promise)
+    vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources: SOURCES })
     render(<App />)
     await userEvent.click(screen.getByTestId('open-video'))
     expect(api.openVideos).toHaveBeenCalledWith(SOURCES.map((source) => source.path), null, undefined)
-    expect(screen.getByTestId('joining')).toHaveTextContent(t.joiningVideos)
-    await act(async () => join.resolve({ ok: true, path: JOINED, sources: SOURCES }))
     expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
-    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(JOINED))
+    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[0].path))
+    expect(api.frameRate).toHaveBeenCalledWith(SOURCES[0].path)
+    expect(api.loadSession).toHaveBeenCalledWith(JOINED)
   })
 
-  it('shows the names of the videos being joined, so the wait says what is happening', async () => {
-    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
-    vi.mocked(api.openVideos).mockReturnValue(new Promise(() => {}))
+  it('reads a session from its first video that is still there, never from the session id, which is not a file', async () => {
+    const sources = [{ ...SOURCES[0], missing: true }, SOURCES[1], SOURCES[2]]
+    vi.mocked(api.openVideo).mockResolvedValue(SOURCES.map((source) => source.path))
+    vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources })
     render(<App />)
     await userEvent.click(screen.getByTestId('open-video'))
-    expect(screen.getByTestId('joining')).toHaveTextContent('IMG_0412.mov')
-    expect(screen.getByTestId('joining')).toHaveTextContent('IMG_0413.mov')
+    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[1].path))
+    expect(api.frameRate).toHaveBeenCalledWith(SOURCES[1].path)
+    await act(async () => userEvent.click(screen.getByTestId('suggest')))
+    expect(api.waveform).toHaveBeenCalledWith(SOURCES[1].path)
+    expect(api.waveform).not.toHaveBeenCalledWith(JOINED)
+    expect(api.thumbnail).not.toHaveBeenCalledWith(JOINED, expect.anything())
   })
 
-  it('opens one video without the joining view, since nothing is joined', async () => {
+  it('saves a session with its videos, so a missing one can still be shown with its name and length next time', async () => {
+    vi.mocked(api.openVideo).mockResolvedValue(SOURCES.map((source) => source.path))
+    vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources: SOURCES })
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 10, 20)
+    await waitFor(() => expect(api.saveSession).toHaveBeenLastCalledWith(JOINED, expect.objectContaining({ sources: SOURCES })), { timeout: 3000 })
+  })
+
+  it('opens one video as before, keyed by its own path', async () => {
     const open = deferred<Awaited<ReturnType<Api['openVideos']>>>()
     vi.mocked(api.openVideos).mockReturnValue(open.promise)
     render(<App />)
@@ -2709,18 +2724,7 @@ describe('Several videos as one session', () => {
     expect(screen.getByTestId('unsupported-video')).toHaveTextContent(t.unsupportedVideo)
   })
 
-  it('keeps the open video and names the file that cannot be joined, so the work is never lost to a bad pick', async () => {
-    render(<App />)
-    await loadVideo()
-    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
-    vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'mismatch', name: 'IMG_0413.mov' })
-    await act(async () => menuOpenVideo())
-    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.cannotJoin('IMG_0413.mov'))
-    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
-    expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(VIDEO))
-  })
-
-  it('ignores a join that finishes after a newer open, so a slow join never replaces the video opened since', async () => {
+  it('ignores an open that finishes after a newer one, so slow probing never replaces the video opened since', async () => {
     const join = deferred<Awaited<ReturnType<Api['openVideos']>>>()
     const single = deferred<Awaited<ReturnType<Api['openVideos']>>>()
     const other = '/Users/vicent/Movies/other.mov'
@@ -2730,53 +2734,17 @@ describe('Several videos as one session', () => {
     await userEvent.click(screen.getByTestId('open-video'))
     act(() => openPath(other))
     await act(async () => single.resolve({ ok: true, path: other, sources: [] }))
-    await act(async () => join.resolve({ ok: false, problem: 'mismatch', name: 'IMG_0413.mov' }))
+    await act(async () => join.resolve({ ok: true, path: JOINED, sources: SOURCES }))
     expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(other))
-    expect(screen.queryByTestId('suggest-notice')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
   })
 
-  it('keeps showing a newer join while an older one finishes, so the wait is never hidden early', async () => {
-    const first = deferred<Awaited<ReturnType<Api['openVideos']>>>()
-    const second = deferred<Awaited<ReturnType<Api['openVideos']>>>()
-    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
-    vi.mocked(api.openVideos).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
-    render(<App />)
-    await userEvent.click(screen.getByTestId('open-video'))
-    await act(async () => menuOpenVideo())
-    await act(async () => first.resolve({ ok: true, path: JOINED, sources: SOURCES }))
-    expect(screen.getByTestId('joining')).toBeInTheDocument()
-    expect(screen.queryByTestId('video')).not.toBeInTheDocument()
-    await act(async () => second.resolve({ ok: true, path: JOINED, sources: SOURCES }))
-    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
-  })
-
-  it('names a missing video instead of opening a session without it', async () => {
-    vi.mocked(api.openVideo).mockResolvedValue([SOURCES[0].path, SOURCES[1].path])
-    vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_0412.mov' })
-    render(<App />)
-    await userEvent.click(screen.getByTestId('open-video'))
-    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_0412.mov'))
-    expect(screen.queryByTestId('video')).not.toBeInTheDocument()
-  })
-
-  it('says the videos could not be joined when the join itself fails, instead of leaving the window waiting', async () => {
+  it('keeps the open video when the others cannot be read, so a failed open never loses the work on screen', async () => {
     render(<App />)
     await loadVideo()
     vi.mocked(api.openVideo).mockResolvedValue([SOURCES[1].path, SOURCES[0].path])
     vi.mocked(api.openVideos).mockRejectedValue(new Error('ffmpeg exited with code 1'))
     await act(async () => menuOpenVideo())
-    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.cannotJoin('IMG_0412.mov'))
-    expect(screen.queryByTestId('joining')).not.toBeInTheDocument()
     expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(VIDEO))
-  })
-
-  it('names a recent session whose video went missing, instead of doing nothing on click', async () => {
-    vi.mocked(api.recentVideos).mockResolvedValue([{ path: JOINED, name: 'IMG_0412.mov +2', folder: 'set', openedAt: Date.now(), clips: 3, poster: null }])
-    vi.mocked(api.openRecent).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_0413.mov' })
-    render(<App />)
-    await userEvent.click(await screen.findByTestId('recent-video-1'))
-    expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_0413.mov'))
   })
 
   it('titles the session after its first video plus how many follow, listing all of them on hover', async () => {
@@ -2789,7 +2757,7 @@ describe('Several videos as one session', () => {
     expect(document.title).toBe('IMG_0412.mov +2')
   })
 
-  it('names the clips and their folder after the first video, not the hidden joined file', async () => {
+  it('names the clips and their folder after the first video, not the session id', async () => {
     vi.mocked(api.openVideo).mockResolvedValue(SOURCES.map((source) => source.path))
     vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources: SOURCES })
     render(<App />)
@@ -2798,12 +2766,12 @@ describe('Several videos as one session', () => {
     expect(screen.getByTestId('base-name')).toHaveValue('IMG_0412')
     await act(async () => userEvent.click(await inPanel('export')))
     expect(api.exportClips).toHaveBeenCalledWith(
-      expect.objectContaining({ input: JOINED, baseName: 'IMG_0412', folder: '/Users/vicent/Movies/Cuts/IMG_0412' })
+      expect.objectContaining({ baseName: 'IMG_0412', folder: '/Users/vicent/Movies/Cuts/IMG_0412' })
     )
   })
 
   describe('removing and adding videos on the timeline', () => {
-    const REJOINED = '/Users/vicent/Library/Application Support/Cuts/joined/def.mov'
+    const REJOINED = 'session:def'
 
     function showDuration(duration: number) {
       const video = screen.getByTestId('video') as HTMLVideoElement
@@ -2946,8 +2914,7 @@ describe('Several videos as one session', () => {
       expect(api.loadSession).not.toHaveBeenCalledWith(REJOINED)
       showDuration(80)
       await act(async () => userEvent.click(await inPanel('export')))
-      const { input, clips } = vi.mocked(api.exportClips).mock.calls[0][0]
-      expect(input).toBe(REJOINED)
+      const { clips } = vi.mocked(api.exportClips).mock.calls[0][0]
       expect(clips).toEqual([
         expect.objectContaining({ start: 65, end: 70, videoFade: 'white', position: 0 }),
         expect.objectContaining({ start: 10, end: 20, videoFade: 'black', position: 1 })
@@ -2964,31 +2931,6 @@ describe('Several videos as one session', () => {
       expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
     })
 
-    it('keeps the clips and the videos as they were when a video went missing while removing another', async () => {
-      const video = await openJoined()
-      await markClip(video, 10, 20)
-      await markClip(video, 105, 110)
-      vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_1001.mov' })
-      await userEvent.click(screen.getByTestId('remove-video-1'))
-      expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_1001.mov'))
-      expect(screen.getByTestId('video').getAttribute('src')).toBe('media://file/' + encodeURIComponent(JOINED))
-      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
-      expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:00:05')
-      expect(screen.getByTestId('join-2')).toBeInTheDocument()
-    })
-
-    it('keeps the clips and the videos as they were when a video went missing while adding another', async () => {
-      const video = await openJoined()
-      await markClip(video, 10, 20)
-      vi.mocked(api.openVideo).mockResolvedValue([`${FOLDER}/IMG_2000.mov`])
-      vi.mocked(api.openVideos).mockResolvedValue({ ok: false, problem: 'missing', name: 'IMG_0413.mov' })
-      await userEvent.click(screen.getByTestId('add-videos'))
-      expect(api.openVideos).toHaveBeenLastCalledWith([...SOURCES.map((source) => source.path), `${FOLDER}/IMG_2000.mov`], JOINED, expect.anything())
-      expect(await screen.findByTestId('suggest-notice')).toHaveTextContent(t.videoMissing('IMG_0413.mov'))
-      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
-      expect(screen.getByTestId('join-2')).toBeInTheDocument()
-    })
-
     it('adds videos after a single open video and keeps its clips, so a set filmed in parts can be completed later', async () => {
       const extra = '/Users/vicent/Movies/extra.mov'
       render(<App />)
@@ -2999,8 +2941,8 @@ describe('Several videos as one session', () => {
         ok: true,
         path: JOINED,
         sources: [
-          { path: VIDEO, name: '2026-10-22 22-33-13.mov', duration: 4880 },
-          { path: extra, name: 'extra.mov', duration: 30 }
+          { path: VIDEO, name: '2026-10-22 22-33-13.mov', duration: 4880, width: 1280, height: 720, hdr: false, missing: false },
+          { path: extra, name: 'extra.mov', duration: 30, width: 1280, height: 720, hdr: false, missing: false }
         ]
       })
       await userEvent.click(screen.getByTestId('add-videos'))
@@ -3019,7 +2961,7 @@ describe('Several videos as one session', () => {
       showDuration(60)
       await act(async () => userEvent.click(await inPanel('export')))
       expect(api.exportClips).toHaveBeenCalledWith(
-        expect.objectContaining({ input: REJOINED, baseName: 'IMG_0412', folder: '/Users/vicent/Movies/Cuts/IMG_0412' })
+        expect.objectContaining({ baseName: 'IMG_0412', folder: '/Users/vicent/Movies/Cuts/IMG_0412' })
       )
     })
 

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import type { Session } from '../shared/api'
@@ -34,4 +34,20 @@ export async function saveSession(dir: string, videoPath: string, session: Sessi
 
 export async function removeSession(dir: string, videoPath: string): Promise<void> {
   await rm(fileFor(dir, videoPath), { force: true })
+}
+
+export async function listSessions(dir: string): Promise<Session[]> {
+  const files = await readdir(dir).catch((): string[] => [])
+  const sessions = await Promise.all(
+    files
+      .filter((file) => file.endsWith('.json'))
+      .map(async (file) => {
+        try {
+          return JSON.parse(await readFile(join(dir, file), 'utf8')) as Session
+        } catch {
+          return null
+        }
+      })
+  )
+  return sessions.filter((session): session is Session => Array.isArray(session?.sources))
 }

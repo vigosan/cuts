@@ -2,10 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import { joinKey } from './join'
 import { openVideos, type OpenDeps } from './open-videos'
-import type { Session } from '../shared/api'
-import type { RecentEntry } from './recents'
-
-const DIR = '/userData/joined'
+import type { Session, Source } from '../shared/api'
 
 const info = (seconds: number, size = '1920x1080') => `Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'x.mov':
   Duration: 00:00:${String(seconds).padStart(2, '0')}.00, start: 0.000000, bitrate: 15250 kb/s
@@ -13,120 +10,102 @@ const info = (seconds: number, size = '1920x1080') => `Input #0, mov,mp4,m4a,3gp
   Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706d), 48000 Hz, stereo, fltp, 191 kb/s (default)
 `
 
-function fakeDeps(files: Record<string, string>, evicted: RecentEntry[] = []) {
+const carry: Session = { clips: [{ id: 'c1', start: 1, end: 2 }], clipSettings: {}, defaultSettings: DEFAULT_SETTINGS, format: '9:16', baseName: 'IMG_0412' }
+
+function fakeDeps(files: Record<string, string>, sessions: Record<string, Session> = {}) {
   const fs = new Map(Object.entries(files))
+  const saved = new Map(Object.entries(sessions))
   const deps = {
-    dir: DIR,
     exists: (path: string) => fs.has(path),
     info: vi.fn(async (path: string) => fs.get(path) ?? ''),
-    run: vi.fn(async (args: string[]) => {
-      fs.set(args.at(-1)!, 'joined')
+    loadSession: async (id: string) => saved.get(id) ?? null,
+    savedSessions: async () => [...saved.values()],
+    saveSession: vi.fn(async (id: string, session: Session) => {
+      saved.set(id, session)
     }),
-    read: async (path: string) => fs.get(path) ?? null,
-    write: async (path: string, text: string) => {
-      fs.set(path, text)
-    },
-    rename: async (from: string, to: string) => {
-      fs.set(to, fs.get(from)!)
-      fs.delete(from)
-    },
-    remove: vi.fn(async (path: string) => {
-      fs.delete(path)
+    removeSession: vi.fn(async (id: string) => {
+      saved.delete(id)
     }),
-    saveSession: vi.fn(async (_path: string, _session: Session) => {}),
-    removeSession: vi.fn(async (_path: string) => {}),
-    forget: vi.fn(async () => {}),
-    remember: vi.fn(async () => evicted),
-    bookmark: () => undefined,
+    forget: vi.fn(async (_path: string) => {}),
+    remember: vi.fn(async () => {}),
+    bookmark: (_path: string): string | undefined => undefined,
     now: () => 7
   } satisfies OpenDeps
-  return { fs, deps }
+  return { fs, saved, deps }
 }
 
 const A = '/Movies/IMG_0412.MOV'
 const B = '/Movies/IMG_0413.MOV'
-const key = joinKey([A, B])
-const joined = `${DIR}/${key}.mov`
+const id = `session:${joinKey([A, B])}`
+const source = (path: string, duration: number, extra: Partial<Source> = {}): Source => ({
+  path,
+  name: path.slice(path.lastIndexOf('/') + 1),
+  duration,
+  width: 1920,
+  height: 1080,
+  hdr: false,
+  missing: false,
+  ...extra
+})
 
 describe('openVideos', () => {
-  it('opens a single video as it is, so one video never pays for a join', async () => {
-    const { deps, fs } = fakeDeps({ [A]: info(12) })
+  it('opens a single video as it is, so one video never pays for probing or a session id', async () => {
+    const { deps } = fakeDeps({ [A]: info(12) })
     expect(await openVideos([A], null, deps)).toEqual({ ok: true, path: A, sources: [] })
-    expect(deps.run).not.toHaveBeenCalled()
+    expect(deps.info).not.toHaveBeenCalled()
     expect(deps.remember).toHaveBeenCalledWith({ path: A, openedAt: 7, bookmark: undefined })
-    expect([...fs.keys()]).toEqual([A])
   })
 
   it('still opens a video when Recents cannot be written, since a full disk or locked list must never block editing', async () => {
     const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) })
     deps.remember.mockRejectedValue(new Error('EACCES'))
     expect(await openVideos([A], null, deps)).toEqual({ ok: true, path: A, sources: [] })
-    expect(await openVideos([A, B], null, deps)).toMatchObject({ ok: true, path: joined })
+    expect(await openVideos([A, B], null, deps)).toMatchObject({ ok: true, path: id })
   })
 
   it('opens only the first file when the selection has an audio recording, since audio stays single-file', async () => {
     const { deps } = fakeDeps({ '/Music/set.wav': '', [A]: info(12) })
     expect(await openVideos(['/Music/set.wav', A], null, deps)).toEqual({ ok: true, path: '/Music/set.wav', sources: [] })
-    expect(deps.run).not.toHaveBeenCalled()
+    expect(deps.info).not.toHaveBeenCalled()
   })
 
-  it('joins several videos once and reuses the joined file next time, so reopening a set is instant', async () => {
-    const { deps, fs } = fakeDeps({ [A]: info(12), [B]: info(8) })
-    const sources = [
-      { path: A, name: 'IMG_0412.MOV', duration: 12 },
-      { path: B, name: 'IMG_0413.MOV', duration: 8 }
-    ]
-    expect(await openVideos([A, B], null, deps)).toEqual({ ok: true, path: joined, sources })
-    expect(fs.get(joined)).toBe('joined')
-    expect(JSON.parse(fs.get(`${DIR}/${key}.json`)!)).toEqual({ sources })
-    expect(deps.remember).toHaveBeenCalledWith({ path: joined, openedAt: 7, sources: [A, B] })
-    expect(await openVideos([B, A], null, deps)).toEqual({ ok: true, path: joined, sources })
-    expect(deps.run).toHaveBeenCalledTimes(1)
-  })
-
-  it('leaves no joined file after a failed join and joins again next time, so a broken file is never reused', async () => {
-    const { deps, fs } = fakeDeps({ [A]: info(12), [B]: info(8) })
-    deps.run.mockImplementationOnce(async (args: string[]) => {
-      fs.set(args.at(-1)!, 'half')
-      throw new Error('disk full')
-    })
-    await expect(openVideos([A, B], null, deps)).rejects.toThrow('disk full')
+  it('opens several videos straight from the originals under one session id, so nothing is joined or copied before editing', async () => {
+    const { deps, fs } = fakeDeps({ [A]: info(12), [B]: info(8, '3840x2160') })
+    expect(await openVideos([A, B], null, deps)).toEqual({ ok: true, path: id, sources: [source(A, 12), source(B, 8, { width: 3840, height: 2160 })] })
     expect([...fs.keys()]).toEqual([A, B])
-    expect(await openVideos([A, B], null, deps)).toMatchObject({ ok: true, path: joined })
-    expect(deps.run).toHaveBeenCalledTimes(2)
+    expect(deps.remember).toHaveBeenCalledWith({ path: id, openedAt: 7, sources: [A, B] })
   })
 
-  it('names a missing original instead of joining, so the user knows which file to bring back', async () => {
+  it('opens the same session whatever order the videos were picked in, keeping the saved order', async () => {
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) }, { [id]: { ...carry, sources: [source(B, 8), source(A, 12)] } })
+    expect(await openVideos([A, B], null, deps)).toMatchObject({ path: id, sources: [{ path: B }, { path: A }] })
+  })
+
+  it('flags a video that is gone with the length saved for it, so its stretch and clips keep their place on the timeline', async () => {
+    const { deps } = fakeDeps({ [A]: info(12) }, { [id]: { ...carry, sources: [source(A, 12), source(B, 8, { width: 1080, height: 1920, hdr: true })] } })
+    expect(await openVideos([A, B], null, deps)).toEqual({
+      ok: true,
+      path: id,
+      sources: [source(A, 12), source(B, 8, { width: 1080, height: 1920, hdr: true, missing: true })]
+    })
+    expect(deps.info).toHaveBeenCalledTimes(1)
+  })
+
+  it('still opens a session whose missing video was never saved, with an empty stretch instead of failing', async () => {
     const { deps } = fakeDeps({ [A]: info(12) })
-    expect(await openVideos([A, B], null, deps)).toEqual({ ok: false, problem: 'missing', name: 'IMG_0413.MOV' })
-    expect(deps.run).not.toHaveBeenCalled()
+    expect((await openVideos([A, B], null, deps)).sources[1]).toEqual(source(B, 0, { width: 0, height: 0, missing: true }))
   })
 
-  it('names the video that cannot be joined as it is, so nothing is re-encoded behind the user\'s back', async () => {
-    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8, '3840x2160') })
-    expect(await openVideos([A, B], null, deps)).toEqual({ ok: false, problem: 'mismatch', name: 'IMG_0413.MOV' })
-    expect(deps.run).not.toHaveBeenCalled()
-  })
-
-  it('keeps the sandbox bookmarks of every original, so the App Store version can rejoin after a relaunch', async () => {
+  it('keeps the sandbox bookmarks of every original, so the App Store version can reopen the session after a relaunch', async () => {
     const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) })
     await openVideos([A, B], null, { ...deps, bookmark: (path) => `bm:${path}` })
-    expect(deps.remember).toHaveBeenCalledWith({ path: joined, openedAt: 7, sources: [A, B], bookmarks: [`bm:${A}`, `bm:${B}`] })
+    expect(deps.remember).toHaveBeenCalledWith({ path: id, openedAt: 7, sources: [A, B], bookmarks: [`bm:${A}`, `bm:${B}`] })
   })
 
-  it('discards the joined file it replaces, with its manifest, session and recent, so rejoins do not pile up', async () => {
-    const old = `${DIR}/old.mov`
-    const { deps, fs } = fakeDeps({ [A]: info(12), [old]: 'joined', [`${DIR}/old.json`]: '{}' })
-    await openVideos([A], old, deps)
-    expect(fs.has(old)).toBe(false)
-    expect(fs.has(`${DIR}/old.json`)).toBe(false)
-    expect(deps.removeSession).toHaveBeenCalledWith(old)
-    expect(deps.forget).toHaveBeenCalledWith(old)
-  })
-
-  it('saves the carried clips under the new video before discarding the old session, so a quit right after X or + never loses them', async () => {
-    const old = `${DIR}/old.mov`
-    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8), [old]: 'joined' })
+  it('saves the carried clips under the new session before removing the old one, so a quit right after X or + never loses them', async () => {
+    const C = '/Movies/IMG_0414.MOV'
+    const old = `session:${joinKey([A, B, C])}`
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) })
     const calls: string[] = []
     deps.saveSession.mockImplementation(async (path: string) => {
       calls.push(`save ${path}`)
@@ -134,36 +113,47 @@ describe('openVideos', () => {
     deps.removeSession.mockImplementation(async (path: string) => {
       calls.push(`remove ${path}`)
     })
-    const carry = { clips: [{ id: 'c1', start: 1, end: 2 }], clipSettings: {}, defaultSettings: DEFAULT_SETTINGS, format: '9:16' as const, baseName: 'IMG_0412' }
     await openVideos([A, B], old, deps, carry)
-    expect(deps.saveSession).toHaveBeenCalledWith(joined, carry)
-    expect(calls).toEqual([`save ${joined}`, `remove ${old}`])
+    expect(deps.saveSession).toHaveBeenCalledWith(id, { ...carry, sources: [source(A, 12), source(B, 8)] })
+    expect(calls).toEqual([`save ${id}`, `remove ${old}`])
+    expect(deps.forget).toHaveBeenCalledWith(old)
   })
 
   it('saves no session when nothing is carried, so a plain open keeps whatever was saved for that video', async () => {
-    const old = `${DIR}/old.mov`
-    const { deps } = fakeDeps({ [A]: info(12), [old]: 'joined' })
-    await openVideos([A], old, deps)
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) })
+    await openVideos([A], id, deps)
     expect(deps.saveSession).not.toHaveBeenCalled()
+    expect(deps.removeSession).toHaveBeenCalledWith(id)
   })
 
-  it('never deletes an original it replaces, since those are the user\'s own videos', async () => {
+  it('never removes the session of a single video it replaces, since that work belongs to the user\'s own file', async () => {
     const { deps, fs } = fakeDeps({ [A]: info(12), [B]: info(8) })
-    await openVideos([B], A, deps)
+    await openVideos([A, B], A, deps, carry)
     expect(fs.has(A)).toBe(true)
-    expect(deps.remove).not.toHaveBeenCalled()
+    expect(deps.removeSession).not.toHaveBeenCalled()
     expect(deps.forget).not.toHaveBeenCalled()
   })
 
-  it('deletes the joined file of a session that falls out of Recents, so joined files never pile up on disk', async () => {
-    const gone = `${DIR}/gone.mov`
-    const { deps, fs } = fakeDeps({ [A]: info(12), [gone]: 'joined', [`${DIR}/gone.json`]: '{}', [B]: info(8) }, [
-      { path: gone, openedAt: 1, sources: [B] },
-      { path: B, openedAt: 1 }
-    ])
-    await openVideos([A], null, deps)
-    expect(fs.has(gone)).toBe(false)
-    expect(fs.has(`${DIR}/gone.json`)).toBe(false)
-    expect(fs.has(B)).toBe(true)
+  it('restores the clips of a session whose folder was moved, matching names and lengths, and drops the old copy', async () => {
+    const oldA = '/Volumes/X/IMG_0412.MOV'
+    const oldB = '/Volumes/X/IMG_0413.MOV'
+    const old = `session:${joinKey([oldA, oldB])}`
+    const { deps, saved } = fakeDeps({ [A]: info(12), [B]: info(8) }, { [old]: { ...carry, sources: [source(oldA, 12.3), source(oldB, 7.8)] } })
+    const result = await openVideos([A, B], null, deps)
+    expect(result).toEqual({ ok: true, path: id, sources: [source(A, 12), source(B, 8)] })
+    expect(saved.get(id)).toEqual({ ...carry, sources: [source(A, 12), source(B, 8)] })
+    expect(saved.has(old)).toBe(false)
+    expect(deps.forget).toHaveBeenCalledWith(old)
+  })
+
+  it('does not take over another session whose videos only share names, since clips must stay on the recording they were marked on', async () => {
+    const other = `session:${joinKey(['/Volumes/X/IMG_0412.MOV', '/Volumes/X/IMG_0413.MOV'])}`
+    const { deps, saved } = fakeDeps(
+      { [A]: info(12), [B]: info(8) },
+      { [other]: { ...carry, sources: [source('/Volumes/X/IMG_0412.MOV', 12), source('/Volumes/X/IMG_0413.MOV', 30)] } }
+    )
+    await openVideos([A, B], null, deps)
+    expect(saved.has(id)).toBe(false)
+    expect(saved.has(other)).toBe(true)
   })
 })
