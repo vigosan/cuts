@@ -2790,8 +2790,21 @@ describe('Several videos as one session', () => {
       return showDuration(120)
     }
 
+    function expectAt(video: HTMLVideoElement, index: number, local: number) {
+      expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[index].path))
+      showDuration(SOURCES[index].duration)
+      expect(video.currentTime).toBeCloseTo(local)
+    }
+
     function timelineOneSecondPerPixel() {
       screen.getByTestId('timeline').getBoundingClientRect = () => ({ left: 0, width: 120, top: 0, height: 32, right: 120, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    }
+
+    function seekOnTimeline(video: HTMLVideoElement, time: number, duration: number) {
+      timelineOneSecondPerPixel()
+      fireEvent.click(screen.getByTestId('timeline'), { clientX: time })
+      showDuration(duration)
+      return video
     }
 
     it('draws a join where each video starts and names every video, so the session still reads as the recordings it came from', async () => {
@@ -2826,7 +2839,8 @@ describe('Several videos as one session', () => {
         const video = await openJoined()
         await markClip(video, 70, 80)
         await userEvent.click(screen.getByTestId('clip-row-1'))
-        seek(video, 20)
+        expectAt(video, 1, 10)
+        seekOnTimeline(video, 20, 60)
         await userEvent.click(screen.getByTestId('clip-set-start-1'))
         expect(screen.getByTestId('clip-duration-1')).toHaveTextContent('0:20')
       })
@@ -2844,7 +2858,8 @@ describe('Several videos as one session', () => {
         const video = await openJoined()
         await markClip(video, 70, 80)
         await userEvent.click(screen.getByTestId('clip-row-1'))
-        seek(video, 20)
+        expectAt(video, 1, 10)
+        seekOnTimeline(video, 20, 60)
         await userEvent.keyboard('{Shift>}I{/Shift}')
         expect(screen.getByTestId('clip-duration-1')).toHaveTextContent('0:20')
       })
@@ -2971,9 +2986,9 @@ describe('Several videos as one session', () => {
       timelineOneSecondPerPixel()
       fireEvent.pointerDown(screen.getByTestId('clip-handle-end-1'), { clientX: 55 })
       fireEvent.pointerMove(window, { clientX: 80 })
-      expect(video.currentTime).toBe(60)
+      expectAt(video, 1, 0)
       fireEvent.pointerMove(window, { clientX: 80, altKey: true })
-      expect(video.currentTime).toBe(60)
+      expectAt(video, 1, 0)
       fireEvent.pointerUp(window, { clientX: 80 })
     })
 
@@ -3019,8 +3034,90 @@ describe('Several videos as one session', () => {
       timelineOneSecondPerPixel()
       fireEvent.pointerDown(screen.getByTestId('clip-block-1'), { clientX: 67 })
       fireEvent.pointerMove(window, { clientX: 30 })
-      expect(video.currentTime).toBe(60)
+      expectAt(video, 1, 0)
       fireEvent.pointerUp(window, { clientX: 30 })
+    })
+
+    describe('playing across the videos', () => {
+      it('marks I and O at the session time of the video under the playhead, so a clip in a later video lands where it was filmed', async () => {
+        const video = await openJoined()
+        seekOnTimeline(video, 105, 20)
+        expect(video.currentTime).toBe(5)
+        await userEvent.keyboard('i')
+        seek(video, 10)
+        await userEvent.keyboard('o')
+        expect(screen.getByTestId('clip-source-1')).toHaveTextContent('IMG_1001.mov')
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:05')
+        expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:10')
+      })
+
+      it('steps frames at the frame rate of the video under the playhead and across the join, so precise cuts work in every video', async () => {
+        vi.mocked(api.frameRate).mockImplementation(async (path: string) => (path === SOURCES[1].path ? 25 : 50))
+        const video = await openJoined()
+        seekOnTimeline(video, 60.04, 40)
+        await act(async () => {})
+        fireEvent.keyDown(window, { key: '.', code: 'Period' })
+        expect(video.currentTime).toBeCloseTo(0.08)
+        fireEvent.keyDown(window, { key: ',', code: 'Comma' })
+        fireEvent.keyDown(window, { key: ',', code: 'Comma' })
+        fireEvent.keyDown(window, { key: ',', code: 'Comma' })
+        expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[0].path))
+        showDuration(60)
+        await act(async () => {})
+        expect(video.currentTime).toBeCloseTo(59.96)
+        fireEvent.keyDown(window, { key: ',', code: 'Comma' })
+        expect(video.currentTime).toBeCloseTo(59.94)
+      })
+
+      it('plays all clips through the videos they are in and back to the first, showing each clip’s time while its video loads', async () => {
+        const video = await openJoined()
+        const play = vi.fn(async () => {})
+        Object.assign(video, { play })
+        await markClip(video, 10, 20)
+        seekOnTimeline(video, 105, 20)
+        await userEvent.keyboard('i')
+        seek(video, 10)
+        await userEvent.keyboard('o')
+        await userEvent.click(screen.getByTestId('clip-play-1'))
+        expectAt(video, 0, 10)
+        expect(play).toHaveBeenCalled()
+        Object.defineProperty(video, 'paused', { configurable: true, value: false })
+        seek(video, 20.1)
+        expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[2].path))
+        expect(screen.getByTestId('clip-play-2')).toHaveAttribute('aria-pressed', 'true')
+        fireEvent(video, new Event('timeupdate'))
+        expect(screen.getByTestId('playhead')).toHaveStyle({ left: '87.5%' })
+        play.mockClear()
+        expectAt(video, 2, 5)
+        expect(play).toHaveBeenCalled()
+        seek(video, 10.1)
+        expect(screen.getByTestId('clip-play-1')).toHaveAttribute('aria-pressed', 'true')
+        expectAt(video, 0, 10)
+      })
+
+      it('plays on into the next video when one ends, without stopping at the join', async () => {
+        const video = await openJoined()
+        Object.assign(video, { play: vi.fn(async () => {}) })
+        fireEvent(video, new Event('play'))
+        Object.defineProperty(video, 'ended', { configurable: true, value: true })
+        fireEvent(video, new Event('pause'))
+        fireEvent(video, new Event('ended'))
+        Object.defineProperty(video, 'ended', { configurable: true, value: false })
+        expect(screen.getByTestId('play')).toHaveAccessibleName(t.pause)
+        expectAt(video, 1, 0)
+        expect(video.play).toHaveBeenCalled()
+      })
+
+      it('stops at the end of the last video instead of starting the session over', async () => {
+        const video = await openJoined()
+        seekOnTimeline(video, 110, 20)
+        fireEvent(video, new Event('play'))
+        Object.defineProperty(video, 'ended', { configurable: true, value: true })
+        fireEvent(video, new Event('pause'))
+        fireEvent(video, new Event('ended'))
+        expect(screen.getByTestId('play')).toHaveAccessibleName(t.play)
+        expect(video.getAttribute('src')).toBe('media://file/' + encodeURIComponent(SOURCES[2].path))
+      })
     })
   })
 })

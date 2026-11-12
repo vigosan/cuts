@@ -30,6 +30,7 @@ import { snapToBeat } from '@cuts/core/beats'
 import { confineMoment, orderVideos, partBoundsAt, removePart } from '@cuts/core/parts'
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
+import { useSessionClock } from './useSessionClock'
 import { useWaveform } from './useVideoPreview'
 import { loadPreferences, savePreferences } from './preferences'
 
@@ -58,7 +59,8 @@ export function App() {
   const [history, dispatch] = useReducer(clipsHistory, { past: [], present: initialClipsState, future: [] })
   const { clips, pendingStart } = history.present
   const [time, setTime] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [loadedDuration, setDuration] = useState(0)
+  const duration = sources.length > 0 ? sources.reduce((sum, source) => sum + source.duration, 0) : loadedDuration
   const [playing, setPlaying] = useState(false)
   const [baseName, setBaseName] = useState('')
   const [folder, setFolder] = useState<string | null>(() => loadPreferences().folder)
@@ -129,7 +131,8 @@ export function App() {
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
-  const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(videoRef, duration)
+  const clock = useSessionClock(videoRef, sources.length > 0 ? sources : [{ path: videoPath ?? '', duration }])
+  const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(clock.now, clock.seekTo, videoRef, duration)
   const { peaks, analysing } = useWaveform(mediaPath)
   const onBeat = (time: number) => (peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
   const markStart = (free = false) => dispatch({ type: 'markStart', time: free ? now() : onBeat(now()) })
@@ -176,7 +179,6 @@ export function App() {
     dispatch({ type: 'reset', resetHistory: true })
     setRestoredFor(null)
     openedPath.current = path
-    void window.api.frameRate(playablePath(path, sources)).then((rate) => openedPath.current === path && setFps(rate))
     if (!carry) setNamePath(sources[0]?.path ?? path)
     if (carry) {
       restore(carry)
@@ -189,6 +191,16 @@ export function App() {
       setRestoredFor(path)
     })
   }
+
+  const missingSource = sources[clock.index]?.missing ?? false
+  useEffect(() => {
+    if (!clock.src || missingSource) return
+    let current = true
+    void window.api.frameRate(clock.src).then((rate) => current && setFps(rate))
+    return () => {
+      current = false
+    }
+  }, [clock.src, missingSource])
 
   useEffect(() => {
     if (unsupportedDrops === 0) return
@@ -218,7 +230,7 @@ export function App() {
   const exportState: ExportState =
     outdated && (lastExport.status === 'done' || lastExport.status === 'error') ? { status: 'idle' } : lastExport
 
-  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, seekTo })
+  const { loopingId, loop, playClip, keepLooping, seekFromTimeline } = useClipLoop({ videoRef, clips, playing, now, seekTo, play: clock.play })
 
   const selectClip = (clip: Clip, mode: SelectMode = 'only') => {
     const from = clips.findIndex((other) => other.id === selectionAnchor.current)
@@ -608,19 +620,22 @@ export function App() {
               <video
                 ref={videoRef}
                 data-testid="video"
-                src={mediaUrl(playablePath(videoPath, sources))}
+                src={mediaUrl(clock.src)}
                 className={`max-h-[55vh] w-full cursor-pointer object-contain lg:absolute lg:inset-0 lg:h-full lg:max-h-none ${isAudio ? 'hidden' : ''} ${target && shownSettings.framing === 'fit' ? 'opacity-0' : ''}`}
                 onClick={togglePlay}
-                onTimeUpdate={(e) => {
-                  keepLooping(e.currentTarget)
-                  setTime(e.currentTarget.currentTime)
+                onTimeUpdate={() => {
+                  keepLooping()
+                  setTime(now())
                 }}
                 onLoadedMetadata={(e) => {
                   setDuration(e.currentTarget.duration)
                   if (!isAudio) setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })
+                  clock.onLoadedMetadata()
                 }}
+                onEnded={clock.onEnded}
                 onPlay={() => setPlaying(true)}
                 onPause={() => {
+                  if (clock.continuing()) return
                   setPlaying(false)
                   loop(null)
                 }}
@@ -677,7 +692,7 @@ export function App() {
                   onChange={changeSettings}
                 />
               )}
-              {duration === 0 && !videoError && !(isAudio && !background) && (
+              {loadedDuration === 0 && !videoError && !(isAudio && !background) && (
                 <p data-testid="video-loading" className="absolute flex items-center gap-2 text-sm text-white/70">
                   <SpinnerIcon className="size-4" />
                   {t.loadingVideo}
@@ -810,7 +825,7 @@ export function App() {
                 viewStart={currentViewStart}
                 viewSpan={viewSpan}
                 time={time}
-                videoRef={videoRef}
+                now={now}
                 playing={playing}
                 clips={clips}
                 fades={fades}

@@ -5,10 +5,12 @@ type Options = {
   videoRef: RefObject<HTMLVideoElement | null>
   clips: Clip[]
   playing: boolean
+  now: () => number
   seekTo: (time: number) => void
+  play: () => void
 }
 
-export function useClipLoop({ videoRef, clips, playing, seekTo }: Options) {
+export function useClipLoop({ videoRef, clips, playing, now, seekTo, play }: Options) {
   const [loopingId, setLoopingId] = useState<string | null>(null)
   const looping = useRef<string | null>(null)
   const loopingClip = clips.find((clip) => clip.id === loopingId) ?? null
@@ -26,15 +28,15 @@ export function useClipLoop({ videoRef, clips, playing, seekTo }: Options) {
     }
     loop(clip.id)
     seekTo(clip.start)
-    void videoRef.current?.play()
+    play()
   }
 
-  const keepLooping = (video: HTMLVideoElement) => {
+  const keepLooping = () => {
     const index = clips.findIndex((clip) => clip.id === looping.current)
-    if (index < 0 || video.currentTime < clips[index].end) return
+    if (index < 0 || now() < clips[index].end) return
     const next = clips[(index + 1) % clips.length]
     loop(next.id)
-    video.currentTime = next.start
+    seekTo(next.start)
   }
 
   const seekFromTimeline = (t: number) => {
@@ -42,17 +44,16 @@ export function useClipLoop({ videoRef, clips, playing, seekTo }: Options) {
     seekTo(t)
   }
 
-  const onFrame = useEffectEvent((video: HTMLVideoElement) => keepLooping(video))
+  const onFrame = useEffectEvent(() => keepLooping())
   const isLooping = loopingClip !== null
   useEffect(() => {
-    const video = videoRef.current
-    if (!video || !isLooping || !playing) return
+    if (!isLooping || !playing) return
     let frame = requestAnimationFrame(function check() {
-      onFrame(video)
+      onFrame()
       frame = requestAnimationFrame(check)
     })
     return () => cancelAnimationFrame(frame)
-  }, [videoRef, isLooping, playing])
+  }, [isLooping, playing])
 
   return { loopingId, loop, playClip, keepLooping, seekFromTimeline }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
+import { useEffect, useEffectEvent, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { formatDuration, MAX_CLIP_SECONDS, type Clip } from '@cuts/core/clips'
 import { audioGain, nearestFadeSeconds, type ClipFade } from '@cuts/core/fades'
 import { dragClip, type DragMode } from '@cuts/core/drag-clip'
@@ -41,7 +41,7 @@ type Props = {
   viewStart: number
   viewSpan: number
   time: number
-  videoRef: RefObject<HTMLVideoElement | null>
+  now: () => number
   playing: boolean
   clips: Clip[]
   fades: ClipFade[]
@@ -68,7 +68,7 @@ export function Timeline({
   viewStart,
   viewSpan,
   time,
-  videoRef,
+  now,
   playing,
   clips,
   fades,
@@ -403,7 +403,7 @@ export function Timeline({
             widthPx={viewSpan > 0 ? (Math.max(0, time - pendingStart) / viewSpan) * width : 0}
           />
         )}
-        <Playhead time={time} videoRef={videoRef} playing={playing} position={(now) => pct(now - viewStart)} />
+        <Playhead time={time} now={now} playing={playing} position={(at) => pct(at - viewStart)} />
       </div>
       {onAddVideos && (
         <button
@@ -443,30 +443,30 @@ function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left:
 
 function Playhead({
   time,
-  videoRef,
+  now,
   playing,
   position
 }: {
   time: number
-  videoRef: RefObject<HTMLVideoElement | null>
+  now: () => number
   playing: boolean
   position: (time: number) => string
 }) {
-  const [now, setNow] = useState(time)
+  const [followed, setFollowed] = useState(time)
+  const read = useEffectEvent(now)
   useEffect(() => {
-    const video = videoRef.current
-    if (!video || !playing) return
+    if (!playing) return
     let frame = requestAnimationFrame(function follow() {
-      setNow(video.currentTime)
+      setFollowed(read())
       frame = requestAnimationFrame(follow)
     })
     return () => cancelAnimationFrame(frame)
-  }, [videoRef, playing])
+  }, [playing])
   return (
     <div
       data-testid="playhead"
       className="pointer-events-none absolute inset-y-0 z-20 w-0.5 -translate-x-1/2 rounded-full bg-red-500"
-      style={{ left: position(playing ? now : time) }}
+      style={{ left: position(playing ? followed : time) }}
     />
   )
 }
