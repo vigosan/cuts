@@ -1,51 +1,76 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { joinPeaks } from '@cuts/core/parts'
 
-export function useWaveform(path: string | null): { peaks: Float32Array | null; analysing: boolean } {
-  const [peaks, setPeaks] = useState<{ path: string; peaks: Float32Array | null } | null>(null)
+export type WaveformPart = { path: string; duration: number; missing?: boolean }
+
+export function fetchPeaks(parts: WaveformPart[]): Promise<(Float32Array | null)[]> {
+  return Promise.all(parts.map((part) => (part.missing ? null : window.api.waveform(part.path).catch(() => null))))
+}
+
+export function combinePeaks(fetched: (Float32Array | null)[], parts: WaveformPart[]): Float32Array | null {
+  if (fetched.every((peaks) => peaks === null)) return null
+  if (parts.length === 1) return fetched[0]
+  return joinPeaks(
+    fetched,
+    parts.map((part) => part.duration),
+    PEAKS_PER_SECOND
+  )
+}
+
+export function useWaveform(parts: WaveformPart[]): { peaks: Float32Array | null; analysing: boolean } {
+  const [fetched, setFetched] = useState<{ key: string; peaks: (Float32Array | null)[] } | null>(null)
+  const key = parts.map((part) => (part.missing ? '' : part.path)).join('\n')
+  const durations = parts.map((part) => part.duration).join(',')
   useEffect(() => {
-    if (!path) return
+    if (key === '') return
     let current = true
-    window.api.waveform(path).then(
-      (result) => current && setPeaks({ path, peaks: result }),
-      () => current && setPeaks({ path, peaks: null })
-    )
+    const available = key.split('\n').map((path) => ({ path, duration: 0, missing: path === '' }))
+    void fetchPeaks(available).then((peaks) => current && setFetched({ key, peaks }))
     return () => {
       current = false
     }
-  }, [path])
-  const done = peaks?.path === path
-  return { peaks: done ? peaks.peaks : null, analysing: path !== null && !done }
+  }, [key])
+  const done = fetched?.key === key
+  const peaks = useMemo(() => {
+    if (!done) return null
+    const sized = durations.split(',').map((duration, i) => ({ path: '', duration: Number(duration), missing: fetched.peaks[i] === null }))
+    return combinePeaks(fetched.peaks, sized)
+  }, [done, fetched, durations])
+  return { peaks, analysing: parts.length > 0 && !done }
 }
 
-const NO_FRAMES = new Map<number, string>()
+const NO_FRAMES = new Map<string, string>()
 
-export function useThumbnails(path: string, times: number[]): Map<number, string> {
-  const cache = useRef({ path, frames: new Map<number, string>(), pending: new Set<number>() })
-  const [shown, setShown] = useState({ path, frames: NO_FRAMES })
+export type ThumbnailRequest = { path: string; time: number }
 
-  const key = times.join(',')
+export function useThumbnails(requests: ThumbnailRequest[]): Map<string, string> {
+  const cache = useRef({ frames: new Map<string, string>(), pending: new Set<string>() })
+  const [shown, setShown] = useState(NO_FRAMES)
+
+  const key = requests.map((request) => `${request.path}|${request.time}`).join('\n')
   useEffect(() => {
-    if (cache.current.path !== path) cache.current = { path, frames: new Map(), pending: new Set() }
     const entry = cache.current
-    const wanted = key === '' ? [] : key.split(',').map(Number)
-    const missing = wanted.filter((time) => !entry.frames.has(time) && !entry.pending.has(time))
-    missing.forEach((time) => entry.pending.add(time))
+    const wanted = key === '' ? [] : key.split('\n')
+    const missing = wanted.filter((frame) => !entry.frames.has(frame) && !entry.pending.has(frame))
+    missing.forEach((frame) => entry.pending.add(frame))
     let current = true
     const next = async () => {
-      for (const time of missing) {
+      for (const frame of missing) {
         if (!current) return
-        const src = await window.api.thumbnail(path, time).catch(() => null)
-        entry.pending.delete(time)
-        if (src) entry.frames.set(time, src)
-        setShown({ path, frames: new Map(entry.frames) })
+        const split = frame.lastIndexOf('|')
+        const src = await window.api.thumbnail(frame.slice(0, split), Number(frame.slice(split + 1))).catch(() => null)
+        entry.pending.delete(frame)
+        if (src) entry.frames.set(frame, src)
+        setShown(new Map(entry.frames))
       }
     }
     void next()
     return () => {
       current = false
-      missing.forEach((time) => entry.frames.has(time) || entry.pending.delete(time))
+      missing.forEach((frame) => entry.frames.has(frame) || entry.pending.delete(frame))
     }
-  }, [path, key])
+  }, [key])
 
-  return shown.path === path ? shown.frames : NO_FRAMES
+  return shown
 }

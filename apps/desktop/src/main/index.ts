@@ -251,21 +251,21 @@ app.whenReady().then(() => {
     parseFrameRate(await readFfmpegInfo(bundledFfmpeg()!, opened(path))) ?? DEFAULT_FRAME_RATE
   )
 
-  let lastWaveform: { path: string; peaks: Promise<Float32Array> } | null = null
+  const waveforms = new Map<string, Promise<Float32Array>>()
   const readWaveform = async (path: string) => {
     const raw = await captureFfmpeg(bundledFfmpeg()!, waveformArgs(opened(path)))
     const even = raw.byteLength - (raw.byteLength % 2)
     return peaksFromSamples(new Int16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + even)))
   }
   ipcMain.handle('waveform', (_event, path: string) => {
-    if (lastWaveform?.path !== path) {
+    if (!waveforms.has(path)) {
       const peaks = readWaveform(path)
       peaks.catch(() => {
-        if (lastWaveform?.peaks === peaks) lastWaveform = null
+        if (waveforms.get(path) === peaks) waveforms.delete(path)
       })
-      lastWaveform = { path, peaks }
+      waveforms.set(path, peaks)
     }
-    return lastWaveform.peaks
+    return waveforms.get(path)
   })
 
   ipcMain.handle('load-session', (_event, videoPath: string) => loadSession(sessionsDir, videoPath))

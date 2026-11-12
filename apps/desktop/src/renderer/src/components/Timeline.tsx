@@ -90,10 +90,12 @@ export function Timeline({
   const [width, setWidth] = useState(0)
   const [hoveredSource, setHoveredSource] = useState<number | null>(null)
   const tiles = thumbnails ? filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration) : []
-  const frames = useThumbnails(
-    videoPath,
-    tiles.map((tile) => tile.time)
-  )
+  const tileFrames = tiles.map((tile) => {
+    if (sources.length === 0) return { tile, request: { path: videoPath, time: tile.time } }
+    const local = localTime(sources, tile.time)
+    return { tile, request: sources[local.index].missing ? null : { path: sources[local.index].path, time: local.time } }
+  })
+  const frames = useThumbnails(tileFrames.flatMap(({ request }) => (request ? [request] : [])))
 
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
@@ -243,12 +245,12 @@ export function Timeline({
               {t.loadingFrames}
             </p>
           )}
-          {tiles.map((tile) =>
-            frames.has(tile.time) ? (
+          {tileFrames.map(({ tile, request }) =>
+            request && frames.has(`${request.path}|${request.time}`) ? (
               <img
                 key={tile.time}
                 data-testid="filmstrip-frame"
-                src={frames.get(tile.time)}
+                src={frames.get(`${request.path}|${request.time}`)}
                 alt=""
                 draggable={false}
                 className="absolute inset-y-0 h-full object-cover"

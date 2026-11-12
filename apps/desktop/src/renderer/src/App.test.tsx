@@ -2865,10 +2865,13 @@ describe('Several videos as one session', () => {
       })
 
       it('never suggests a clip across a join, so Suggest does not hand over clips that cannot be exported', async () => {
-        const peaks = new Float32Array(120 * 50).fill(0.2)
-        peaks.fill(0.02, 40 * 50, 60 * 50)
-        peaks.fill(0.3, 60 * 50, 90 * 50)
-        vi.mocked(api.waveform).mockResolvedValue(peaks)
+        const first = new Float32Array(60 * 50).fill(0.2)
+        first.fill(0.02, 40 * 50)
+        const second = new Float32Array(40 * 50).fill(0.2)
+        second.fill(0.3, 0, 30 * 50)
+        const third = new Float32Array(20 * 50).fill(0.2)
+        const byPath = new Map([[SOURCES[0].path, first], [SOURCES[1].path, second], [SOURCES[2].path, third]])
+        vi.mocked(api.waveform).mockImplementation(async (path) => byPath.get(path)!)
         await openJoined()
         await act(async () => userEvent.click(screen.getByTestId('suggest')))
         expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:00:01')

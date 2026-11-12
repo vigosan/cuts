@@ -31,7 +31,7 @@ import { confineMoment, orderVideos, partBoundsAt, removePart } from '@cuts/core
 import { useClipLoop } from './useClipLoop'
 import { useTransport } from './useTransport'
 import { useSessionClock } from './useSessionClock'
-import { useWaveform } from './useVideoPreview'
+import { combinePeaks, fetchPeaks, useWaveform } from './useVideoPreview'
 import { loadPreferences, savePreferences } from './preferences'
 
 const SEEK_STEP = 5
@@ -131,9 +131,10 @@ export function App() {
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
   const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
-  const clock = useSessionClock(videoRef, sources.length > 0 ? sources : [{ path: videoPath ?? '', duration }])
+  const parts = sources.length > 0 ? sources : [{ path: videoPath ?? '', duration }]
+  const clock = useSessionClock(videoRef, parts)
   const { now, seekTo, togglePlay, stepTo, shuttleForward, stopShuttle } = useTransport(clock.now, clock.seekTo, videoRef, duration)
-  const { peaks, analysing } = useWaveform(mediaPath)
+  const { peaks, analysing } = useWaveform(videoPath ? parts : [])
   const onBeat = (time: number) => (peaks ? snapToBeat(time, peaks, PEAKS_PER_SECOND) : time)
   const markStart = (free = false) => dispatch({ type: 'markStart', time: free ? now() : onBeat(now()) })
   const markEnd = (free = false) => {
@@ -433,9 +434,8 @@ export function App() {
 
   const suggest = async (path: string) => {
     setSuggesting(true)
-    const peaks = await window.api
-      .waveform(playablePath(path, sources))
-      .catch(() => null)
+    const peaks = await fetchPeaks(parts)
+      .then((fetched) => combinePeaks(fetched, parts))
       .finally(() => setSuggesting(false))
     if (openedPath.current !== path) return
     if (!peaks) return setSuggestNotice(t.suggestNoAudio)
