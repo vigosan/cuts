@@ -95,7 +95,7 @@ app.whenReady().then(() => {
     )
   )
   app.setAboutPanelOptions({ credits: t.aboutCredits })
-  void rm(join(app.getPath('userData'), 'joined'), { recursive: true, force: true })
+  rm(join(app.getPath('userData'), 'joined'), { recursive: true, force: true }).catch(() => {})
   const openedVideos = new Set<string>()
   const recentsFile = join(app.getPath('userData'), 'recent-videos.json')
   const sessionsDir = join(app.getPath('userData'), 'sessions')
@@ -322,6 +322,10 @@ app.whenReady().then(() => {
     if (!entry) return null
     if (entry.sources) {
       entry.bookmarks?.forEach((bookmark) => app.startAccessingSecurityScopedResource(bookmark))
+      if (!entry.sources.some((source) => existsSync(source))) {
+        await forgetRecent(recentsFile, path)
+        return null
+      }
       entry.sources.forEach((source, index) => allowVideo(source, entry.bookmarks?.[index]))
       return open(entry.sources, null)
     }

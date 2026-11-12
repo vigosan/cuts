@@ -84,4 +84,11 @@ describe('sessions', () => {
   it('lists nothing when no session was ever saved, instead of failing to open videos', async () => {
     expect(await listSessions(join(tmpdir(), 'cuts-no-sessions-here'))).toEqual([])
   })
+
+  it('keeps a multi-video session without clips, since it is the only record of its videos\' order and lengths', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cuts-sessions-'))
+    const sources = [{ path: '/a.mov', name: 'a.mov', duration: 12, width: 1920, height: 1080, hdr: false, missing: false }]
+    await saveSession(dir, 'session:abc', { ...snapshot, clips: [], sources })
+    expect(await loadSession(dir, 'session:abc')).toEqual({ ...snapshot, clips: [], sources })
+  })
 })

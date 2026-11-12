@@ -24,7 +24,7 @@ export async function loadSession(dir: string, videoPath: string): Promise<Sessi
 
 export async function saveSession(dir: string, videoPath: string, session: Session): Promise<void> {
   const file = fileFor(dir, videoPath)
-  if (session.clips.length === 0) {
+  if (session.clips.length === 0 && !session.sources?.length) {
     await rm(file, { force: true })
     return
   }

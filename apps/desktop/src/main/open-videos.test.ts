@@ -1,8 +1,12 @@
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import { joinKey } from './join'
 import { openVideos, type OpenDeps } from './open-videos'
 import type { Session, Source } from '../shared/api'
+import { loadSession, saveSession } from './sessions'
 
 const info = (seconds: number, size = '1920x1080') => `Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'x.mov':
   Duration: 00:00:${String(seconds).padStart(2, '0')}.00, start: 0.000000, bitrate: 15250 kb/s
@@ -155,5 +159,23 @@ describe('openVideos', () => {
     await openVideos([A, B], null, deps)
     expect(saved.has(id)).toBe(false)
     expect(saved.has(other)).toBe(true)
+  })
+
+  it('does not adopt another session when none of the chosen videos is there, since names alone like IMG_0001.MOV repeat across sets', async () => {
+    const other = `session:${joinKey(['/Volumes/X/IMG_0412.MOV', '/Volumes/X/IMG_0413.MOV'])}`
+    const { deps, saved } = fakeDeps({}, { [other]: { ...carry, sources: [source('/Volumes/X/IMG_0412.MOV', 12), source('/Volumes/X/IMG_0413.MOV', 8)] } })
+    await openVideos([A, B], null, deps)
+    expect(saved.has(id)).toBe(false)
+    expect(saved.has(other)).toBe(true)
+  })
+
+  it('remembers the length of a missing video in a session without clips, so its stretch keeps its size and Locate can match it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cuts-open-'))
+    const { deps, fs } = fakeDeps({ [A]: info(12), [B]: info(8) })
+    const real = { ...deps, loadSession: (key: string) => loadSession(dir, key), saveSession: (key: string, session: Session) => saveSession(dir, key, session) }
+    const opened = await openVideos([A, B], null, real)
+    await saveSession(dir, opened.path, { ...carry, clips: [], sources: opened.sources })
+    fs.delete(B)
+    expect((await openVideos([A, B], null, real)).sources[1]).toEqual(source(B, 8, { missing: true }))
   })
 })

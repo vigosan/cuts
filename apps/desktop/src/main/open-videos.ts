@@ -36,6 +36,7 @@ async function probe(path: string, saved: Source | undefined, deps: OpenDeps): P
 
 const sameVideos = (saved: Source[] | undefined, sources: Source[]) =>
   saved?.length === sources.length &&
+  sources.some((source) => !source.missing) &&
   saved.every(
     (old, i) =>
       old.name === sources[i].name && (sources[i].missing || Math.abs(old.duration - sources[i].duration) <= DURATION_TOLERANCE_SECONDS)
