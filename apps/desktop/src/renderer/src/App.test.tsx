@@ -3228,10 +3228,35 @@ describe('Several videos as one session', () => {
         vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: REJOINED, sources: [SOURCES[0], { ...SOURCES[1], path: LOCATED }, SOURCES[2]] })
         await userEvent.click(screen.getByTestId('locate-1'))
         expect(api.locateVideo).toHaveBeenCalledWith(40)
-        expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, LOCATED, SOURCES[2].path], JOINED, expect.objectContaining({ clips: CLIPS }))
+        expect(api.openVideos).toHaveBeenLastCalledWith(
+          [SOURCES[0].path, LOCATED, SOURCES[2].path],
+          JOINED,
+          expect.objectContaining({ clips: CLIPS, sources: [SOURCES[0], { ...SOURCES[1], missing: true }, SOURCES[2]] })
+        )
         expect(screen.queryByTestId('missing-1')).not.toBeInTheDocument()
         expect(screen.getByTestId('clip-row-3')).toBeInTheDocument()
         expect(screen.queryByTestId('clip-unavailable-2')).not.toBeInTheDocument()
+      })
+
+      it('sends the videos with their stored lengths when X or + reopens the session, so another missing video keeps its place', async () => {
+        await openWithMissing()
+        const sources = [SOURCES[0], { ...SOURCES[1], missing: true }, SOURCES[2]]
+        vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: REJOINED, sources })
+        vi.mocked(api.openVideo).mockResolvedValue([`${FOLDER}/IMG_2000.mov`])
+        await userEvent.click(screen.getByTestId('add-videos'))
+        expect(api.openVideos).toHaveBeenLastCalledWith(expect.anything(), JOINED, expect.objectContaining({ sources }))
+        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+        await userEvent.click(screen.getByTestId('remove-video-2'))
+        confirm.mockRestore()
+        expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, SOURCES[1].path], REJOINED, expect.objectContaining({ sources }))
+      })
+
+      it('stays calm when the locate dialog fails, keeping the placeholder', async () => {
+        await openWithMissing()
+        vi.mocked(api.locateVideo).mockRejectedValue(new Error('dialog failed'))
+        await userEvent.click(screen.getByTestId('locate-1'))
+        expect(screen.getByTestId('missing-1')).toBeInTheDocument()
+        expect(api.openVideos).toHaveBeenCalledTimes(1)
       })
 
       it('keeps the placeholder and says so when the located file is another video, so clips never land on the wrong recording', async () => {

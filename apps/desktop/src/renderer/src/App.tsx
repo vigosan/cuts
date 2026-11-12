@@ -504,7 +504,8 @@ export function App() {
         clipSettings: Object.fromEntries(Object.entries(clipSettings).filter(([id]) => keptIds.has(id))),
         defaultSettings,
         format,
-        baseName
+        baseName,
+        sources
       }
     )
   }
@@ -516,18 +517,18 @@ export function App() {
     const current = sources.length > 0 ? sources.map((source) => source.path) : [videoPath]
     const paths = orderVideos(current, chosen)
     if (paths.length === current.length) return
-    await openPaths(paths, videoPath, { clips, clipSettings, defaultSettings, format, baseName })
+    await openPaths(paths, videoPath, { clips, clipSettings, defaultSettings, format, baseName, sources })
   }
 
   const locateSource = async (index: number) => {
     if (exporting || !videoPath) return
-    const found = await window.api.locateVideo(sources[index].duration)
+    const found = await window.api.locateVideo(sources[index].duration).catch(() => null)
     if (found === 'mismatch') return setSuggestNotice(t.locateMismatch(sources[index].name))
     if (!found) return
     await openPaths(
       sources.map((source, i) => (i === index ? found.path : source.path)),
       videoPath,
-      { clips, clipSettings, defaultSettings, format, baseName }
+      { clips, clipSettings, defaultSettings, format, baseName, sources }
     )
   }
 

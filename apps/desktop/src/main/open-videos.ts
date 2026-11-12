@@ -20,8 +20,8 @@ export type OpenDeps = {
 const SESSION_PREFIX = 'session:'
 const DURATION_TOLERANCE_SECONDS = 0.5
 
-export const matchesDuration = (info: string, duration: number) =>
-  Math.abs(parseMediaInfo(info).duration - duration) <= DURATION_TOLERANCE_SECONDS
+export const matchesMissing = (path: string, info: string, duration: number) =>
+  mediaKind(path) !== 'audio' && Math.abs(parseMediaInfo(info).duration - duration) <= DURATION_TOLERANCE_SECONDS
 
 const sessionId = (paths: string[]) => `${SESSION_PREFIX}${joinKey(paths)}`
 
@@ -50,7 +50,8 @@ async function openSession(paths: string[], deps: OpenDeps, carry?: Session): Pr
   const session = await deps.loadSession(id)
   const saved = session?.sources
   const order = saved && sameSet(saved.map((source) => source.path), paths) ? saved.map((source) => source.path) : paths
-  const sources = await Promise.all(order.map((path) => probe(path, saved?.find((source) => source.path === path), deps)))
+  const known = (path: string) => saved?.find((source) => source.path === path) ?? carry?.sources?.find((source) => source.path === path)
+  const sources = await Promise.all(order.map((path) => probe(path, known(path), deps)))
   if (session || carry) return { ok: true, path: id, sources }
   const moved = (await deps.savedSessions()).find((old) => sameVideos(old.sources, sources))
   const previous = moved?.sources
@@ -66,7 +67,10 @@ async function openSession(paths: string[], deps: OpenDeps, carry?: Session): Pr
 export async function openVideos(paths: string[], replacing: string | null, deps: OpenDeps, carry?: Session): Promise<OpenResult> {
   const single = paths.length === 1 || paths.some((path) => mediaKind(path) === 'audio')
   const result: OpenResult = single ? { ok: true, path: paths[0], sources: [] } : await openSession(paths, deps, carry)
-  if (carry) await deps.saveSession(result.path, single ? carry : { ...carry, sources: result.sources })
+  if (carry) {
+    const { sources: _carried, ...plain } = carry
+    await deps.saveSession(result.path, single ? plain : { ...plain, sources: result.sources })
+  }
   if (replacing && replacing !== result.path && replacing.startsWith(SESSION_PREFIX)) {
     await deps.removeSession(replacing)
     await deps.forget(replacing)

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SETTINGS } from '@cuts/core/fades'
 import { joinKey } from './join'
-import { matchesDuration, openVideos, type OpenDeps } from './open-videos'
+import { matchesMissing, openVideos, type OpenDeps } from './open-videos'
 import type { Session, Source } from '../shared/api'
 import { loadSession, saveSession } from './sessions'
 
@@ -130,6 +130,21 @@ describe('openVideos', () => {
     expect(deps.removeSession).toHaveBeenCalledWith(id)
   })
 
+  it('keeps the stored length and size of another missing video when reopening under a new id, so its clips and Locate still line up', async () => {
+    const C = '/Movies/IMG_0414.MOV'
+    const located = '/Volumes/Backup/IMG_0412.MOV'
+    const stored = [source(A, 12, { missing: true }), source(B, 8, { width: 1080, height: 1920, missing: true }), source(C, 5)]
+    const { deps } = fakeDeps({ [located]: info(12), [C]: info(5) })
+    const opened = await openVideos([located, B, C], `session:${joinKey([A, B, C])}`, deps, { ...carry, sources: stored })
+    expect(opened.sources).toEqual([source(located, 12), source(B, 8, { width: 1080, height: 1920, missing: true }), source(C, 5)])
+  })
+
+  it('stores no video list when X leaves a single video, so its session is never mistaken for a moved multi-video one', async () => {
+    const { deps, saved } = fakeDeps({ [A]: info(12) })
+    await openVideos([A], id, deps, { ...carry, sources: [source(A, 12), source(B, 8)] })
+    expect(saved.get(A)).not.toHaveProperty('sources')
+  })
+
   it('never removes the session of a single video it replaces, since that work belongs to the user\'s own file', async () => {
     const { deps, fs } = fakeDeps({ [A]: info(12), [B]: info(8) })
     await openVideos([A, B], A, deps, carry)
@@ -180,14 +195,18 @@ describe('openVideos', () => {
   })
 })
 
-describe('matchesDuration', () => {
-  it('accepts a located file within half a second of the missing one, since re-saving a file can shift its length slightly', () => {
-    expect(matchesDuration(info(40), 40.5)).toBe(true)
-    expect(matchesDuration(info(40), 39.5)).toBe(true)
+describe('matchesMissing', () => {
+  it('accepts a located video within half a second of the missing one, since re-saving a file can shift its length slightly', () => {
+    expect(matchesMissing(B, info(40), 40.5)).toBe(true)
+    expect(matchesMissing(B, info(40), 39.5)).toBe(true)
   })
 
   it('rejects a located file of another length, so clips are never placed on a different recording', () => {
-    expect(matchesDuration(info(40), 40.6)).toBe(false)
-    expect(matchesDuration('', 40)).toBe(false)
+    expect(matchesMissing(B, info(40), 40.6)).toBe(false)
+    expect(matchesMissing(B, '', 40)).toBe(false)
+  })
+
+  it('rejects an audio file of the same length, since audio would collapse the session into a single file', () => {
+    expect(matchesMissing('/Music/IMG_0413.wav', info(40), 40)).toBe(false)
   })
 })

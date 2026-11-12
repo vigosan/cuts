@@ -15,7 +15,7 @@ import { handleMediaProtocol, registerMediaScheme } from './media-protocol'
 import { menuTemplate } from './menu'
 import { importOverlay, isOwnedOverlay, type OverlayDeps } from './overlay'
 import { openFileBatch } from './open-file-batch'
-import { matchesDuration, openVideos, type OpenDeps } from './open-videos'
+import { matchesMissing, openVideos, type OpenDeps } from './open-videos'
 import { existingAncestor } from './paths'
 import { canRemember, forgetRecent, isListed, loadRecents, posterFile, posterFrame, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
 import { listSessions, loadSession, removeSession, saveSession } from './sessions'
@@ -145,12 +145,12 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender)!
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
-      filters: [{ name: t.videoFilter, extensions: [...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS] }],
+      filters: [{ name: t.videoFilter, extensions: VIDEO_EXTENSIONS }],
       securityScopedBookmarks: process.mas === true
     })
     if (result.canceled) return null
     const path = result.filePaths[0]
-    if (!matchesDuration(await readFfmpegInfo(bundledFfmpeg()!, path), duration)) return 'mismatch'
+    if (!matchesMissing(path, await readFfmpegInfo(bundledFfmpeg()!, path), duration)) return 'mismatch'
     allowVideo(path, result.bookmarks?.[0])
     return { path }
   })
