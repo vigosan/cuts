@@ -222,7 +222,7 @@ describe('sessions of several videos', () => {
 
   it('cuts a clip from its own video at its local times, since nothing is joined on disk', async () => {
     const d = deps()
-    await exportClips({ ...request, clips: [{ ...request.clips[0], start: 5, end: 15, input: sources[1].path, frame: { width: 1080, height: 1920 } }] }, d)
+    await exportClips({ ...request, clips: [{ ...request.clips[0], start: 5, end: 15, input: sources[1].path }] }, d)
     const args = vi.mocked(d.run).mock.calls[0][1]
     expect(args[args.indexOf('-i') + 1]).toBe(sources[1].path)
     expect(args[args.indexOf('-ss') + 1]).toBe('5')

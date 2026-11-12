@@ -3465,7 +3465,7 @@ describe('Several videos as one session', () => {
         await act(async () => userEvent.click(screen.getByTestId('export')))
         expect(api.exportClips).toHaveBeenCalledWith(
           expect.objectContaining({
-            clips: [expect.objectContaining({ input: PORTRAIT.path, start: 10, end: 20, frame: { width: 1080, height: 1920 }, position: 0 })]
+            clips: [expect.objectContaining({ input: PORTRAIT.path, start: 10, end: 20, position: 0 })]
           })
         )
       })

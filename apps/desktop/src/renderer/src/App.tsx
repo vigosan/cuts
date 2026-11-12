@@ -393,7 +393,7 @@ export function App() {
     if (sources.length === 0) return {}
     const { index, time } = localTime(sources, clip.start)
     const { path, width, height } = sources[index]
-    return { input: path, start: time, end: time + clip.end - clip.start, frame: { width, height }, overlay: exportOverlay(outputFrame(format, { width, height })) }
+    return { input: path, start: time, end: time + clip.end - clip.start, overlay: exportOverlay(outputFrame(format, { width, height })) }
   }
   const inMissingSource = (clip: Clip) => sources.length > 0 && sources[localTime(sources, clip.start).index].missing
 
