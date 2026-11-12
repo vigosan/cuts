@@ -1,4 +1,4 @@
-import { constants, existsSync } from 'node:fs'
+import { constants, existsSync, statSync } from 'node:fs'
 import { access, copyFile, mkdir, readdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, ShareMenu, shell, type MessageBoxOptions } from 'electron'
@@ -326,6 +326,7 @@ app.whenReady().then(() => {
       savePoster(entry).catch(() => {})
     },
     bookmark: (path) => bookmarks.get(path),
+    createdAt: (path) => statSync(path).birthtimeMs,
     now: Date.now
   }
   const open = async (paths: string[], replacing: string | null, carry?: Session) => {

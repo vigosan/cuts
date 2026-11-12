@@ -2995,6 +2995,28 @@ describe('Several videos as one session', () => {
       expect(screen.getByTestId('remove-video-1')).toHaveAccessibleName(t.removeVideo('extra.mov'))
     })
 
+    it('shows the clips where the reopened session placed them when + slots an earlier recording in front, so each cut stays on its own footage', async () => {
+      const extra = '/Users/vicent/Movies/extra.mov'
+      render(<App />)
+      const video = await loadVideo()
+      await markClip(video, 100, 150)
+      vi.mocked(api.openVideo).mockResolvedValue([extra])
+      vi.mocked(api.openVideos).mockImplementation(async (_paths, _replacing, carry) => ({
+        ok: true,
+        path: JOINED,
+        sources: [
+          { path: extra, name: 'extra.mov', duration: 30, width: 1280, height: 720, hdr: false, missing: false },
+          { path: VIDEO, name: '2026-10-22 22-33-13.mov', duration: 4880, width: 1280, height: 720, hdr: false, missing: false }
+        ],
+        carried: { ...carry!, clips: carry!.clips.map((clip) => ({ ...clip, start: clip.start + 30, end: clip.end + 30 })) }
+      }))
+      await userEvent.click(screen.getByTestId('add-videos'))
+      showDuration(4910)
+      expect(screen.getByTestId('clip-source-1')).toHaveTextContent('2026-10-22 22-33-13.mov')
+      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
+      expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:02:30')
+    })
+
     it('keeps exporting into the first video’s folder after that video is removed, so one set never splits across folders', async () => {
       const video = await openJoined()
       await markClip(video, 70, 80)
@@ -3339,7 +3361,7 @@ describe('Several videos as one session', () => {
         const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
         await userEvent.click(screen.getByTestId('remove-video-2'))
         confirm.mockRestore()
-        expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, SOURCES[1].path], REJOINED, expect.objectContaining({ sources }))
+        expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[0].path, SOURCES[1].path], REJOINED, expect.objectContaining({ sources: sources.slice(0, 2) }))
       })
 
       it('stays calm when the locate dialog fails, keeping the placeholder', async () => {

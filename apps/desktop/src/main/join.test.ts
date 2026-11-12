@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { joinKey, parseMediaInfo } from './join'
+import { joinKey, parseMediaInfo, recordedAt } from './join'
 
 const iphone = (size: string, fps: string) => `Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'IMG_0001.MOV':
   Metadata:
@@ -76,5 +76,22 @@ describe('joinKey', () => {
 
   it('is 32 hex characters', () => {
     expect(joinKey(['/a.mov'])).toMatch(/^[0-9a-f]{32}$/)
+  })
+})
+
+describe('recordedAt', () => {
+  const exported = `Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'x.mp4':
+  Metadata:
+    creation_time   : 2026-11-12T15:29:33.000000Z
+    com.apple.quicktime.creationdate: 2026-11-08T09:54:24+01:00
+  Duration: 00:00:53.16, start: 0.000000, bitrate: 2862 kb/s
+`
+
+  it('reads when the camera recorded the video, not when it was exported, so a session sorts in shooting order', () => {
+    expect(recordedAt(exported)).toBe(Date.parse('2026-11-08T09:54:24+01:00'))
+  })
+
+  it('knows nothing when the video only carries an export time, so the file date can stand in', () => {
+    expect(recordedAt(exported.replace(/.*creationdate.*\n/, ''))).toBeNull()
   })
 })

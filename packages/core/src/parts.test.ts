@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { confineMoment, joinPeaks, localTime, nextAvailable, orderVideos, partBoundsAt, partStarts, removePart } from './parts'
+import { confineMoment, joinPeaks, localTime, nextAvailable, orderVideos, partBoundsAt, partStarts, placeClips, removePart } from './parts'
 
 const parts = [{ duration: 10 }, { duration: 20 }, { duration: 5 }]
 const total = 35
@@ -68,6 +68,36 @@ describe('orderVideos', () => {
     expect(
       orderVideos(['/a/IMG_0412.mov'], ['/b/IMG_0410.mov', '/a/IMG_0412.mov', '/b/IMG_09.mov']),
     ).toEqual(['/a/IMG_0412.mov', '/b/IMG_09.mov', '/b/IMG_0410.mov'])
+  })
+})
+
+describe('placeClips', () => {
+  it('moves each clip with its own video when the session is reordered, so a cut never lands on footage from another video', () => {
+    const clips = [
+      { id: 'a', start: 2, end: 4 },
+      { id: 'b', start: 12, end: 15 }
+    ]
+    const from = [
+      { path: '/a.mov', duration: 10 },
+      { path: '/c.mov', duration: 20 }
+    ]
+    const to = [
+      { path: '/a.mov', duration: 10 },
+      { path: '/b.mov', duration: 5 },
+      { path: '/c.mov', duration: 20 }
+    ]
+    expect(placeClips(clips, from, to)).toEqual([
+      { id: 'a', start: 2, end: 4 },
+      { id: 'b', start: 17, end: 20 }
+    ])
+    expect(placeClips(clips, from, [to[2], to[0]])).toEqual([
+      { id: 'a', start: 22, end: 24 },
+      { id: 'b', start: 2, end: 5 }
+    ])
+  })
+
+  it('drops a clip whose video is no longer in the session, since its footage is gone', () => {
+    expect(placeClips([{ id: 'a', start: 12, end: 14 }], [{ path: '/a.mov', duration: 10 }, { path: '/b.mov', duration: 10 }], [{ path: '/a.mov', duration: 10 }])).toEqual([])
   })
 })
 

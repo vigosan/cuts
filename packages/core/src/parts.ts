@@ -57,6 +57,19 @@ export function removePart<T extends Span>(clips: T[], parts: Part[], index: num
     .map((clip) => (clip.start >= end ? { ...clip, start: clip.start - length, end: clip.end - length } : clip))
 }
 
+type Placed = { path: string; duration: number }
+
+export function placeClips<T extends Span>(clips: T[], from: Placed[], to: Placed[]): T[] {
+  const starts = partStarts(to)
+  return clips.flatMap((clip) => {
+    const { index, time } = localTime(from, clip.start)
+    const target = to.findIndex((part) => part.path === from[index]?.path)
+    if (target < 0) return []
+    const start = starts[target] + time
+    return [{ ...clip, start, end: start + clip.end - clip.start }]
+  })
+}
+
 export function orderVideos(existing: string[], added: string[]): string[] {
   const basename = (path: string) => path.slice(path.lastIndexOf('/') + 1)
   const fresh = added

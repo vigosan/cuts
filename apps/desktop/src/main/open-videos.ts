@@ -1,7 +1,8 @@
 import { basename } from 'node:path'
+import { placeClips } from '@cuts/core/parts'
 import type { OpenResult, Session, Source } from '../shared/api'
 import { mediaKind } from '../shared/video-formats'
-import { joinKey, parseMediaInfo } from './join'
+import { joinKey, parseMediaInfo, recordedAt } from './join'
 import type { RecentEntry } from './recents'
 
 export type OpenDeps = {
@@ -14,6 +15,7 @@ export type OpenDeps = {
   forget(path: string): Promise<void>
   remember(entry: RecentEntry): Promise<void>
   bookmark(path: string): string | undefined
+  createdAt(path: string): number | undefined
   now(): number
 }
 
@@ -34,32 +36,46 @@ async function probe(path: string, saved: Source | undefined, deps: OpenDeps): P
     return { path, name, duration, width, height, hdr, missing: true }
   }
   if (!deps.exists(path)) return missing()
-  const { duration, width, height, hdr, video } = parseMediaInfo(await deps.info(path))
+  const output = await deps.info(path)
+  const { duration, width, height, hdr, video } = parseMediaInfo(output)
   if (duration <= 0 || video === null) return missing()
   const stored = saved && Math.abs(saved.duration - duration) <= DURATION_TOLERANCE_SECONDS ? saved.duration : duration
-  return { path, name, duration: stored, width, height, hdr, missing: false }
+  const recorded = recordedAt(output) ?? deps.createdAt(path)
+  return { path, name, duration: stored, width, height, hdr, missing: false, ...(recorded === undefined ? {} : { recordedAt: recorded }) }
 }
+
+const byRecording = (sources: Source[]) =>
+  sources.every((source) => source.recordedAt !== undefined)
+    ? [...sources].sort((a, b) => a.recordedAt! - b.recordedAt! || a.name.localeCompare(b.name, undefined, { numeric: true }))
+    : sources
+
+const counterpart = (old: Source, sources: Source[]) => sources.find((source) => source.name === old.name)
 
 const sameVideos = (saved: Source[] | undefined, sources: Source[]) =>
   saved?.length === sources.length &&
   sources.some((source) => !source.missing) &&
-  saved.every(
-    (old, i) =>
-      old.name === sources[i].name && (sources[i].missing || Math.abs(old.duration - sources[i].duration) <= DURATION_TOLERANCE_SECONDS)
-  )
+  saved.every((old) => {
+    const source = counterpart(old, sources)
+    return source !== undefined && (source.missing || Math.abs(old.duration - source.duration) <= DURATION_TOLERANCE_SECONDS)
+  })
 
 async function openSession(paths: string[], deps: OpenDeps, carry?: Session): Promise<OpenResult> {
   const id = sessionId(paths)
   const session = await deps.loadSession(id)
   const saved = session?.sources
-  const order = !carry && saved && sameSet(saved.map((source) => source.path), paths) ? saved.map((source) => source.path) : paths
+  const keepSaved = !carry && saved && sameSet(saved.map((source) => source.path), paths)
+  const order = keepSaved ? saved.map((source) => source.path) : paths
   const known = (path: string) => saved?.find((source) => source.path === path) ?? carry?.sources?.find((source) => source.path === path)
-  const sources = await Promise.all(order.map((path) => probe(path, known(path), deps)))
+  const probed = await Promise.all(order.map((path) => probe(path, known(path), deps)))
+  const sources = keepSaved ? probed : byRecording(probed)
   if (session || carry) return { ok: true, path: id, sources }
   const moved = (await deps.savedSessions()).find((old) => sameVideos(old.sources, sources))
   const previous = moved?.sources
   if (!moved || !previous) return { ok: true, path: id, sources }
-  const restored = sources.map((source, i) => (source.missing ? { ...previous[i], path: source.path, missing: true } : source))
+  const restored = previous.map((old) => {
+    const source = counterpart(old, sources)!
+    return source.missing ? { ...old, path: source.path, missing: true } : source
+  })
   const old = sessionId(previous.map((source) => source.path))
   await deps.saveSession(id, { ...moved, sources: restored })
   await deps.removeSession(old)
@@ -71,8 +87,11 @@ export async function openVideos(paths: string[], replacing: string | null, deps
   const single = paths.length === 1 || paths.some((path) => mediaKind(path) === 'audio')
   const result: OpenResult = single ? { ok: true, path: paths[0], sources: [] } : await openSession(paths, deps, carry)
   if (carry) {
-    const { sources: _carried, ...plain } = carry
-    await deps.saveSession(result.path, single ? plain : { ...plain, sources: result.sources })
+    const { sources: carriedSources, ...plain } = carry
+    const before = carriedSources?.length ? carriedSources : result.sources.filter((source) => source.path === replacing)
+    const clips = single || before.length === 0 ? plain.clips : placeClips(plain.clips, before, result.sources)
+    result.carried = { ...plain, clips, ...(single ? {} : { sources: result.sources }) }
+    await deps.saveSession(result.path, result.carried)
   }
   if (replacing && replacing !== result.path && replacing.startsWith(SESSION_PREFIX)) {
     await deps.removeSession(replacing)

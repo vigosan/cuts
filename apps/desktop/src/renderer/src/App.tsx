@@ -519,7 +519,7 @@ export function App() {
     const request = ++openRequest.current
     const result = await window.api.openVideos(paths, replacing, carry).catch(() => null)
     if (openRequest.current !== request || !result) return
-    load(result, carry)
+    load(result, result.carried ?? carry)
   }
 
   const openVideo = async () => {
@@ -544,7 +544,7 @@ export function App() {
         defaultSettings,
         format,
         baseName,
-        sources
+        sources: sources.filter((_, i) => i !== index)
       }
     )
   }

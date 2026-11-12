@@ -44,9 +44,9 @@ export type ExportResult = { ok: true; files: string[] } | { ok: false; error: s
 
 export type ExportProgress = { index: number; ratio: number }
 
-export type Source = { path: string; name: string; duration: number; width: number; height: number; hdr: boolean; missing: boolean }
+export type Source = { path: string; name: string; duration: number; width: number; height: number; hdr: boolean; missing: boolean; recordedAt?: number }
 
-export type OpenResult = { ok: true; path: string; sources: Source[] }
+export type OpenResult = { ok: true; path: string; sources: Source[]; carried?: Session }
 
 export type RecentVideo = { path: string; name: string; folder: string; openedAt: number; clips: number; poster: string | null }
 
