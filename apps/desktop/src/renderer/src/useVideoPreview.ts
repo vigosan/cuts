@@ -23,7 +23,7 @@ export function useWaveform(parts: WaveformPart[]): { peaks: Float32Array | null
   const key = parts.map((part) => (part.missing ? '' : part.path)).join('\n')
   const durations = parts.map((part) => part.duration).join(',')
   useEffect(() => {
-    if (key === '') return
+    if (!key.split('\n').some((path) => path !== '')) return
     let current = true
     const available = key.split('\n').map((path) => ({ path, duration: 0, missing: path === '' }))
     void fetchPeaks(available).then((peaks) => current && setFetched({ key, peaks }))
@@ -37,7 +37,7 @@ export function useWaveform(parts: WaveformPart[]): { peaks: Float32Array | null
     const sized = durations.split(',').map((duration, i) => ({ path: '', duration: Number(duration), missing: fetched.peaks[i] === null }))
     return combinePeaks(fetched.peaks, sized)
   }, [done, fetched, durations])
-  return { peaks, analysing: parts.length > 0 && !done }
+  return { peaks, analysing: parts.some((part) => !part.missing) && !done }
 }
 
 const NO_FRAMES = new Map<string, string>()
@@ -45,11 +45,13 @@ const NO_FRAMES = new Map<string, string>()
 export type ThumbnailRequest = { path: string; time: number }
 
 export function useThumbnails(requests: ThumbnailRequest[]): Map<string, string> {
-  const cache = useRef({ frames: new Map<string, string>(), pending: new Set<string>() })
+  const cache = useRef({ paths: '', frames: new Map<string, string>(), pending: new Set<string>() })
   const [shown, setShown] = useState(NO_FRAMES)
 
   const key = requests.map((request) => `${request.path}|${request.time}`).join('\n')
   useEffect(() => {
+    const paths = [...new Set(key === '' ? [] : key.split('\n').map((frame) => frame.slice(0, frame.lastIndexOf('|'))))].join('\n')
+    if (paths !== '' && cache.current.paths !== paths) cache.current = { paths, frames: new Map(), pending: new Set() }
     const entry = cache.current
     const wanted = key === '' ? [] : key.split('\n')
     const missing = wanted.filter((frame) => !entry.frames.has(frame) && !entry.pending.has(frame))

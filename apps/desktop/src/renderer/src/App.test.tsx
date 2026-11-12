@@ -2807,6 +2807,29 @@ describe('Several videos as one session', () => {
       return video
     }
 
+    it('draws filmstrip frames from every video at their local times, so a tile past the join shows the second recording', async () => {
+      await openJoined()
+      await screen.findAllByTestId('filmstrip-frame')
+      const calls = vi.mocked(api.thumbnail).mock.calls
+      const second = calls.filter(([path]) => path === SOURCES[1].path)
+      expect(second.length).toBeGreaterThan(0)
+      expect(Math.max(...second.map(([, time]) => time))).toBeLessThan(SOURCES[1].duration)
+      expect(calls.filter(([path]) => path === JOINED)).toEqual([])
+    })
+
+    it('asks for no frames of a missing video, since its file is gone', async () => {
+      const sources = [{ ...SOURCES[0], missing: true }, SOURCES[1], SOURCES[2]]
+      vi.mocked(api.openVideo).mockResolvedValue(SOURCES.map((source) => source.path))
+      vi.mocked(api.openVideos).mockResolvedValue({ ok: true, path: JOINED, sources })
+      render(<App />)
+      await userEvent.click(screen.getByTestId('open-video'))
+      showDuration(120)
+      await screen.findAllByTestId('filmstrip-frame')
+      const paths = vi.mocked(api.thumbnail).mock.calls.map(([path]) => path)
+      expect(paths).toContain(SOURCES[1].path)
+      expect(paths).not.toContain(SOURCES[0].path)
+    })
+
     it('draws a join where each video starts and names every video, so the session still reads as the recordings it came from', async () => {
       await openJoined()
       expect(screen.queryByTestId('join-0')).not.toBeInTheDocument()

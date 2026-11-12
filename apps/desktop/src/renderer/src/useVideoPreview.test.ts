@@ -54,6 +54,18 @@ describe('useThumbnails across videos', () => {
   })
 })
 
+describe('useThumbnails memory', () => {
+  it('drops the frames of videos no longer shown, so a long run does not keep every session in memory', async () => {
+    const { rerender } = renderHook(({ path }) => useThumbnails([{ path, time: 1 }]), { initialProps: { path: '/a.mov' } })
+    await finishAll()
+    rerender({ path: '/b.mov' })
+    await finishAll()
+    rerender({ path: '/a.mov' })
+    await finishAll()
+    expect(thumbnail.mock.calls.map(([path]) => path)).toEqual(['/a.mov', '/b.mov', '/a.mov'])
+  })
+})
+
 describe('useWaveform', () => {
   let waveform: ReturnType<typeof vi.fn>
   beforeEach(() => {
@@ -95,6 +107,13 @@ describe('useWaveform', () => {
     expect(result.current.peaks).toHaveLength(5 * PEAKS_PER_SECOND)
     expect(result.current.peaks![0]).toBe(0)
     expect(result.current.peaks![2 * PEAKS_PER_SECOND]).toBe(0.75)
+  })
+
+  it('is done at once when every video is missing, so the timeline never waits on audio that cannot come', async () => {
+    const { result } = renderHook(() => useWaveform([{ path: '/gone.mov', duration: 2, missing: true }]))
+    expect(result.current.analysing).toBe(false)
+    expect(result.current.peaks).toBeNull()
+    expect(waveform).not.toHaveBeenCalled()
   })
 
   it('does not refetch when only a duration changes, so loading metadata never restarts the analysis', async () => {
