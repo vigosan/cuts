@@ -24,3 +24,9 @@ export function parseMediaInfo(ffmpegOutput: string): MediaInfo {
 export function joinKey(paths: string[]): string {
   return createHash('sha256').update([...paths].sort().join('\n')).digest('hex').slice(0, 32)
 }
+
+export function recordedAt(ffmpegOutput: string): number | null {
+  const date = /com\.apple\.quicktime\.creationdate\s*: (\S+)/.exec(ffmpegOutput)
+  const time = date ? Date.parse(date[1]) : NaN
+  return Number.isNaN(time) ? null : time
+}

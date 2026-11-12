@@ -16,7 +16,7 @@ const info = (seconds: number, size = '1920x1080') => `Input #0, mov,mp4,m4a,3gp
 
 const carry: Session = { clips: [{ id: 'c1', start: 1, end: 2 }], clipSettings: {}, defaultSettings: DEFAULT_SETTINGS, format: '9:16', baseName: 'IMG_0412' }
 
-function fakeDeps(files: Record<string, string>, sessions: Record<string, Session> = {}) {
+function fakeDeps(files: Record<string, string>, sessions: Record<string, Session> = {}, created: Record<string, number> = {}) {
   const fs = new Map(Object.entries(files))
   const saved = new Map(Object.entries(sessions))
   const deps = {
@@ -33,6 +33,7 @@ function fakeDeps(files: Record<string, string>, sessions: Record<string, Sessio
     forget: vi.fn(async (_path: string) => {}),
     remember: vi.fn(async () => {}),
     bookmark: (_path: string): string | undefined => undefined,
+    createdAt: (path: string): number | undefined => created[path],
     now: () => 7
   } satisfies OpenDeps
   return { fs, saved, deps }
@@ -53,6 +54,41 @@ const source = (path: string, duration: number, extra: Partial<Source> = {}): So
 })
 
 describe('openVideos', () => {
+  const C = '/Movies/IMG_0414.MOV'
+  const camera = (seconds: number, date: string) => info(seconds).replace('  Duration', `  Metadata:\n    com.apple.quicktime.creationdate: ${date}\n  Duration`)
+
+  it('lays a session out in the order it was recorded, since names like 0039190a-… say nothing about when each video was shot', async () => {
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) }, {}, { [A]: 2000, [B]: 1000 })
+    expect((await openVideos([A, B], null, deps)).sources).toEqual([source(B, 8, { recordedAt: 1000 }), source(A, 12, { recordedAt: 2000 })])
+  })
+
+  it('trusts the date the camera wrote inside the video over the file date, which a copy can change', async () => {
+    const { deps } = fakeDeps({ [A]: camera(12, '2026-11-08T09:50:00+01:00'), [B]: info(8) }, {}, { [A]: Date.parse('2026-11-12T16:00:00Z'), [B]: Date.parse('2026-11-08T09:52:00+01:00') })
+    expect((await openVideos([B, A], null, deps)).sources.map((video) => video.path)).toEqual([A, B])
+  })
+
+  it('keeps videos recorded in the same second in name order, so the layout is the same every time', async () => {
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) }, {}, { [A]: 1000, [B]: 1000 })
+    expect((await openVideos([B, A], null, deps)).sources.map((video) => video.path)).toEqual([A, B])
+  })
+
+  it('slots a video added with + between the ones recorded around it and moves the later clips with their video', async () => {
+    const { deps, saved } = fakeDeps({ [A]: info(10), [B]: info(5), [C]: info(20) }, {}, { [A]: 1000, [B]: 2000, [C]: 3000 })
+    const session = { ...carry, clips: [{ id: 'a', start: 2, end: 4 }, { id: 'c', start: 12, end: 15 }], sources: [source(A, 10, { recordedAt: 1000 }), source(C, 20, { recordedAt: 3000 })] }
+    const result = await openVideos([A, C, B], `session:${joinKey([A, C])}`, deps, session)
+    expect(result.sources.map((video) => video.path)).toEqual([A, B, C])
+    const placed = [{ id: 'a', start: 2, end: 4 }, { id: 'c', start: 17, end: 20 }]
+    expect(result.carried?.clips).toEqual(placed)
+    expect(saved.get(result.path)?.clips).toEqual(placed)
+  })
+
+  it('moves the clips of a single video when + adds one recorded before it', async () => {
+    const { deps } = fakeDeps({ [A]: info(10), [B]: info(5) }, {}, { [A]: 2000, [B]: 1000 })
+    const result = await openVideos([A, B], A, deps, { ...carry, clips: [{ id: 'a', start: 2, end: 4 }] })
+    expect(result.sources.map((video) => video.path)).toEqual([B, A])
+    expect(result.carried?.clips).toEqual([{ id: 'a', start: 7, end: 9 }])
+  })
+
   it('opens a single video as it is, so one video never pays for probing or a session id', async () => {
     const { deps } = fakeDeps({ [A]: info(12) })
     expect(await openVideos([A], null, deps)).toEqual({ ok: true, path: A, sources: [] })
@@ -186,6 +222,14 @@ describe('openVideos', () => {
     expect(saved.get(id)).toEqual({ ...carry, sources: [source(A, 12), source(B, 8)] })
     expect(saved.has(old)).toBe(false)
     expect(deps.forget).toHaveBeenCalledWith(old)
+  })
+
+  it('keeps the saved order of a moved session even when the recording times say otherwise, since its clips were marked on that order', async () => {
+    const oldA = '/Volumes/X/IMG_0412.MOV'
+    const oldB = '/Volumes/X/IMG_0413.MOV'
+    const old = `session:${joinKey([oldA, oldB])}`
+    const { deps } = fakeDeps({ [A]: info(12), [B]: info(8) }, { [old]: { ...carry, sources: [source(oldA, 12), source(oldB, 8)] } }, { [A]: 2000, [B]: 1000 })
+    expect((await openVideos([A, B], null, deps)).sources.map((video) => video.path)).toEqual([A, B])
   })
 
   it('does not take over another session whose videos only share names, since clips must stay on the recording they were marked on', async () => {
