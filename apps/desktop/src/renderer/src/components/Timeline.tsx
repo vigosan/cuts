@@ -237,6 +237,10 @@ export function Timeline({
           setHoveredSource(localTime(sources, viewStart + ((e.clientX - rect.left) / rect.width) * viewSpan).index)
         }}
         onPointerLeave={() => setHoveredSource(null)}
+        onWheel={(e) => {
+          if (viewSpan >= duration || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
+          onPan(viewStart + (e.deltaX / e.currentTarget.getBoundingClientRect().width) * viewSpan)
+        }}
         className="relative h-22 min-w-0 flex-1 cursor-pointer touch-none select-none overflow-hidden rounded-lg bg-sunken"
         onClick={(e) => {
           if (justDragged.current) return

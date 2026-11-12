@@ -663,6 +663,23 @@ describe('App', () => {
     expect(screen.getByTestId('view-start')).toHaveTextContent('00:32:20')
   })
 
+  it('pans the zoomed timeline with a two-finger trackpad swipe, like any Mac scroll view, without moving the playhead', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 1000)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:15:40')
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 1200, top: 0, height: 32, right: 1200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.wheel(timeline, { deltaX: 600, deltaY: 0 })
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:16:40')
+    fireEvent.wheel(timeline, { deltaX: -900, deltaY: 0 })
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:15:10')
+    fireEvent.wheel(timeline, { deltaX: 0, deltaY: 600 })
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:15:10')
+    expect(video.currentTime).toBe(1000)
+  })
+
   it('zooms the timeline to 2 minutes around the playhead for second-accurate dragging', async () => {
     render(<App />)
     const video = await loadVideo()
