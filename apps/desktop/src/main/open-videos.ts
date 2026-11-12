@@ -29,11 +29,13 @@ const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((
 
 async function probe(path: string, saved: Source | undefined, deps: OpenDeps): Promise<Source> {
   const name = basename(path)
-  if (!deps.exists(path)) {
+  const missing = () => {
     const { duration, width, height, hdr } = saved ?? { duration: 0, width: 0, height: 0, hdr: false }
     return { path, name, duration, width, height, hdr, missing: true }
   }
-  const { duration, width, height, hdr } = parseMediaInfo(await deps.info(path))
+  if (!deps.exists(path)) return missing()
+  const { duration, width, height, hdr, video } = parseMediaInfo(await deps.info(path))
+  if (duration <= 0 || video === null) return missing()
   const stored = saved && Math.abs(saved.duration - duration) <= DURATION_TOLERANCE_SECONDS ? saved.duration : duration
   return { path, name, duration: stored, width, height, hdr, missing: false }
 }

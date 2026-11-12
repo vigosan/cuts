@@ -101,6 +101,14 @@ describe('openVideos', () => {
     expect(deps.info).toHaveBeenCalledTimes(1)
   })
 
+  it('shows a video ffmpeg cannot read as missing with its stored length, so its clips never slide into the next video and Locate can still match it', async () => {
+    const audioOnly = info(8).split('\n').filter((line) => !line.includes('Video:')).join('\n')
+    const { deps } = fakeDeps({ [A]: info(12), [B]: '' }, { [id]: { ...carry, sources: [source(A, 12), source(B, 8)] } })
+    expect((await openVideos([A, B], null, deps)).sources[1]).toEqual(source(B, 8, { missing: true }))
+    deps.info.mockImplementation(async (path: string) => (path === B ? audioOnly : info(12)))
+    expect((await openVideos([A, B], null, deps)).sources[1]).toEqual(source(B, 8, { missing: true }))
+  })
+
   it('still opens a session whose missing video was never saved, with an empty stretch instead of failing', async () => {
     const { deps } = fakeDeps({ [A]: info(12) })
     expect((await openVideos([A, B], null, deps)).sources[1]).toEqual(source(B, 0, { width: 0, height: 0, missing: true }))
