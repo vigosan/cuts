@@ -1060,17 +1060,25 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:03:20')
   })
 
-  it('shows where image fades happen on the timeline only, with the cover clip starting sharp, so the list stays a clean list of times', async () => {
+  it('marks in each carousel row how its image fades in and out, with the cover starting sharp, so mixed fades are readable at a glance', async () => {
     render(<App />)
     const video = await loadVideo()
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
     expect(screen.getByTestId('clip-cover-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('clip-fade-in-1')).not.toBeInTheDocument()
+    expect(screen.getByTestId('clip-fade-out-1')).toHaveAttribute('title', t.fadeToBlack)
+    expect(screen.getByTestId('clip-fade-in-2')).toHaveAttribute('title', t.fadeToBlack)
     expect(screen.getByTestId('clip-block-1')).toHaveAttribute('data-fade-in', 'false')
     expect(screen.getByTestId('clip-block-2')).toHaveAttribute('data-fade-in', 'true')
-    expect(screen.queryByTestId('clip-fade-in-2')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('clip-fade-out-1')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('clip-row-2'))
+    await userEvent.selectOptions(screen.getByTestId('fade-video'), 'white')
+    expect(screen.getByTestId('clip-fade-in-2')).toHaveAttribute('title', t.fadeToWhite)
+    expect(screen.getByTestId('clip-fade-out-2')).toHaveAttribute('title', t.fadeToWhite)
+    expect(screen.getByTestId('clip-fade-out-1')).toHaveAttribute('title', t.fadeToBlack)
     await userEvent.selectOptions(screen.getByTestId('fade-video'), 'none')
+    expect(screen.queryByTestId('clip-fade-in-2')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('clip-fade-out-2')).not.toBeInTheDocument()
     expect(screen.getByTestId('clip-block-2')).toHaveAttribute('data-fade-out', 'false')
   })
 

@@ -999,6 +999,7 @@ export function App() {
                 clips={clips}
                 sources={sources}
                 time={time}
+                videoFades={clips.map((clip) => settingsOf(clip).videoFade)}
                 selectedIds={selectedIds}
                 onSelect={pickClip}
                 onPlay={playClip}

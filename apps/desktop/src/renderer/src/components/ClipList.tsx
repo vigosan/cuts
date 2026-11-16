@@ -11,9 +11,10 @@ import {
 } from '@cuts/core/clips'
 import { localTime, partBoundsAt, partStarts } from '@cuts/core/parts'
 import { dragOffset, reorderTarget, rowShift, settleOffset } from '@cuts/core/reorder'
+import type { VideoFade } from '@cuts/core/fades'
 import type { Source } from '@shared/api'
 import { t } from '../i18n'
-import { CheckIcon, CloseIcon, CropIcon, FitIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
+import { CheckIcon, CloseIcon, CropIcon, FadeInIcon, FadeOutIcon, FitIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
 
 export type SelectMode = 'only' | 'toggle' | 'range'
 
@@ -28,6 +29,7 @@ type Props = {
   clips: Clip[]
   sources: Source[]
   time: number
+  videoFades: VideoFade[]
   selectedIds: string[]
   loopingId: string | null
   onSelect: (clip: Clip, mode?: SelectMode) => void
@@ -53,6 +55,7 @@ export function ClipList({
   clips,
   sources,
   time,
+  videoFades,
   selectedIds,
   loopingId,
   onSelect,
@@ -152,6 +155,8 @@ export function ClipList({
         const target = (at: number) => (bounds ? Math.min(Math.max(at, bounds.start), bounds.end) : at)
         const now = local(target(time))
         const selected = selectedIds.includes(clip.id)
+        const fade = videoFades[index]
+        const fadeTitle = fade === 'white' ? t.fadeToWhite : t.fadeToBlack
         return (
           <li
             key={clip.id}
@@ -185,11 +190,18 @@ export function ClipList({
               className={`flex min-w-0 flex-1 flex-col text-sm text-ink ${unavailable ? 'opacity-50' : ''}`}
             >
               {source && (
-                <span data-testid={`clip-source-${n}`} className="truncate px-1 text-xs text-ink-3" title={sources[source.index].name}>
+                <span data-testid={`clip-source-${n}`} className="truncate pr-1 pl-4 text-xs text-ink-3" title={sources[source.index].name}>
                   {sources[source.index].name}
                 </span>
               )}
               <span className="flex items-center">
+                <span className="w-3 text-ink-3">
+                  {fade !== 'none' && index > 0 && (
+                    <span data-testid={`clip-fade-in-${n}`} title={fadeTitle}>
+                      <FadeInIcon hollow={fade === 'white'} />
+                    </span>
+                  )}
+                </span>
                 <button
                   data-testid={`clip-set-start-${n}`}
                   className={selected ? timeButton : 'px-1 tabular-nums'}
@@ -219,6 +231,13 @@ export function ClipList({
                     </span>
                   )}
                 </button>
+                <span className="w-3 text-ink-3">
+                  {fade !== 'none' && (
+                    <span data-testid={`clip-fade-out-${n}`} title={fadeTitle}>
+                      <FadeOutIcon hollow={fade === 'white'} />
+                    </span>
+                  )}
+                </span>
               </span>
             </span>
             {framings && (
