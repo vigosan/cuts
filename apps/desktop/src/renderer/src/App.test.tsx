@@ -1502,6 +1502,7 @@ describe('App', () => {
   })
 
   it('stops a running export from the Export button that shows its progress, so stopping never needs a second control', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
     render(<App />)
     const video = await loadVideo()
@@ -1513,8 +1514,21 @@ describe('App', () => {
     expect(button).toHaveAccessibleName(`${t.stopExport} (${t.exportingClip(1, 2)})`)
     expect(screen.getByTestId('export-stop-label')).toHaveTextContent(t.stopExport)
     expect(screen.getByTestId('export-stop-label')).toContainElement(screen.getByTestId('export-stop-icon'))
+    act(() => vi.advanceTimersByTime(500))
     await userEvent.click(button)
     expect(api.cancelExport).toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('ignores a second click right after Export starts, so a double click never cancels the export it just started', async () => {
+    vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.dblClick(await inPanel('export'))
+    expect(api.exportClips).toHaveBeenCalledTimes(1)
+    expect(api.cancelExport).not.toHaveBeenCalled()
+    expect(screen.getByTestId('export-stop-label')).toHaveClass('invisible')
   })
 
   it('stops a running export with Command-period, the Mac shortcut for cancelling an operation', async () => {

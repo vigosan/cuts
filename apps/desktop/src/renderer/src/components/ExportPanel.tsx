@@ -49,6 +49,8 @@ type Props = {
   canShare: boolean
 }
 
+const STOP_GUARD_MS = 500
+
 function exportProgress(state: ExportState): { overall: number; finished: number } {
   if (state.status !== 'running') return { overall: 0, finished: 0 }
   return {
@@ -71,6 +73,7 @@ export function ExportPanel(p: Props) {
   const folderName = p.folder?.split(/[\\/]/).filter(Boolean).slice(-2).join('/')
   const exporting = p.state.status === 'running'
   const [menuOpen, setMenuOpen] = useState(false)
+  const [stoppable, setStoppable] = useState(false)
   const clipsMode = p.positions.length > 0
   const primaryEnabled = clipsMode ? p.canExport : p.canExportFull
   const choosing = p.state.status === 'idle' || p.state.status === 'error'
@@ -78,6 +81,15 @@ export function ExportPanel(p: Props) {
     setMenuOpen(false)
     action()
   }
+
+  useEffect(() => {
+    if (!exporting) return
+    const timer = setTimeout(() => setStoppable(true), STOP_GUARD_MS)
+    return () => {
+      clearTimeout(timer)
+      setStoppable(false)
+    }
+  }, [exporting])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -208,7 +220,7 @@ export function ExportPanel(p: Props) {
             disabled={!primaryEnabled && p.state.status !== 'running'}
             onClick={() =>
               p.state.status === 'running'
-                ? p.onCancel()
+                ? stoppable && p.onCancel()
                 : p.state.status === 'done'
                   ? p.canShare
                     ? p.onShare(p.state.files)
@@ -222,16 +234,16 @@ export function ExportPanel(p: Props) {
               <>
                 <span
                   data-testid="export-progress"
-                  className="absolute inset-0 origin-left bg-on-accent/20 transition-transform group-hover:opacity-0 group-focus-visible:opacity-0"
+                  className={`absolute inset-0 origin-left bg-on-accent/20 transition-transform ${stoppable ? 'group-hover:opacity-0 group-focus-visible:opacity-0' : ''}`}
                   style={{ transform: `scaleX(${exportProgress(p.state).overall})` }}
                 />
                 <span className="relative grid">
-                  <span className="col-start-1 row-start-1 group-hover:invisible group-focus-visible:invisible">
+                  <span className={`col-start-1 row-start-1 ${stoppable ? 'group-hover:invisible group-focus-visible:invisible' : ''}`}>
                     {runningLabel(p.state.progress)}
                   </span>
                   <span
                     data-testid="export-stop-label"
-                    className="invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 group-hover:visible group-focus-visible:visible"
+                    className={`invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 ${stoppable ? 'group-hover:visible group-focus-visible:visible' : ''}`}
                   >
                     <StopIcon data-testid="export-stop-icon" />
                     {t.stopExport}
