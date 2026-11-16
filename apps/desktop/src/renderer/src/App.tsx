@@ -217,18 +217,7 @@ export function App() {
     }
   }, [clock.src, missingSource])
 
-  useEffect(() => {
-    if (unsupportedDrops === 0) return
-    const timer = setTimeout(() => setUnsupportedDrops(0), NOTICE_MS)
-    return () => clearTimeout(timer)
-  }, [unsupportedDrops])
-
   const [suggestNotice, setSuggestNotice] = useState<string | null>(null)
-  useEffect(() => {
-    if (suggestNotice === null) return
-    const timer = setTimeout(() => setSuggestNotice(null), NOTICE_MS)
-    return () => clearTimeout(timer)
-  }, [suggestNotice])
 
   useEffect(() => {
     if (!videoPath || restoredFor !== videoPath) return

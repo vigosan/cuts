@@ -282,6 +282,22 @@ describe('App', () => {
     vi.useRealTimers()
   })
 
+  it('keeps a notice open while the pointer rests on it and resumes the countdown on leave, so it never vanishes mid-read', () => {
+    vi.useFakeTimers()
+    render(<App />)
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'notes.pdf')] } })
+    act(() => vi.advanceTimersByTime(3000))
+    fireEvent.pointerEnter(screen.getByTestId('unsupported-video'))
+    act(() => vi.advanceTimersByTime(10000))
+    expect(screen.getByTestId('unsupported-video')).toBeInTheDocument()
+    fireEvent.pointerLeave(screen.getByTestId('unsupported-video'))
+    act(() => vi.advanceTimersByTime(1999))
+    expect(screen.getByTestId('unsupported-video')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1))
+    expect(screen.queryByTestId('unsupported-video')).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
   it('closes the unsupported file notice at once from its close button, without waiting the 5 seconds', async () => {
     render(<App />)
     fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'notes.pdf')] } })
