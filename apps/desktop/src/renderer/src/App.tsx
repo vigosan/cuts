@@ -552,6 +552,14 @@ export function App() {
     )
   }
 
+  const moveSource = (index: number, gap: number) => {
+    if (exporting || !videoPath) return
+    const paths = sources.map((source) => source.path)
+    const [moved] = paths.splice(index, 1)
+    paths.splice(gap > index ? gap - 1 : gap, 0, moved)
+    void openPaths(paths, videoPath, { clips, clipSettings, defaultSettings, format, baseName, sources })
+  }
+
   const addVideos = async () => {
     if (exporting || !videoPath) return
     const chosen = (await window.api.openVideo())?.filter((path) => mediaKind(path) !== 'audio')
@@ -960,6 +968,7 @@ export function App() {
                 }}
                 sources={sources}
                 onRemoveSource={removeSource}
+                onMoveSource={moveSource}
                 onLocateSource={(index) => void locateSource(index)}
                 onAddVideos={isAudio ? null : () => void addVideos()}
               />

@@ -3097,6 +3097,45 @@ describe('Several videos as one session', () => {
       expect(screen.queryByTestId('add-videos')).not.toBeInTheDocument()
     })
 
+    it('moves a video to where its name is dragged on the timeline, taking its clips along, for files whose dates say nothing about the set order', async () => {
+      const video = await openJoined()
+      await markClip(video, 105, 110)
+      timelineOneSecondPerPixel()
+      vi.mocked(api.openVideos).mockClear()
+      const name = screen.getByTestId('video-name-2')
+      fireEvent.pointerDown(name, { clientX: 105 })
+      fireEvent.pointerMove(window, { clientX: 40 })
+      expect(screen.getByTestId('video-drop-line')).toBeInTheDocument()
+      fireEvent.pointerMove(window, { clientX: 5 })
+      fireEvent.pointerUp(window, { clientX: 5 })
+      expect(api.openVideos).toHaveBeenLastCalledWith(
+        [SOURCES[2].path, SOURCES[0].path, SOURCES[1].path],
+        JOINED,
+        expect.objectContaining({ sources: SOURCES, clips: [expect.objectContaining({ start: 105, end: 110 })] })
+      )
+      expect(screen.queryByTestId('video-drop-line')).not.toBeInTheDocument()
+    })
+
+    it('moves a video later in the set when its name is dragged past the next one', async () => {
+      await openJoined()
+      timelineOneSecondPerPixel()
+      vi.mocked(api.openVideos).mockClear()
+      fireEvent.pointerDown(screen.getByTestId('video-name-0'), { clientX: 10 })
+      fireEvent.pointerMove(window, { clientX: 90 })
+      fireEvent.pointerUp(window, { clientX: 90 })
+      expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[1].path, SOURCES[0].path, SOURCES[2].path], JOINED, expect.anything())
+    })
+
+    it('leaves the order alone when a name is dropped back where it was, so grabbing a label by mistake reopens nothing', async () => {
+      await openJoined()
+      timelineOneSecondPerPixel()
+      vi.mocked(api.openVideos).mockClear()
+      fireEvent.pointerDown(screen.getByTestId('video-name-1'), { clientX: 70 })
+      fireEvent.pointerMove(window, { clientX: 85 })
+      fireEvent.pointerUp(window, { clientX: 85 })
+      expect(api.openVideos).not.toHaveBeenCalled()
+    })
+
     it('removes the middle video with its clips and keeps the other clips in their carousel order, settings and shifted times', async () => {
       const video = await openJoined()
       await markClip(video, 10, 20)
