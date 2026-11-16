@@ -936,7 +936,6 @@ export function App() {
                 thumbnails={!isAudio}
                 peaks={peaks}
                 analysingAudio={analysing}
-                onBeat={onBeat}
                 duration={duration}
                 viewStart={currentViewStart}
                 viewSpan={viewSpan}

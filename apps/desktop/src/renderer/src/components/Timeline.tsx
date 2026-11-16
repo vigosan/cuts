@@ -36,7 +36,6 @@ type Props = {
   thumbnails: boolean
   peaks: Float32Array | null
   analysingAudio: boolean
-  onBeat: (time: number) => number
   duration: number
   viewStart: number
   viewSpan: number
@@ -64,7 +63,6 @@ export function Timeline({
   thumbnails,
   peaks,
   analysingAudio,
-  onBeat,
   duration,
   viewStart,
   viewSpan,
@@ -160,9 +158,7 @@ export function Timeline({
       if (!moved && Math.abs(move.clientX - originX) < DRAG_THRESHOLD_PX) return
       if (!moved) onDragStart()
       moved = true
-      const dragged = dragClip(clip, mode, ((move.clientX - originX) / bar.width) * viewSpan, bounds.end, bounds.start)
-      const next =
-        mode === 'move' || move.altKey ? dragged : dragClip(clip, mode, onBeat(dragged[mode]) - clip[mode], bounds.end, bounds.start)
+      const next = dragClip(clip, mode, ((move.clientX - originX) / bar.width) * viewSpan, bounds.end, bounds.start)
       onClipChange(next)
       onSeek(mode === 'end' ? next.end : next.start)
     }

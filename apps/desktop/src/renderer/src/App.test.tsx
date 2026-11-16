@@ -472,7 +472,7 @@ describe('App', () => {
     expect(vi.mocked(api.exportClips).mock.calls[0][0].clips[0]).toMatchObject({ start: 100.18, end: 130.4 })
   })
 
-  it('pulls a dragged edge onto the nearest kick, and leaves it free while Option is held', async () => {
+  it('trims a dragged edge exactly where it is dragged, even next to a kick, so a trim can always be fine-tuned', async () => {
     vi.mocked(api.waveform).mockResolvedValue(kicksEveryHalfSecond())
     render(<App />)
     const video = await loadVideo()
@@ -482,8 +482,6 @@ describe('App', () => {
     timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
     fireEvent.pointerDown(screen.getByTestId('clip-handle-end-1'), { clientX: 1100 })
     fireEvent.pointerMove(window, { clientX: 1059.3 })
-    expect(video.currentTime).toBe(1059.5)
-    fireEvent.pointerMove(window, { clientX: 1059.3, altKey: true })
     expect(video.currentTime).toBeCloseTo(1059.3)
     fireEvent.pointerUp(window, { clientX: 1059.3 })
   })
