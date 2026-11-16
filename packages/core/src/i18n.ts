@@ -98,6 +98,8 @@ function english(locale: Locale) {
     fadeLabels: { image: 'Image fade', audio: 'Audio fade', length: 'Length' },
     fadeSeconds: (seconds: number) => `${decimal(locale, seconds)} s`,
     videoFades: { black: 'Black', white: 'White', none: 'None' } satisfies Record<VideoFade, string>,
+    fadeToBlack: 'Fades to black',
+    fadeToWhite: 'Fades to white',
     audioFades: { natural: 'Natural', linear: 'Linear', none: 'None' } satisfies Record<AudioFade, string>,
     formats: {
       original: 'Original',
@@ -353,6 +355,8 @@ function spanish(locale: Locale): Messages {
     fadeLabels: { image: 'Fundido imagen', audio: 'Fundido audio', length: 'Duración' },
     fadeSeconds: (seconds) => `${decimal(locale, seconds)} s`,
     videoFades: { black: 'Negro', white: 'Blanco', none: 'Ninguno' },
+    fadeToBlack: 'Fundido a negro',
+    fadeToWhite: 'Fundido a blanco',
     audioFades: { natural: 'Natural', linear: 'Lineal', none: 'Ninguno' },
     formats: {
       original: 'Original',

@@ -82,6 +82,22 @@ export function GripIcon({ className = 'size-3.5' }: IconProps) {
   )
 }
 
+export function FadeInIcon({ className = 'size-3', hollow = false }: IconProps & { hollow?: boolean }) {
+  return (
+    <svg viewBox="0 0 12 12" fill={hollow ? 'none' : 'currentColor'} stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
+      <path d="M1.5 10.5 10.5 2.5v8Z" />
+    </svg>
+  )
+}
+
+export function FadeOutIcon({ className = 'size-3', hollow = false }: IconProps & { hollow?: boolean }) {
+  return (
+    <svg viewBox="0 0 12 12" fill={hollow ? 'none' : 'currentColor'} stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
+      <path d="M1.5 2.5l9 8h-9Z" />
+    </svg>
+  )
+}
+
 export function ImageIcon({ className = 'size-3.5' }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" aria-hidden className={`${base} ${className}`}>
