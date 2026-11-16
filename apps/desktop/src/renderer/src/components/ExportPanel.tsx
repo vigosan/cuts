@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MAX_CLIP_SECONDS } from '@cuts/core/clips'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import type { Overlay } from '@cuts/core/overlay'
@@ -74,6 +74,8 @@ export function ExportPanel(p: Props) {
   const exporting = p.state.status === 'running'
   const [menuOpen, setMenuOpen] = useState(false)
   const [stoppable, setStoppable] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
   const clipsMode = p.positions.length > 0
   const primaryEnabled = clipsMode ? p.canExport : p.canExportFull
   const choosing = p.state.status === 'idle' || p.state.status === 'error'
@@ -93,10 +95,22 @@ export function ExportPanel(p: Props) {
 
   useEffect(() => {
     if (!menuOpen) return
+    const items = () => Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role=menuitem]:not(:disabled)') ?? [])
+    items()[0]?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        setMenuOpen(false)
+        menuButtonRef.current?.focus()
+        return
+      }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
       e.stopPropagation()
-      setMenuOpen(false)
+      e.preventDefault()
+      const enabled = items()
+      const step = e.key === 'ArrowDown' ? 1 : -1
+      const index = enabled.indexOf(document.activeElement as HTMLButtonElement)
+      enabled[(index + step + enabled.length) % enabled.length]?.focus()
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
@@ -258,6 +272,7 @@ export function ExportPanel(p: Props) {
           </button>
           {choosing && (
             <button
+              ref={menuButtonRef}
               data-testid="export-menu"
               aria-label={t.exportOptions}
               title={t.exportOptions}
@@ -274,6 +289,7 @@ export function ExportPanel(p: Props) {
             <>
               <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
               <div
+                ref={menuRef}
                 role="menu"
                 className="absolute right-0 bottom-full z-50 mb-2 flex w-64 origin-bottom-right flex-col rounded-xl bg-surface p-1 text-sm shadow-lg ring-1 ring-ink-3/20 transition duration-150 ease-out starting:scale-95 starting:opacity-0 motion-reduce:starting:scale-100"
               >

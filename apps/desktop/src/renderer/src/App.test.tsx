@@ -2774,6 +2774,25 @@ describe('export full recording', () => {
     expect(api.exportClips).not.toHaveBeenCalled()
   })
 
+  it('moves through the export menu with the arrow keys like any Mac menu, without moving the clip selection behind it', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    await userEvent.click(screen.getByTestId('export-menu'))
+    expect(screen.getByTestId('export-option-clips')).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(screen.getByTestId('export-full')).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(screen.getByTestId('export-option-clips')).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(screen.getByTestId('export-full')).toHaveFocus()
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'true')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByTestId('export-menu')).toHaveFocus()
+  })
+
   it('hides the export options while an export runs, so a second one cannot start', async () => {
     let finish: (result: ExportResult) => void = () => {}
     vi.mocked(api.exportClips).mockImplementation(() => new Promise((resolve) => (finish = resolve)))
