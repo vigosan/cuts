@@ -493,13 +493,13 @@ function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left:
     <div
       data-testid="pending-clip"
       data-over-limit={over}
-      className={`pointer-events-none absolute inset-y-1.5 rounded-md border border-dashed ${over ? 'border-warn bg-warn-soft' : 'border-accent bg-accent-soft'}`}
+      className={`pointer-events-none absolute inset-y-1.5 rounded-md border-2 border-dashed shadow-[0_0_0_1px_rgb(0_0_0/0.5)] ${over ? 'border-yellow-300 bg-yellow-300/20' : 'border-white bg-white/20'}`}
       style={{ left, width }}
     >
       <span
         data-testid="pending-clip-time"
         data-outside={outside}
-        className={`absolute top-1 rounded px-1 text-[11px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${over ? 'bg-warn' : 'bg-accent'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
+        className={`absolute top-1 rounded px-1 text-[11px] leading-4 font-semibold whitespace-nowrap tabular-nums ${over ? 'bg-yellow-300 text-black' : 'bg-black/60 text-white'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
       >
         {formatDuration(elapsed)}
       </span>
