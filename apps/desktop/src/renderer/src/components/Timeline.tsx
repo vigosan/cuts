@@ -446,6 +446,7 @@ export function Timeline({
             left={pct(pendingStart - viewStart)}
             width={pct(Math.max(0, time - pendingStart))}
             widthPx={viewSpan > 0 ? (Math.max(0, time - pendingStart) / viewSpan) * width : 0}
+            belowNames={stretches.length > 0}
           />
         )}
         <Playhead time={time} now={now} playing={playing} position={(at) => pct(at - viewStart)} />
@@ -465,7 +466,19 @@ export function Timeline({
   )
 }
 
-function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left: string; width: string; widthPx: number }) {
+function PendingClip({
+  elapsed,
+  left,
+  width,
+  widthPx,
+  belowNames
+}: {
+  elapsed: number
+  left: string
+  width: string
+  widthPx: number
+  belowNames: boolean
+}) {
   const over = elapsed > MAX_CLIP_SECONDS
   const outside = widthPx < PENDING_LABEL_PX
   return (
@@ -478,7 +491,7 @@ function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left:
       <span
         data-testid="pending-clip-time"
         data-outside={outside}
-        className={`absolute top-1 rounded px-1 text-[11px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${over ? 'bg-warn' : 'bg-accent'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
+        className={`absolute rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold whitespace-nowrap tabular-nums ${over ? 'text-amber-300' : 'text-white'} ${belowNames ? 'top-6' : 'top-1'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
       >
         {formatDuration(elapsed)}
       </span>
