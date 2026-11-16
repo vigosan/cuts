@@ -108,6 +108,13 @@ async function markClip(video: HTMLVideoElement, start: number, end: number) {
   await userEvent.click(screen.getByTestId('mark-end'))
 }
 
+function layOutRows(count: number) {
+  for (let i = 0; i < count; i++) {
+    const top = i * 42
+    screen.getByTestId(`clip-row-${i + 1}`).getBoundingClientRect = () => ({ left: 0, width: 360, top, height: 40, right: 360, bottom: top + 40, x: 0, y: top, toJSON: () => ({}) })
+  }
+}
+
 async function inPanel(testId: string) {
   return screen.getByTestId(testId)
 }
@@ -847,13 +854,42 @@ describe('App', () => {
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
     await markClip(video, 300, 350)
-    fireEvent.dragStart(screen.getByTestId('clip-row-3'))
-    fireEvent.dragOver(screen.getByTestId('clip-row-1'))
-    fireEvent.drop(screen.getByTestId('clip-row-1'))
+    layOutRows(3)
+    fireEvent.pointerDown(screen.getByTestId('clip-row-3'), { clientY: 100 })
+    fireEvent.pointerMove(window, { clientY: 15 })
+    fireEvent.pointerUp(window, { clientY: 15 })
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:05:00')
     expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:01:40')
     expect(screen.getByTestId('clip-block-1')).toHaveTextContent('1')
     expect(screen.getByTestId('clip-block-1').style.left).toBe(`${(300 / 4880) * 100}%`)
+  })
+
+  it('follows the pointer while a clip is dragged and slides the clips it passes out of the way, so the new order shows before the drop', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    layOutRows(3)
+    fireEvent.pointerDown(screen.getByTestId('clip-row-3'), { clientY: 100 })
+    fireEvent.pointerMove(window, { clientY: 60 })
+    expect(screen.getByTestId('clip-row-3').style.transform).toBe('translateY(-40px)')
+    expect(screen.getByTestId('clip-row-2').style.transform).toBe('translateY(42px)')
+    expect(screen.getByTestId('clip-row-1').style.transform).toBe('')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
+  })
+
+  it('keeps a clip in place when the pointer barely moves, so a click on a row still just selects it', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    layOutRows(2)
+    fireEvent.pointerDown(screen.getByTestId('clip-row-2'), { clientY: 60 })
+    fireEvent.pointerMove(window, { clientY: 58 })
+    fireEvent.pointerUp(window, { clientY: 58 })
+    expect(screen.getByTestId('clip-row-2').style.transform).toBe('')
+    expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:03:20')
   })
 
   it('shows where image fades happen on the timeline only, with the cover clip starting sharp, so the list stays a clean list of times', async () => {

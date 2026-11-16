@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import {
   clipDuration,
   formatDuration,
@@ -10,11 +10,17 @@ import {
   type Clip
 } from '@cuts/core/clips'
 import { localTime, partBoundsAt, partStarts } from '@cuts/core/parts'
+import { dragOffset, reorderTarget, rowShift, settleOffset } from '@cuts/core/reorder'
 import type { Source } from '@shared/api'
 import { t } from '../i18n'
 import { CheckIcon, CloseIcon, CropIcon, FitIcon, GripIcon, PauseIcon, PlayIcon, SparkleIcon, SpinnerIcon } from './icons'
 
 export type SelectMode = 'only' | 'toggle' | 'range'
+
+const ROW_GAP_PX = 2
+const REORDER_THRESHOLD_PX = 4
+
+type Drag = { from: number; to: number; dy: number; heights: number[] }
 
 const selectMode = (e: MouseEvent): SelectMode => (e.shiftKey ? 'range' : e.metaKey || e.ctrlKey ? 'toggle' : 'only')
 
@@ -60,8 +66,18 @@ export function ClipList({
   exportStatus,
   framings
 }: Props) {
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [overIndex, setOverIndex] = useState<number | null>(null)
+  const listRef = useRef<HTMLOListElement>(null)
+  const justDragged = useRef(false)
+  const [drag, setDrag] = useState<Drag | null>(null)
+  const [settle, setSettle] = useState<{ id: string; y: number } | null>(null)
+
+  useEffect(() => {
+    if (!settle) return
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => setSettle(null))
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [settle])
 
   if (clips.length === 0) {
     return (
@@ -91,18 +107,42 @@ export function ClipList({
     )
   }
 
-  const endDrag = () => {
-    setDragIndex(null)
-    setOverIndex(null)
+  const startReorder = (e: ReactPointerEvent<HTMLLIElement>, clip: Clip, from: number) => {
+    if (e.button !== 0 || (e.target instanceof Element && e.target.closest('button'))) return
+    const heights = Array.from(listRef.current!.children).map((row) => row.getBoundingClientRect().height + ROW_GAP_PX)
+    const originY = e.clientY
+    let current: Drag | null = null
+    const onMove = (move: PointerEvent) => {
+      const dy = move.clientY - originY
+      if (!current && Math.abs(dy) < REORDER_THRESHOLD_PX) return
+      const offset = dragOffset(heights, from, dy)
+      current = { from, to: reorderTarget(heights, from, offset), dy: offset, heights }
+      setDrag(current)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      if (!current) return
+      if (current.to !== from) onReorder(from, current.to)
+      setSettle({ id: clip.id, y: settleOffset(heights, from, current.to, current.dy) })
+      setDrag(null)
+      justDragged.current = true
+      setTimeout(() => {
+        justDragged.current = false
+      }, 0)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
   }
 
   return (
-    <ol className="flex flex-col gap-0.5 p-2">
+    <ol ref={listRef} className="flex flex-col gap-0.5 p-2">
       {clips.map((clip, index) => {
         const n = index + 1
         const over = isOverLimit(clip)
         const past = isPastCarousel(index)
-        const dropTarget = dragIndex !== null && overIndex === index && dragIndex !== index
+        const lifted = drag?.from === index
+        const offset = lifted ? drag.dy : settle?.id === clip.id ? settle.y : drag ? rowShift(drag.heights, drag.from, drag.to, index) : 0
         const joined = sources.length >= 2
         const source = joined ? localTime(sources, clip.start) : null
         const partStart = source ? partStarts(sources)[source.index] : 0
@@ -120,34 +160,13 @@ export function ClipList({
             data-past-carousel={past}
             aria-current={selected}
             onClick={(e) => {
+              if (justDragged.current) return
               if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip, selectMode(e))
             }}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer?.setData('text/plain', String(index))
-              setDragIndex(index)
-            }}
-            onDragOver={(e) => {
-              if (dragIndex === null) return
-              e.preventDefault()
-              e.stopPropagation()
-              setOverIndex(index)
-            }}
-            onDrop={(e) => {
-              if (dragIndex === null) return
-              e.preventDefault()
-              e.stopPropagation()
-              if (dragIndex !== index) onReorder(dragIndex, index)
-              endDrag()
-            }}
-            onDragEnd={endDrag}
-            className={`group relative flex cursor-default items-center gap-2 rounded-xl py-1.5 pr-1 pl-1 transition-colors ${selected ? 'bg-sunken' : 'hover:bg-canvas'} ${dragIndex === index ? 'opacity-40' : ''}`}
+            onPointerDown={(e) => startReorder(e, clip, index)}
+            style={{ transform: offset ? `translateY(${offset}px)` : undefined }}
+            className={`group relative flex cursor-default items-center gap-2 rounded-xl py-1.5 pr-1 pl-1 select-none ${lifted || settle ? '' : 'transition-[background-color,transform] duration-200 ease-out motion-reduce:transition-none'} ${lifted ? 'z-10 cursor-grabbing bg-surface shadow-lg ring-1 ring-line' : selected ? 'bg-sunken' : 'hover:bg-canvas'}`}
           >
-            {dropTarget && (
-              <span
-                className={`pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-accent ${dragIndex < index ? '-bottom-0.5' : '-top-0.5'}`}
-              />
-            )}
             <span className="cursor-grab text-ink-3 opacity-0 transition-opacity group-hover:opacity-100" title={t.reorderHint}>
               <GripIcon />
             </span>
