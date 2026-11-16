@@ -89,6 +89,7 @@ export function Timeline({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [width, setWidth] = useState(0)
   const [hoveredSource, setHoveredSource] = useState<number | null>(null)
+  const [trimming, setTrimming] = useState<string | null>(null)
   const tiles = thumbnails ? filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration) : []
   const tileFrames = tiles.map((tile) => {
     if (sources.length === 0) return { tile, request: { path: videoPath, time: tile.time } }
@@ -150,6 +151,7 @@ export function Timeline({
     e.preventDefault()
     if (e.shiftKey || e.metaKey || e.ctrlKey) return onSelect(clip, e.shiftKey ? 'range' : 'toggle')
     onSelect(clip)
+    if (mode !== 'move') setTrimming(clip.id)
     const bar = e.currentTarget.closest('[data-testid=timeline]')!.getBoundingClientRect()
     const originX = e.clientX
     const bounds = partBoundsAt(sources, clip.start, duration)
@@ -165,6 +167,7 @@ export function Timeline({
     const onUp = (up: PointerEvent) => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      setTrimming(null)
       if (!moved) onSeek(viewStart + ((up.clientX - bar.left) / bar.width) * viewSpan)
       justDragged.current = true
       setTimeout(() => {
@@ -369,6 +372,14 @@ export function Timeline({
                   className={`pointer-events-none absolute left-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold text-white tabular-nums ${stretches.length > 0 ? 'top-6' : 'top-1'}`}
                 >
                   {index + 1}
+                </span>
+              )}
+              {trimming === clip.id && (
+                <span
+                  data-testid={`clip-trim-duration-${index + 1}`}
+                  className={`pointer-events-none absolute right-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${stretches.length > 0 ? 'top-6' : 'top-1'}`}
+                >
+                  {formatDuration(clip.end - clip.start)}
                 </span>
               )}
               <div

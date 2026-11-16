@@ -486,6 +486,21 @@ describe('App', () => {
     fireEvent.pointerUp(window, { clientX: 1059.3 })
   })
 
+  it('shows how long the clip is while an edge is held or dragged, so a trim can aim for a length', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 1000, 1030)
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    expect(screen.queryByTestId('clip-trim-duration-1')).not.toBeInTheDocument()
+    fireEvent.pointerDown(screen.getByTestId('clip-handle-start-1'), { clientX: 1000 })
+    expect(screen.getByTestId('clip-trim-duration-1')).toHaveTextContent('0:30')
+    fireEvent.pointerMove(window, { clientX: 1010 })
+    expect(screen.getByTestId('clip-trim-duration-1')).toHaveTextContent('0:20')
+    fireEvent.pointerUp(window, { clientX: 1010 })
+    expect(screen.queryByTestId('clip-trim-duration-1')).not.toBeInTheDocument()
+  })
+
   it('marks with the I and O keys like in Final Cut', async () => {
     render(<App />)
     const video = await loadVideo()
