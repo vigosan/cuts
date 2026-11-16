@@ -126,10 +126,13 @@ export function App() {
   const [suggesting, setSuggesting] = useState(false)
   const [panned, setPanned] = useState<{ time: number; zoom: Zoom } | null>(null)
 
-  const keepPanned = panned?.time === time && panned.zoom === zoom
+  const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
+  const playheadShown = time >= viewStart && time <= viewStart + viewSpan
+  const keepPanned = panned !== null && panned.zoom === zoom && (panned.time === time || (playing && !playheadShown))
+  if (keepPanned && panned.time !== time) setPanned({ time, zoom })
+  if (panned && !keepPanned) setPanned(null)
   const currentViewStart = keepPanned ? viewStart : nextViewStart(viewStart, time, duration, zoom)
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
-  const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
   const parts = sources.length > 0 ? sources : [{ path: videoPath ?? '', duration }]
   const clock = useSessionClock(videoRef, parts)
