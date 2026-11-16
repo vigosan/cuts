@@ -35,7 +35,7 @@ export function Notice({ testId, text, ms, onClose }: Props) {
       {text}
       <button
         data-testid={`close-${testId}`}
-        className="grid size-7 place-items-center rounded-lg text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+        className="grid size-7 place-items-center rounded-lg text-ink-2 transition-[background-color,color,transform] duration-150 ease-out hover:bg-sunken hover:text-ink active:scale-[0.97]"
         title={t.close}
         aria-label={t.close}
         onClick={onClose}

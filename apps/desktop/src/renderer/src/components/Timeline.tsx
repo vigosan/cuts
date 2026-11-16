@@ -433,7 +433,7 @@ export function Timeline({
                 aria-label={t.removeVideo(source.name)}
                 title={t.removeVideo(source.name)}
                 data-shown={hoveredSource === index}
-                className={`pointer-events-auto absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/80 text-white transition-opacity hover:bg-black focus-visible:opacity-100 ${hoveredSource === index ? 'opacity-100' : 'opacity-0'}`}
+                className={`pointer-events-auto absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/80 text-white transition-[background-color,opacity,transform] duration-150 ease-out hover:bg-black active:scale-[0.97] focus-visible:opacity-100 ${hoveredSource === index ? 'opacity-100' : 'opacity-0'}`}
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation()
@@ -476,7 +476,7 @@ export function Timeline({
           data-testid="add-videos"
           aria-label={t.addVideos}
           title={t.addVideos}
-          className="grid w-11 shrink-0 place-items-center rounded-lg border border-dashed border-ink-3/50 text-lg text-ink-2 transition-colors hover:border-ink-2 hover:bg-sunken hover:text-ink"
+          className="grid w-11 shrink-0 place-items-center rounded-lg border border-dashed border-ink-3/50 text-lg text-ink-2 transition-[background-color,border-color,color,transform] duration-150 ease-out hover:border-ink-2 hover:bg-sunken hover:text-ink active:scale-[0.97]"
           onClick={onAddVideos}
         >
           +
