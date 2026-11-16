@@ -729,6 +729,22 @@ describe('App', () => {
     expect(screen.getByTestId('timeline-content').style.transform).toBe('')
   })
 
+  it('zooms the timeline one level per trackpad pinch around the pointer, so pinching lands on what you point at', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 1000)
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 1200, top: 0, height: 32, right: 1200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.wheel(timeline, { deltaY: -10, ctrlKey: true, clientX: 300 })
+    expect(screen.getByTestId('zoom-all')).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.wheel(timeline, { deltaY: -30, ctrlKey: true, clientX: 300 })
+    expect(screen.getByTestId('zoom-600')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:17:50')
+    fireEvent.wheel(timeline, { deltaY: 40, ctrlKey: true, clientX: 300 })
+    expect(screen.getByTestId('zoom-all')).toHaveAttribute('aria-pressed', 'true')
+    expect(video.currentTime).toBe(1000)
+  })
+
   it('pans the zoomed timeline with a two-finger trackpad swipe, like any Mac scroll view, without moving the playhead', async () => {
     render(<App />)
     const video = await loadVideo()

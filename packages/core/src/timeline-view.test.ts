@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextViewStart, spacedLabels, viewStartForClip } from './timeline-view'
+import { anchoredViewStart, nextViewStart, spacedLabels, steppedZoom, viewStartForClip } from './timeline-view'
 
 const duration = 4880
 
@@ -51,5 +51,39 @@ describe('spacedLabels', () => {
 
   it('spaces the numbers by position on screen, not by carousel order, since a reordered clip can sit anywhere', () => {
     expect(spacedLabels([300, 0, 10], 20)).toEqual([true, true, false])
+  })
+})
+
+describe('steppedZoom', () => {
+  it('moves one level closer or further per pinch step, through the same levels as the zoom buttons', () => {
+    expect(steppedZoom(null, 1, 4880)).toBe(600)
+    expect(steppedZoom(120, 1, 4880)).toBe(30)
+    expect(steppedZoom(120, -1, 4880)).toBe(600)
+    expect(steppedZoom(600, -1, 4880)).toBe(null)
+  })
+
+  it('stays put at the closest and furthest levels', () => {
+    expect(steppedZoom(30, 1, 4880)).toBe(30)
+    expect(steppedZoom(null, -1, 4880)).toBe(null)
+  })
+
+  it('skips levels longer than the video, since they would look the same as the whole video', () => {
+    expect(steppedZoom(null, 1, 300)).toBe(120)
+    expect(steppedZoom(120, -1, 300)).toBe(null)
+  })
+})
+
+describe('anchoredViewStart', () => {
+  it('keeps the moment under the pointer at the same spot, so a pinch zooms into what you point at', () => {
+    expect(anchoredViewStart(1220, 0.25, 600, 4880)).toBe(1070)
+  })
+
+  it('stays inside the video', () => {
+    expect(anchoredViewStart(10, 0.5, 600, 4880)).toBe(0)
+    expect(anchoredViewStart(4870, 0.5, 600, 4880)).toBe(4280)
+  })
+
+  it('starts at the beginning when showing the whole video', () => {
+    expect(anchoredViewStart(1220, 0.25, null, 4880)).toBe(0)
   })
 })

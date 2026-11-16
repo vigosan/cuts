@@ -19,6 +19,7 @@ const PENDING_LABEL_PX = 40
 const NUMBER_LABEL_PX = 22
 
 const VOLUME_STEPS = 16
+const PINCH_STEP = 40
 
 function fadeRamp(seconds: number, clipLength: number): string {
   return `max(6px, ${(seconds / clipLength) * 100}%)`
@@ -54,6 +55,7 @@ type Props = {
   onDragStart: () => void
   onFadeSeconds: (seconds: number) => void
   onPan: (viewStart: number) => void
+  onZoomStep: (steps: 1 | -1, anchor: number, fraction: number) => void
   sources: Source[]
   onRemoveSource: (index: number) => void
   onLocateSource: (index: number) => void
@@ -82,12 +84,14 @@ export function Timeline({
   onDragStart,
   onFadeSeconds,
   onPan,
+  onZoomStep,
   sources,
   onRemoveSource,
   onLocateSource,
   onAddVideos
 }: Props) {
   const justDragged = useRef(false)
+  const pinch = useRef(0)
   const barRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [width, setWidth] = useState(0)
@@ -247,6 +251,15 @@ export function Timeline({
         }}
         onPointerLeave={() => setHoveredSource(null)}
         onWheel={(e) => {
+          if (e.ctrlKey) {
+            pinch.current = Math.sign(pinch.current) === Math.sign(-e.deltaY) ? pinch.current - e.deltaY : -e.deltaY
+            if (Math.abs(pinch.current) < PINCH_STEP) return
+            const rect = e.currentTarget.getBoundingClientRect()
+            const fraction = (e.clientX - rect.left) / rect.width
+            onZoomStep(pinch.current > 0 ? 1 : -1, viewStart + fraction * viewSpan, fraction)
+            pinch.current = 0
+            return
+          }
           if (viewSpan >= duration || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
           onPan(viewStart + (e.deltaX / e.currentTarget.getBoundingClientRect().width) * viewSpan)
         }}

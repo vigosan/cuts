@@ -23,7 +23,7 @@ import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from '@cuts/core/clips-reducer'
 import { withHistory } from '@cuts/core/history'
 import { t } from './i18n'
-import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/core/timeline-view'
+import { anchoredViewStart, nextViewStart, steppedZoom, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/core/timeline-view'
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { snapToBeat } from '@cuts/core/beats'
@@ -933,6 +933,12 @@ export function App() {
                 onPan={(start) => {
                   setViewStart(Math.min(Math.max(0, start), duration - viewSpan))
                   setPanned({ time, zoom })
+                }}
+                onZoomStep={(steps, anchor, fraction) => {
+                  const next = steppedZoom(zoom, steps, duration)
+                  setZoom(next)
+                  setViewStart(anchoredViewStart(anchor, fraction, next, duration))
+                  setPanned({ time, zoom: next })
                 }}
                 sources={sources}
                 onRemoveSource={removeSource}
