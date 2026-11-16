@@ -711,6 +711,24 @@ describe('App', () => {
     expect(screen.getByTestId('view-start')).toHaveTextContent('00:32:20')
   })
 
+  it('stretches the zoomed timeline past its start while dragged and springs back on release, so the edge feels soft instead of frozen', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 30)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:00:00')
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 1200, top: 0, height: 32, right: 1200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(timeline, { clientX: 300 })
+    fireEvent.pointerMove(window, { clientX: 900 })
+    const stretch = Number(screen.getByTestId('timeline-content').style.transform.match(/translateX\((.+)px\)/)?.[1])
+    expect(stretch).toBeGreaterThan(0)
+    expect(stretch).toBeLessThan(600)
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:00:00')
+    fireEvent.pointerUp(window, { clientX: 900 })
+    expect(screen.getByTestId('timeline-content').style.transform).toBe('')
+  })
+
   it('pans the zoomed timeline with a two-finger trackpad swipe, like any Mac scroll view, without moving the playhead', async () => {
     render(<App />)
     const video = await loadVideo()
