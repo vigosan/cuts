@@ -115,6 +115,13 @@ async function markClip(video: HTMLVideoElement, start: number, end: number) {
   await userEvent.click(screen.getByTestId('mark-end'))
 }
 
+function layOutRows(count: number) {
+  for (let i = 0; i < count; i++) {
+    const top = i * 42
+    screen.getByTestId(`clip-row-${i + 1}`).getBoundingClientRect = () => ({ left: 0, width: 360, top, height: 40, right: 360, bottom: top + 40, x: 0, y: top, toJSON: () => ({}) })
+  }
+}
+
 async function inPanel(testId: string) {
   return screen.getByTestId(testId)
 }
@@ -349,6 +356,22 @@ describe('App', () => {
     render(<App />)
     fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'notes.pdf')] } })
     act(() => vi.advanceTimersByTime(4999))
+    expect(screen.getByTestId('unsupported-video')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1))
+    expect(screen.queryByTestId('unsupported-video')).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
+  it('keeps a notice open while the pointer rests on it and resumes the countdown on leave, so it never vanishes mid-read', () => {
+    vi.useFakeTimers()
+    render(<App />)
+    fireEvent.drop(screen.getByTestId('app'), { dataTransfer: { files: [new File([''], 'notes.pdf')] } })
+    act(() => vi.advanceTimersByTime(3000))
+    fireEvent.pointerEnter(screen.getByTestId('unsupported-video'))
+    act(() => vi.advanceTimersByTime(10000))
+    expect(screen.getByTestId('unsupported-video')).toBeInTheDocument()
+    fireEvent.pointerLeave(screen.getByTestId('unsupported-video'))
+    act(() => vi.advanceTimersByTime(1999))
     expect(screen.getByTestId('unsupported-video')).toBeInTheDocument()
     act(() => vi.advanceTimersByTime(1))
     expect(screen.queryByTestId('unsupported-video')).not.toBeInTheDocument()
@@ -774,6 +797,40 @@ describe('App', () => {
     expect(screen.getByTestId('view-start')).toHaveTextContent('00:32:20')
   })
 
+  it('stretches the zoomed timeline past its start while dragged and springs back on release, so the edge feels soft instead of frozen', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 30)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:00:00')
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 1200, top: 0, height: 32, right: 1200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(timeline, { clientX: 300 })
+    fireEvent.pointerMove(window, { clientX: 900 })
+    const stretch = Number(screen.getByTestId('timeline-content').style.transform.match(/translateX\((.+)px\)/)?.[1])
+    expect(stretch).toBeGreaterThan(0)
+    expect(stretch).toBeLessThan(600)
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:00:00')
+    fireEvent.pointerUp(window, { clientX: 900 })
+    expect(screen.getByTestId('timeline-content').style.transform).toBe('')
+  })
+
+  it('zooms the timeline one level per trackpad pinch around the pointer, so pinching lands on what you point at', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 1000)
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 1200, top: 0, height: 32, right: 1200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.wheel(timeline, { deltaY: -10, ctrlKey: true, clientX: 300 })
+    expect(screen.getByTestId('zoom-all')).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.wheel(timeline, { deltaY: -30, ctrlKey: true, clientX: 300 })
+    expect(screen.getByTestId('zoom-600')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:17:50')
+    fireEvent.wheel(timeline, { deltaY: 40, ctrlKey: true, clientX: 300 })
+    expect(screen.getByTestId('zoom-all')).toHaveAttribute('aria-pressed', 'true')
+    expect(video.currentTime).toBe(1000)
+  })
+
   it('pans the zoomed timeline with a two-finger trackpad swipe, like any Mac scroll view, without moving the playhead', async () => {
     render(<App />)
     const video = await loadVideo()
@@ -951,13 +1008,56 @@ describe('App', () => {
     await markClip(video, 100, 150)
     await markClip(video, 200, 250)
     await markClip(video, 300, 350)
-    fireEvent.dragStart(screen.getByTestId('clip-row-3'))
-    fireEvent.dragOver(screen.getByTestId('clip-row-1'))
-    fireEvent.drop(screen.getByTestId('clip-row-1'))
+    layOutRows(3)
+    fireEvent.pointerDown(screen.getByTestId('clip-row-3'), { clientY: 100 })
+    fireEvent.pointerMove(window, { clientY: 15 })
+    fireEvent.pointerUp(window, { clientY: 15 })
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:05:00')
     expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:01:40')
     expect(screen.getByTestId('clip-block-1')).toHaveTextContent('1')
     expect(screen.getByTestId('clip-block-1').style.left).toBe(`${(300 / 4880) * 100}%`)
+  })
+
+  it('follows the pointer while a clip is dragged and slides the clips it passes out of the way, so the new order shows before the drop', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await markClip(video, 300, 350)
+    layOutRows(3)
+    fireEvent.pointerDown(screen.getByTestId('clip-row-3'), { clientY: 100 })
+    fireEvent.pointerMove(window, { clientY: 60 })
+    expect(screen.getByTestId('clip-row-3').style.transform).toBe('translateY(-40px)')
+    expect(screen.getByTestId('clip-row-2').style.transform).toBe('translateY(42px)')
+    expect(screen.getByTestId('clip-row-1').style.transform).toBe('')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
+  })
+
+  it('drags a clip from its times too, since they fill most of the row, without moving its start on release', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    layOutRows(2)
+    fireEvent.pointerDown(screen.getByTestId('clip-set-start-2'), { clientY: 60 })
+    fireEvent.pointerMove(window, { clientY: 10 })
+    fireEvent.pointerUp(window, { clientY: 10 })
+    fireEvent.click(screen.getByTestId('clip-set-start-1'))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:03:20')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:04:10')
+  })
+
+  it('keeps a clip in place when the pointer barely moves, so a click on a row still just selects it', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    layOutRows(2)
+    fireEvent.pointerDown(screen.getByTestId('clip-row-2'), { clientY: 60 })
+    fireEvent.pointerMove(window, { clientY: 58 })
+    fireEvent.pointerUp(window, { clientY: 58 })
+    expect(screen.getByTestId('clip-row-2').style.transform).toBe('')
+    expect(screen.getByTestId('clip-row-2')).toHaveTextContent('00:03:20')
   })
 
   it('shows where image fades happen on the timeline only, with the cover clip starting sharp, so the list stays a clean list of times', async () => {
@@ -1622,6 +1722,7 @@ describe('App', () => {
   })
 
   it('stops a running export from the Export button that shows its progress, so stopping never needs a second control', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
     render(<App />)
     const video = await loadVideo()
@@ -1633,8 +1734,21 @@ describe('App', () => {
     expect(button).toHaveAccessibleName(`${t.stopExport} (${t.exportingClip(1, 2)})`)
     expect(screen.getByTestId('export-stop-label')).toHaveTextContent(t.stopExport)
     expect(screen.getByTestId('export-stop-label')).toContainElement(screen.getByTestId('export-stop-icon'))
+    act(() => vi.advanceTimersByTime(500))
     await userEvent.click(button)
     expect(api.cancelExport).toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('ignores a second click right after Export starts, so a double click never cancels the export it just started', async () => {
+    vi.mocked(api.exportClips).mockReturnValue(new Promise(() => {}))
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await userEvent.dblClick(await inPanel('export'))
+    expect(api.exportClips).toHaveBeenCalledTimes(1)
+    expect(api.cancelExport).not.toHaveBeenCalled()
+    expect(screen.getByTestId('export-stop-label')).toHaveClass('invisible')
   })
 
   it('stops a running export with Command-period, the Mac shortcut for cancelling an operation', async () => {
@@ -2792,6 +2906,25 @@ describe('export full recording', () => {
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByTestId('export-full')).not.toBeInTheDocument()
     expect(api.exportClips).not.toHaveBeenCalled()
+  })
+
+  it('moves through the export menu with the arrow keys like any Mac menu, without moving the clip selection behind it', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    await userEvent.click(screen.getByTestId('clip-row-1'))
+    await userEvent.click(screen.getByTestId('export-menu'))
+    expect(screen.getByTestId('export-option-clips')).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(screen.getByTestId('export-full')).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(screen.getByTestId('export-option-clips')).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(screen.getByTestId('export-full')).toHaveFocus()
+    expect(screen.getByTestId('clip-row-1')).toHaveAttribute('aria-current', 'true')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByTestId('export-menu')).toHaveFocus()
   })
 
   it('hides the export options while an export runs, so a second one cannot start', async () => {

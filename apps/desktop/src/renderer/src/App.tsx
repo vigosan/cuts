@@ -23,7 +23,7 @@ import { Timeline } from './components/Timeline'
 import { clipsReducer, initialClipsState } from '@cuts/core/clips-reducer'
 import { withHistory } from '@cuts/core/history'
 import { t } from './i18n'
-import { nextViewStart, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/core/timeline-view'
+import { anchoredViewStart, nextViewStart, steppedZoom, viewStartForClip, ZOOM_LEVELS, type Zoom } from '@cuts/core/timeline-view'
 import { suggestMoments } from '@cuts/core/suggest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
 import { snapToBeat } from '@cuts/core/beats'
@@ -220,18 +220,7 @@ export function App() {
     }
   }, [clock.src, missingSource])
 
-  useEffect(() => {
-    if (unsupportedDrops === 0) return
-    const timer = setTimeout(() => setUnsupportedDrops(0), NOTICE_MS)
-    return () => clearTimeout(timer)
-  }, [unsupportedDrops])
-
   const [suggestNotice, setSuggestNotice] = useState<string | null>(null)
-  useEffect(() => {
-    if (suggestNotice === null) return
-    const timer = setTimeout(() => setSuggestNotice(null), NOTICE_MS)
-    return () => clearTimeout(timer)
-  }, [suggestNotice])
 
   useEffect(() => {
     if (!videoPath || restoredFor !== videoPath) return
@@ -688,7 +677,7 @@ export function App() {
             <div className="relative ml-auto flex items-center gap-1.5 [-webkit-app-region:no-drag]">
               <button
                 data-testid="suggest"
-                className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-ink-2 transition-colors hover:bg-sunken hover:text-ink disabled:hover:bg-transparent"
+                className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-ink-2 transition-[background-color,color,transform] duration-150 ease-out hover:bg-sunken hover:text-ink active:scale-[0.97] disabled:hover:bg-transparent disabled:active:scale-100"
                 title={t.suggestMoments}
                 aria-label={t.suggestMoments}
                 aria-busy={suggesting}
@@ -932,7 +921,7 @@ export function App() {
                         key={span ?? 'all'}
                         data-testid={`zoom-${span ?? 'all'}`}
                         aria-pressed={zoom === span}
-                        className={`rounded-md px-1.5 py-1 transition-colors ${zoom === span ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
+                        className={`rounded-md px-1.5 py-1 transition-colors ${zoom === span ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink active:bg-ink-3/15'}`}
                         onClick={() => setZoom(span)}
                       >
                         {zoomLabel(span)}
@@ -966,6 +955,12 @@ export function App() {
                   setViewStart(Math.min(Math.max(0, start), duration - viewSpan))
                   setPanned({ time, zoom })
                 }}
+                onZoomStep={(steps, anchor, fraction) => {
+                  const next = steppedZoom(zoom, steps, duration)
+                  setZoom(next)
+                  setViewStart(anchoredViewStart(anchor, fraction, next, duration))
+                  setPanned({ time, zoom: next })
+                }}
                 sources={sources}
                 onRemoveSource={removeSource}
                 onMoveSource={moveSource}
@@ -986,7 +981,7 @@ export function App() {
                 {clips.length > 0 && (
                   <button
                     data-testid="clear-clips"
-                    className="grid size-6 place-items-center rounded-md text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+                    className="grid size-6 place-items-center rounded-md text-ink-2 transition-[background-color,color,transform] duration-150 ease-out hover:bg-sunken hover:text-ink active:scale-[0.97]"
                     title={t.clearClipsHint(window.api.platform === 'darwin' ? '⌘Z' : 'Ctrl+Z')}
                     aria-label={t.clearClips}
                     onClick={() => {

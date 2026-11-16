@@ -5,6 +5,7 @@ import { dragClip, type DragMode } from '@cuts/core/drag-clip'
 import { filmstripTiles, PEAKS_PER_SECOND, uncoveredRanges, waveformColumns } from '@cuts/core/filmstrip'
 import { spacedLabels } from '@cuts/core/timeline-view'
 import { localTime, partBoundsAt, partStarts } from '@cuts/core/parts'
+import { rubberband } from '@cuts/core/reorder'
 import type { Source } from '@shared/api'
 import { t } from '../i18n'
 import { useThumbnails } from '../useVideoPreview'
@@ -18,6 +19,7 @@ const PENDING_LABEL_PX = 40
 const NUMBER_LABEL_PX = 22
 
 const VOLUME_STEPS = 16
+const PINCH_STEP = 40
 
 function fadeRamp(seconds: number, clipLength: number): string {
   return `max(6px, ${(seconds / clipLength) * 100}%)`
@@ -52,6 +54,7 @@ type Props = {
   onDragStart: () => void
   onFadeSeconds: (seconds: number) => void
   onPan: (viewStart: number) => void
+  onZoomStep: (steps: 1 | -1, anchor: number, fraction: number) => void
   sources: Source[]
   onRemoveSource: (index: number) => void
   onMoveSource: (index: number, gap: number) => void
@@ -80,6 +83,7 @@ export function Timeline({
   onDragStart,
   onFadeSeconds,
   onPan,
+  onZoomStep,
   sources,
   onRemoveSource,
   onMoveSource,
@@ -87,10 +91,13 @@ export function Timeline({
   onAddVideos
 }: Props) {
   const justDragged = useRef(false)
+  const pinch = useRef(0)
   const barRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [width, setWidth] = useState(0)
   const [hoveredSource, setHoveredSource] = useState<number | null>(null)
+  const [stretch, setStretch] = useState(0)
+  const [panning, setPanning] = useState(false)
   const [trimming, setTrimming] = useState<string | null>(null)
   const [movingSource, setMovingSource] = useState<{ index: number; offset: number; gap: number } | null>(null)
   const tiles = thumbnails ? filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration) : []
@@ -241,12 +248,18 @@ export function Timeline({
     const onMove = (move: PointerEvent) => {
       if (!moved && Math.abs(move.clientX - originX) < DRAG_THRESHOLD_PX) return
       moved = true
-      onPan(originStart - ((move.clientX - originX) / bar.width) * viewSpan)
+      const wanted = originStart - ((move.clientX - originX) / bar.width) * viewSpan
+      const reachable = Math.min(Math.max(0, wanted), duration - viewSpan)
+      onPan(reachable)
+      setPanning(true)
+      setStretch(rubberband(((reachable - wanted) / viewSpan) * bar.width, bar.width))
     }
     const onUp = () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       if (!moved) return
+      setPanning(false)
+      setStretch(0)
       justDragged.current = true
       setTimeout(() => {
         justDragged.current = false
@@ -270,6 +283,15 @@ export function Timeline({
         }}
         onPointerLeave={() => setHoveredSource(null)}
         onWheel={(e) => {
+          if (e.ctrlKey) {
+            pinch.current = Math.sign(pinch.current) === Math.sign(-e.deltaY) ? pinch.current - e.deltaY : -e.deltaY
+            if (Math.abs(pinch.current) < PINCH_STEP) return
+            const rect = e.currentTarget.getBoundingClientRect()
+            const fraction = (e.clientX - rect.left) / rect.width
+            onZoomStep(pinch.current > 0 ? 1 : -1, viewStart + fraction * viewSpan, fraction)
+            pinch.current = 0
+            return
+          }
           if (viewSpan >= duration || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
           onPan(viewStart + (e.deltaX / e.currentTarget.getBoundingClientRect().width) * viewSpan)
         }}
@@ -280,229 +302,235 @@ export function Timeline({
           onSeek(viewStart + ((e.clientX - rect.left) / rect.width) * viewSpan)
         }}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-14 overflow-hidden">
-          {frames.size === 0 && tiles.length > 0 && (
-            <p data-testid="filmstrip-loading" className="grid h-full place-items-center text-xs text-ink-2 motion-safe:animate-pulse">
-              {t.loadingFrames}
+        <div
+          data-testid="timeline-content"
+          className={`absolute inset-0 ${panning ? '' : 'transition-transform duration-300 ease-out motion-reduce:transition-none'}`}
+          style={{ transform: stretch ? `translateX(${stretch}px)` : undefined }}
+        >
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-14 overflow-hidden">
+            {frames.size === 0 && tiles.length > 0 && (
+              <p data-testid="filmstrip-loading" className="grid h-full place-items-center text-xs text-ink-2 motion-safe:animate-pulse">
+                {t.loadingFrames}
+              </p>
+            )}
+            {tileFrames.map(({ tile, request }) =>
+              request && frames.has(`${request.path}|${request.time}`) ? (
+                <img
+                  key={tile.time}
+                  data-testid="filmstrip-frame"
+                  src={frames.get(`${request.path}|${request.time}`)}
+                  alt=""
+                  draggable={false}
+                  className="absolute inset-y-0 h-full object-cover"
+                  style={{ left: `${tile.left}%`, width: TILE_WIDTH_PX }}
+                />
+              ) : null
+            )}
+          </div>
+          <canvas
+            ref={canvasRef}
+            data-testid="waveform"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 w-full text-ink-3"
+          />
+          {analysingAudio && (
+            <p
+              data-testid="waveform-loading"
+              className="pointer-events-none absolute inset-x-0 bottom-0 grid h-8 place-items-center text-xs text-ink-2 motion-safe:animate-pulse"
+            >
+              {t.analysingAudio}
             </p>
           )}
-          {tileFrames.map(({ tile, request }) =>
-            request && frames.has(`${request.path}|${request.time}`) ? (
-              <img
-                key={tile.time}
-                data-testid="filmstrip-frame"
-                src={frames.get(`${request.path}|${request.time}`)}
-                alt=""
-                draggable={false}
-                className="absolute inset-y-0 h-full object-cover"
-                style={{ left: `${tile.left}%`, width: TILE_WIDTH_PX }}
+          {uncoveredRanges(clips, viewStart, viewStart + viewSpan).map((range) => (
+            <div
+              key={range.start}
+              className="pointer-events-none absolute inset-y-0 bg-black/25 dark:bg-black/40"
+              style={{ left: pct(range.start - viewStart), width: pct(range.end - range.start) }}
+            />
+          ))}
+          {stretches.map(({ source, start, end }) =>
+            source.missing ? (
+              <div
+                key={source.path}
+                className="pointer-events-none absolute inset-y-0 bg-sunken bg-[repeating-linear-gradient(135deg,var(--line)_0_6px,transparent_6px_12px)]"
+                style={{ left: pct(start - viewStart), width: pct(end - start) }}
               />
             ) : null
           )}
-        </div>
-        <canvas
-          ref={canvasRef}
-          data-testid="waveform"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-8 w-full text-ink-3"
-        />
-        {analysingAudio && (
-          <p
-            data-testid="waveform-loading"
-            className="pointer-events-none absolute inset-x-0 bottom-0 grid h-8 place-items-center text-xs text-ink-2 motion-safe:animate-pulse"
-          >
-            {t.analysingAudio}
-          </p>
-        )}
-        {uncoveredRanges(clips, viewStart, viewStart + viewSpan).map((range) => (
-          <div
-            key={range.start}
-            className="pointer-events-none absolute inset-y-0 bg-black/25 dark:bg-black/40"
-            style={{ left: pct(range.start - viewStart), width: pct(range.end - range.start) }}
-          />
-        ))}
-        {stretches.map(({ source, start, end }) =>
-          source.missing ? (
+          {starts.map((start, index) =>
+            index > 0 && sources.length > 1 && start >= viewStart && start <= viewEnd ? (
+              <div
+                key={index}
+                data-testid={`join-${index}`}
+                className="pointer-events-none absolute inset-y-0 z-[5] w-[3px] -translate-x-1/2 bg-canvas"
+                style={{ left: pct(start - viewStart) }}
+              />
+            ) : null
+          )}
+          {clips.map((clip, index) => {
+            const fade = fades[index]
+            const selected = selectedIds.includes(clip.id)
+            const roomy = ((clip.end - clip.start) / viewSpan) * width >= ROOMY_CLIP_PX
+            const fadeColor = fade.videoFade === 'white' ? 'from-white/80' : 'from-black/80'
+            const unavailable = sources.length > 1 && sources[localTime(sources, clip.start).index].missing
+            const handle = `absolute inset-y-0 w-3 cursor-ew-resize after:absolute after:inset-y-3 after:w-1 after:rounded-full after:bg-white after:shadow-[0_0_0_1px_rgb(0_0_0/0.4)] ${!roomy ? 'after:hidden' : selected ? '' : 'after:opacity-0 group-hover:after:opacity-100'}`
+            return (
+              <div
+                key={clip.id}
+                data-testid={`clip-block-${index + 1}`}
+                data-fade-in={fades[index].videoFade !== 'none' && index > 0}
+                data-fade-out={fades[index].videoFade !== 'none'}
+                aria-current={selected}
+                className={`group absolute inset-y-0.5 min-w-3 cursor-grab rounded-md shadow-[0_0_0_1px_rgb(0_0_0/0.5)] active:cursor-grabbing ${selected ? 'z-10 border-[3px] border-white' : 'border-2 border-white/70 hover:border-white'} ${unavailable ? 'opacity-50' : ''}`}
+                style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => startDrag(e, clip, 'move')}
+              >
+                {roomy && fade.videoFade !== 'none' && index > 0 && (
+                  <span
+                    className={`pointer-events-none absolute inset-y-0 left-0 rounded-l-[4px] bg-gradient-to-r ${fadeColor} to-transparent`}
+                    style={{ width: fadeRamp(fade.fadeSeconds, clip.end - clip.start) }}
+                  />
+                )}
+                {roomy && fade.videoFade !== 'none' && (
+                  <span
+                    className={`pointer-events-none absolute inset-y-0 right-0 rounded-r-[4px] bg-gradient-to-l ${fadeColor} to-transparent`}
+                    style={{ width: fadeRamp(fade.fadeSeconds, clip.end - clip.start) }}
+                  />
+                )}
+                {roomy && (
+                  <svg
+                    className="pointer-events-none absolute inset-x-0 bottom-1 h-6 w-full overflow-visible"
+                    viewBox="0 0 100 1"
+                    preserveAspectRatio="none"
+                  >
+                    <polyline
+                      data-testid={`clip-volume-${index + 1}`}
+                      points={volumePoints(fade, clip.end - clip.start)}
+                      fill="none"
+                      className="stroke-yellow-300"
+                      strokeWidth={1.5}
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
+                )}
+                {roomy && selected && fade.audioFade !== 'none' &&
+                  (['in', 'out'] as const).map((side) => (
+                    <div
+                      key={side}
+                      data-testid={`fade-handle-${side}-${index + 1}`}
+                      className="absolute bottom-7 z-10 size-3 cursor-ew-resize rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.5)]"
+                      style={{
+                        [side === 'in' ? 'left' : 'right']: `${(Math.min(fade.fadeSeconds, (clip.end - clip.start) / 2) / (clip.end - clip.start)) * 100}%`,
+                        translate: side === 'in' ? '-50% 50%' : '50% 50%'
+                      }}
+                      onPointerDown={(e) => startFadeDrag(e, clip, side)}
+                    />
+                  ))}
+                {numbered[index] && (
+                  <span
+                    data-testid={`clip-block-number-${index + 1}`}
+                    className={`pointer-events-none absolute left-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold text-white tabular-nums ${stretches.length > 0 ? 'top-6' : 'top-1'}`}
+                  >
+                    {index + 1}
+                  </span>
+                )}
+                {trimming === clip.id && (
+                  <span
+                    data-testid={`clip-trim-duration-${index + 1}`}
+                    className={`pointer-events-none absolute right-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${stretches.length > 0 ? 'top-6' : 'top-1'}`}
+                  >
+                    {formatDuration(clip.end - clip.start)}
+                  </span>
+                )}
+                <div
+                  data-testid={`clip-handle-start-${index + 1}`}
+                  className={`${handle} -left-1.5 after:left-1`}
+                  onPointerDown={(e) => startDrag(e, clip, 'start')}
+                />
+                <div
+                  data-testid={`clip-handle-end-${index + 1}`}
+                  className={`${handle} -right-1.5 after:right-1`}
+                  onPointerDown={(e) => startDrag(e, clip, 'end')}
+                />
+              </div>
+            )
+          })}
+          {stretches.map(({ source, index, start, end }) => (
             <div
               key={source.path}
-              className="pointer-events-none absolute inset-y-0 bg-sunken bg-[repeating-linear-gradient(135deg,var(--line)_0_6px,transparent_6px_12px)]"
-              style={{ left: pct(start - viewStart), width: pct(end - start) }}
-            />
-          ) : null
-        )}
-        {starts.map((start, index) =>
-          index > 0 && sources.length > 1 && start >= viewStart && start <= viewEnd ? (
-            <div
-              key={index}
-              data-testid={`join-${index}`}
-              className="pointer-events-none absolute inset-y-0 z-[5] w-[3px] -translate-x-1/2 bg-canvas"
-              style={{ left: pct(start - viewStart) }}
-            />
-          ) : null
-        )}
-        {clips.map((clip, index) => {
-          const fade = fades[index]
-          const selected = selectedIds.includes(clip.id)
-          const roomy = ((clip.end - clip.start) / viewSpan) * width >= ROOMY_CLIP_PX
-          const fadeColor = fade.videoFade === 'white' ? 'from-white/80' : 'from-black/80'
-          const unavailable = sources.length > 1 && sources[localTime(sources, clip.start).index].missing
-          const handle = `absolute inset-y-0 w-3 cursor-ew-resize after:absolute after:inset-y-3 after:w-1 after:rounded-full after:bg-white after:shadow-[0_0_0_1px_rgb(0_0_0/0.4)] ${!roomy ? 'after:hidden' : selected ? '' : 'after:opacity-0 group-hover:after:opacity-100'}`
-          return (
-            <div
-              key={clip.id}
-              data-testid={`clip-block-${index + 1}`}
-              data-fade-in={fades[index].videoFade !== 'none' && index > 0}
-              data-fade-out={fades[index].videoFade !== 'none'}
-              aria-current={selected}
-              className={`group absolute inset-y-0.5 min-w-3 cursor-grab rounded-md shadow-[0_0_0_1px_rgb(0_0_0/0.5)] active:cursor-grabbing ${selected ? 'z-10 border-[3px] border-white' : 'border-2 border-white/70 hover:border-white'} ${unavailable ? 'opacity-50' : ''}`}
-              style={{ left: pct(clip.start - viewStart), width: pct(clip.end - clip.start) }}
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => startDrag(e, clip, 'move')}
-            >
-              {roomy && fade.videoFade !== 'none' && index > 0 && (
-                <span
-                  className={`pointer-events-none absolute inset-y-0 left-0 rounded-l-[4px] bg-gradient-to-r ${fadeColor} to-transparent`}
-                  style={{ width: fadeRamp(fade.fadeSeconds, clip.end - clip.start) }}
-                />
-              )}
-              {roomy && fade.videoFade !== 'none' && (
-                <span
-                  className={`pointer-events-none absolute inset-y-0 right-0 rounded-r-[4px] bg-gradient-to-l ${fadeColor} to-transparent`}
-                  style={{ width: fadeRamp(fade.fadeSeconds, clip.end - clip.start) }}
-                />
-              )}
-              {roomy && (
-                <svg
-                  className="pointer-events-none absolute inset-x-0 bottom-1 h-6 w-full overflow-visible"
-                  viewBox="0 0 100 1"
-                  preserveAspectRatio="none"
-                >
-                  <polyline
-                    data-testid={`clip-volume-${index + 1}`}
-                    points={volumePoints(fade, clip.end - clip.start)}
-                    fill="none"
-                    className="stroke-yellow-300"
-                    strokeWidth={1.5}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                </svg>
-              )}
-              {roomy && selected && fade.audioFade !== 'none' &&
-                (['in', 'out'] as const).map((side) => (
-                  <div
-                    key={side}
-                    data-testid={`fade-handle-${side}-${index + 1}`}
-                    className="absolute bottom-7 z-10 size-3 cursor-ew-resize rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.5)]"
-                    style={{
-                      [side === 'in' ? 'left' : 'right']: `${(Math.min(fade.fadeSeconds, (clip.end - clip.start) / 2) / (clip.end - clip.start)) * 100}%`,
-                      translate: side === 'in' ? '-50% 50%' : '50% 50%'
-                    }}
-                    onPointerDown={(e) => startFadeDrag(e, clip, side)}
-                  />
-                ))}
-              {numbered[index] && (
-                <span
-                  data-testid={`clip-block-number-${index + 1}`}
-                  className={`pointer-events-none absolute left-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold text-white tabular-nums ${stretches.length > 0 ? 'top-6' : 'top-1'}`}
-                >
-                  {index + 1}
-                </span>
-              )}
-              {trimming === clip.id && (
-                <span
-                  data-testid={`clip-trim-duration-${index + 1}`}
-                  className={`pointer-events-none absolute right-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${stretches.length > 0 ? 'top-6' : 'top-1'}`}
-                >
-                  {formatDuration(clip.end - clip.start)}
-                </span>
-              )}
-              <div
-                data-testid={`clip-handle-start-${index + 1}`}
-                className={`${handle} -left-1.5 after:left-1`}
-                onPointerDown={(e) => startDrag(e, clip, 'start')}
-              />
-              <div
-                data-testid={`clip-handle-end-${index + 1}`}
-                className={`${handle} -right-1.5 after:right-1`}
-                onPointerDown={(e) => startDrag(e, clip, 'end')}
-              />
-            </div>
-          )
-        })}
-        {stretches.map(({ source, index, start, end }) => (
-          <div
-            key={source.path}
-            data-testid={source.missing ? `missing-${index}` : undefined}
-            className={`pointer-events-none absolute inset-y-0 ${movingSource?.index === index ? 'z-30 bg-white/10 ring-2 ring-white ring-inset' : hoveredSource === index ? 'z-20 ring-2 ring-white/40 ring-inset' : 'z-20'}`}
-            style={{
-              left: pct(start - viewStart),
-              width: pct(end - start),
-              transform: movingSource?.index === index ? `translateX(${movingSource.offset}px)` : undefined
-            }}
-          >
-            <span
-              data-testid={`video-name-${index}`}
-              className={`pointer-events-auto absolute top-1 left-1.5 max-w-[calc(100%-2.25rem)] cursor-grab truncate rounded px-1.5 text-[11px] leading-4 text-white active:cursor-grabbing ${movingSource?.index === index ? 'bg-black/80 shadow-lg' : 'bg-black/60'}`}
-              onPointerDown={(e) => startSourceDrag(e, index)}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {source.name}
-            </span>
-            <button
-              data-testid={`remove-video-${index}`}
-              aria-label={t.removeVideo(source.name)}
-              title={t.removeVideo(source.name)}
-              data-shown={hoveredSource === index}
-              className={`pointer-events-auto absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/80 text-white transition-opacity hover:bg-black focus-visible:opacity-100 ${hoveredSource === index ? 'opacity-100' : 'opacity-0'}`}
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemoveSource(index)
+              data-testid={source.missing ? `missing-${index}` : undefined}
+              className={`pointer-events-none absolute inset-y-0 ${movingSource?.index === index ? 'z-30 bg-white/10 ring-2 ring-white ring-inset' : hoveredSource === index ? 'z-20 ring-2 ring-white/40 ring-inset' : 'z-20'}`}
+              style={{
+                left: pct(start - viewStart),
+                width: pct(end - start),
+                transform: movingSource?.index === index ? `translateX(${movingSource.offset}px)` : undefined
               }}
             >
-              <CloseIcon className="size-3" />
-            </button>
-            {source.missing && (
-              <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-center gap-2 px-2 text-xs text-ink-2">
-                <span className="truncate">{t.notFound(source.name)}</span>
-                <button
-                  data-testid={`locate-${index}`}
-                  className="pointer-events-auto h-6 shrink-0 rounded-md bg-surface px-2 font-medium text-ink shadow-sm ring-1 ring-line transition-colors hover:bg-canvas"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onLocateSource(index)
-                  }}
-                >
-                  {t.locate}
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-        {movingSource && movingSource.gap !== movingSource.index && movingSource.gap !== movingSource.index + 1 && (
-          <div
-            data-testid="video-drop-line"
-            className={`pointer-events-none absolute inset-y-0 z-30 w-[3px] rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.4)] ${movingSource.gap === 0 ? '' : movingSource.gap === sources.length ? '-translate-x-full' : '-translate-x-1/2'}`}
-            style={{ left: pct((movingSource.gap < sources.length ? starts[movingSource.gap] : duration) - viewStart) }}
-          />
-        )}
-        {pendingStart !== null && (
-          <PendingClip
-            elapsed={Math.max(0, time - pendingStart)}
-            left={pct(pendingStart - viewStart)}
-            width={pct(Math.max(0, time - pendingStart))}
-            widthPx={viewSpan > 0 ? (Math.max(0, time - pendingStart) / viewSpan) * width : 0}
-            belowNames={stretches.length > 0}
-          />
-        )}
-        <Playhead time={time} now={now} playing={playing} position={(at) => pct(at - viewStart)} />
+              <span
+                data-testid={`video-name-${index}`}
+                className={`pointer-events-auto absolute top-1 left-1.5 max-w-[calc(100%-2.25rem)] cursor-grab truncate rounded px-1.5 text-[11px] leading-4 text-white active:cursor-grabbing ${movingSource?.index === index ? 'bg-black/80 shadow-lg' : 'bg-black/60'}`}
+                onPointerDown={(e) => startSourceDrag(e, index)}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {source.name}
+              </span>
+              <button
+                data-testid={`remove-video-${index}`}
+                aria-label={t.removeVideo(source.name)}
+                title={t.removeVideo(source.name)}
+                data-shown={hoveredSource === index}
+                className={`pointer-events-auto absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/80 text-white transition-[background-color,opacity,transform] duration-150 ease-out hover:bg-black active:scale-[0.97] focus-visible:opacity-100 ${hoveredSource === index ? 'opacity-100' : 'opacity-0'}`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRemoveSource(index)
+                }}
+              >
+                <CloseIcon className="size-3" />
+              </button>
+              {source.missing && (
+                <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-center gap-2 px-2 text-xs text-ink-2">
+                  <span className="truncate">{t.notFound(source.name)}</span>
+                  <button
+                    data-testid={`locate-${index}`}
+                    className="pointer-events-auto h-6 shrink-0 rounded-md bg-surface px-2 font-medium text-ink shadow-sm ring-1 ring-line transition-colors hover:bg-canvas"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onLocateSource(index)
+                    }}
+                  >
+                    {t.locate}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+          {movingSource && movingSource.gap !== movingSource.index && movingSource.gap !== movingSource.index + 1 && (
+            <div
+              data-testid="video-drop-line"
+              className={`pointer-events-none absolute inset-y-0 z-30 w-[3px] rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.4)] ${movingSource.gap === 0 ? '' : movingSource.gap === sources.length ? '-translate-x-full' : '-translate-x-1/2'}`}
+              style={{ left: pct((movingSource.gap < sources.length ? starts[movingSource.gap] : duration) - viewStart) }}
+            />
+          )}
+          {pendingStart !== null && (
+            <PendingClip
+              elapsed={Math.max(0, time - pendingStart)}
+              left={pct(pendingStart - viewStart)}
+              width={pct(Math.max(0, time - pendingStart))}
+              widthPx={viewSpan > 0 ? (Math.max(0, time - pendingStart) / viewSpan) * width : 0}
+              belowNames={stretches.length > 0}
+            />
+          )}
+          <Playhead time={time} now={now} playing={playing} position={(at) => pct(at - viewStart)} />
+        </div>
       </div>
       {onAddVideos && (
         <button
           data-testid="add-videos"
           aria-label={t.addVideos}
           title={t.addVideos}
-          className="grid w-11 shrink-0 place-items-center rounded-lg border border-dashed border-ink-3/50 text-lg text-ink-2 transition-colors hover:border-ink-2 hover:bg-sunken hover:text-ink"
+          className="grid w-11 shrink-0 place-items-center rounded-lg border border-dashed border-ink-3/50 text-lg text-ink-2 transition-[background-color,border-color,color,transform] duration-150 ease-out hover:border-ink-2 hover:bg-sunken hover:text-ink active:scale-[0.97]"
           onClick={onAddVideos}
         >
           +
@@ -531,7 +559,7 @@ function PendingClip({
     <div
       data-testid="pending-clip"
       data-over-limit={over}
-      className={`pointer-events-none absolute inset-y-1.5 rounded-md border border-dashed ${over ? 'border-warn bg-warn-soft' : 'border-accent bg-accent-soft'}`}
+      className={`pointer-events-none absolute inset-y-1.5 rounded-md border-2 border-dashed shadow-[0_0_0_1px_rgb(0_0_0/0.5)] ${over ? 'border-amber-300 bg-amber-300/20' : 'border-white bg-white/20'}`}
       style={{ left, width }}
     >
       <span

@@ -18,6 +18,17 @@ export function viewStartForClip(clip: Clip, duration: number, span: Zoom): numb
   return Math.min(Math.max(0, start), duration - span)
 }
 
+export function steppedZoom(zoom: Zoom, steps: 1 | -1, duration: number): Zoom {
+  const levels = ZOOM_LEVELS.filter((level) => level === null || level < duration)
+  const index = Math.max(0, levels.indexOf(zoom))
+  return levels[Math.min(Math.max(0, index + steps), levels.length - 1)]
+}
+
+export function anchoredViewStart(anchor: number, fraction: number, span: Zoom, duration: number): number {
+  if (span === null || span >= duration) return 0
+  return Math.min(Math.max(0, anchor - fraction * span), duration - span)
+}
+
 export function spacedLabels(positions: number[], minGap: number): boolean[] {
   const shown = positions.map(() => false)
   let last = -Infinity

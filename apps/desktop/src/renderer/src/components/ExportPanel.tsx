@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MAX_CLIP_SECONDS } from '@cuts/core/clips'
 import { FORMATS, type OutputFormat } from '@cuts/core/formats'
 import type { Overlay } from '@cuts/core/overlay'
@@ -49,6 +49,8 @@ type Props = {
   canShare: boolean
 }
 
+const STOP_GUARD_MS = 500
+
 function exportProgress(state: ExportState): { overall: number; finished: number } {
   if (state.status !== 'running') return { overall: 0, finished: 0 }
   return {
@@ -71,6 +73,9 @@ export function ExportPanel(p: Props) {
   const folderName = p.folder?.split(/[\\/]/).filter(Boolean).slice(-2).join('/')
   const exporting = p.state.status === 'running'
   const [menuOpen, setMenuOpen] = useState(false)
+  const [stoppable, setStoppable] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
   const clipsMode = p.positions.length > 0
   const primaryEnabled = clipsMode ? p.canExport : p.canExportFull
   const choosing = p.state.status === 'idle' || p.state.status === 'error'
@@ -80,11 +85,32 @@ export function ExportPanel(p: Props) {
   }
 
   useEffect(() => {
+    if (!exporting) return
+    const timer = setTimeout(() => setStoppable(true), STOP_GUARD_MS)
+    return () => {
+      clearTimeout(timer)
+      setStoppable(false)
+    }
+  }, [exporting])
+
+  useEffect(() => {
     if (!menuOpen) return
+    const items = () => Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role=menuitem]:not(:disabled)') ?? [])
+    items()[0]?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        setMenuOpen(false)
+        menuButtonRef.current?.focus()
+        return
+      }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
       e.stopPropagation()
-      setMenuOpen(false)
+      e.preventDefault()
+      const enabled = items()
+      const step = e.key === 'ArrowDown' ? 1 : -1
+      const index = enabled.indexOf(document.activeElement as HTMLButtonElement)
+      enabled[(index + step + enabled.length) % enabled.length]?.focus()
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
@@ -154,7 +180,7 @@ export function ExportPanel(p: Props) {
                   data-testid="overlay-thumb"
                   src={mediaUrl(p.overlay.path)}
                   alt=""
-                  className="size-5 shrink-0 rounded-sm object-contain [background:repeating-conic-gradient(#d4d4d8_0%_25%,#fff_0%_50%)_50%/8px_8px]"
+                  className="size-5 shrink-0 rounded-sm object-contain [background:repeating-conic-gradient(var(--sunken)_0%_25%,var(--surface)_0%_50%)_50%/8px_8px]"
                 />
                 <span data-testid="overlay-name" className="truncate">
                   {p.overlay.name}
@@ -201,67 +227,71 @@ export function ExportPanel(p: Props) {
           </button>
         )}
         <div className="relative flex flex-1">
-          <button
-            data-testid="export"
-            aria-label={p.state.status === 'running' ? `${t.stopExport} (${runningLabel(p.state.progress)})` : undefined}
-            className={`group relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition duration-150 ease-out active:scale-[0.97] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3 ${choosing ? 'rounded-r-none' : ''}`}
-            disabled={!primaryEnabled && p.state.status !== 'running'}
-            onClick={() =>
-              p.state.status === 'running'
-                ? p.onCancel()
-                : p.state.status === 'done'
-                  ? p.canShare
-                    ? p.onShare(p.state.files)
-                    : p.onReveal(p.state.files[0])
-                  : clipsMode
-                    ? p.onExport()
-                    : p.onExportFull()
-            }
-          >
-          {p.state.status === 'running' ? (
-              <>
-                <span
-                  data-testid="export-progress"
-                  className="absolute inset-0 origin-left bg-on-accent/20 transition-transform group-hover:opacity-0 group-focus-visible:opacity-0"
-                  style={{ transform: `scaleX(${exportProgress(p.state).overall})` }}
-                />
-                <span className="relative grid">
-                  <span className="col-start-1 row-start-1 group-hover:invisible group-focus-visible:invisible">
-                    {runningLabel(p.state.progress)}
-                  </span>
-                  <span
-                    data-testid="export-stop-label"
-                    className="invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 group-hover:visible group-focus-visible:visible"
-                  >
-                    <StopIcon data-testid="export-stop-icon" />
-                    {t.stopExport}
-                  </span>
-                </span>
-              </>
-            ) : (
-              <span className="relative">
-                {p.state.status === 'done' ? (p.canShare ? t.share : t.showInFolder) : clipsMode ? exportLabel(p.positions, p.partial) : t.exportFull}
-              </span>
-            )}
-          </button>
-          {choosing && (
+          <div className="flex flex-1 transition-transform duration-150 ease-out active:scale-[0.97]">
             <button
-              data-testid="export-menu"
-              aria-label={t.exportOptions}
-              title={t.exportOptions}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              className="grid h-10 w-9 place-items-center rounded-r-xl border-l border-on-accent/20 bg-accent text-on-accent transition-colors duration-150 ease-out hover:bg-accent-hover disabled:cursor-not-allowed disabled:border-ink-3/20 disabled:bg-sunken disabled:text-ink-3"
-              disabled={!p.canExport && !p.canExportFull}
-              onClick={() => setMenuOpen(!menuOpen)}
+              data-testid="export"
+              aria-label={p.state.status === 'running' ? `${t.stopExport} (${runningLabel(p.state.progress)})` : undefined}
+              className={`group relative h-10 flex-1 overflow-hidden rounded-xl bg-accent text-sm font-medium text-on-accent transition-colors duration-150 ease-out hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3 ${choosing ? 'rounded-r-none' : ''}`}
+              disabled={!primaryEnabled && p.state.status !== 'running'}
+              onClick={() =>
+                p.state.status === 'running'
+                  ? stoppable && p.onCancel()
+                  : p.state.status === 'done'
+                    ? p.canShare
+                      ? p.onShare(p.state.files)
+                      : p.onReveal(p.state.files[0])
+                    : clipsMode
+                      ? p.onExport()
+                      : p.onExportFull()
+              }
             >
-              <ChevronIcon className="size-3.5" />
+            {p.state.status === 'running' ? (
+                <>
+                  <span
+                    data-testid="export-progress"
+                    className={`absolute inset-0 origin-left bg-on-accent/20 transition-transform ${stoppable ? 'group-hover:opacity-0 group-focus-visible:opacity-0' : ''}`}
+                    style={{ transform: `scaleX(${exportProgress(p.state).overall})` }}
+                  />
+                  <span className="relative grid">
+                    <span className={`col-start-1 row-start-1 ${stoppable ? 'group-hover:invisible group-focus-visible:invisible' : ''}`}>
+                      {runningLabel(p.state.progress)}
+                    </span>
+                    <span
+                      data-testid="export-stop-label"
+                      className={`invisible col-start-1 row-start-1 flex items-center justify-center gap-1.5 ${stoppable ? 'group-hover:visible group-focus-visible:visible' : ''}`}
+                    >
+                      <StopIcon data-testid="export-stop-icon" />
+                      {t.stopExport}
+                    </span>
+                  </span>
+                </>
+              ) : (
+                <span className="relative">
+                  {p.state.status === 'done' ? (p.canShare ? t.share : t.showInFolder) : clipsMode ? exportLabel(p.positions, p.partial) : t.exportFull}
+                </span>
+              )}
             </button>
-          )}
+            {choosing && (
+              <button
+                ref={menuButtonRef}
+                data-testid="export-menu"
+                aria-label={t.exportOptions}
+                title={t.exportOptions}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="grid h-10 w-9 place-items-center rounded-r-xl border-l border-on-accent/20 bg-accent text-on-accent transition-colors duration-150 ease-out hover:bg-accent-hover disabled:cursor-not-allowed disabled:border-ink-3/20 disabled:bg-sunken disabled:text-ink-3"
+                disabled={!p.canExport && !p.canExportFull}
+                onClick={() => setMenuOpen(!menuOpen)}
+              >
+                <ChevronIcon className="size-3.5" />
+              </button>
+            )}
+          </div>
           {choosing && menuOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
               <div
+                ref={menuRef}
                 role="menu"
                 className="absolute right-0 bottom-full z-50 mb-2 flex w-64 origin-bottom-right flex-col rounded-xl bg-surface p-1 text-sm shadow-lg ring-1 ring-ink-3/20 transition duration-150 ease-out starting:scale-95 starting:opacity-0 motion-reduce:starting:scale-100"
               >
@@ -477,7 +507,7 @@ function RemoveButton({ testId, label, disabled, onClick }: { testId: string; la
       data-testid={testId}
       aria-label={label}
       title={label}
-      className="absolute top-1 right-1 grid size-6 place-items-center rounded-md text-ink-3 transition duration-150 ease-out hover:bg-ink-3/15 hover:text-ink"
+      className="absolute top-1 right-1 grid size-6 place-items-center rounded-md text-ink-3 transition duration-150 ease-out hover:bg-ink-3/15 hover:text-ink active:scale-[0.97]"
       disabled={disabled}
       onClick={onClick}
     >

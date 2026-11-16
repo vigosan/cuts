@@ -29,7 +29,7 @@ export function ClipControls({ format, hasClips, scope, settings, mixed, onChang
               data-testid={`framing-${framing}`}
               aria-pressed={!mixed.framing && settings.framing === framing}
               title={framing === 'crop' ? t.framingCropHint : t.framingFitHint}
-              className={`flex-1 rounded-md px-2 py-1 transition-colors ${!mixed.framing && settings.framing === framing ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink'}`}
+              className={`flex-1 rounded-md px-2 py-1 transition-colors ${!mixed.framing && settings.framing === framing ? 'bg-surface font-medium text-ink shadow-sm' : 'text-ink-2 hover:text-ink active:bg-ink-3/15'}`}
               onClick={() => onChange({ framing })}
             >
               {framing === 'crop' ? t.framingCrop : t.framingFit}
