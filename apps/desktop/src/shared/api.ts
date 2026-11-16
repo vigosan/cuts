@@ -92,6 +92,9 @@ export type Api = {
   frameRate(path: string): Promise<number>
   recentVideos(): Promise<RecentVideo[]>
   openRecent(path: string): Promise<OpenResult | null>
+  forgetRecent(path: string): Promise<void>
+  showRecentMenu(path: string): void
+  onRecentRemoved(callback: (path: string) => void): () => void
   checkSources(paths: string[]): Promise<boolean[]>
   locateVideo(duration: number): Promise<{ path: string } | 'mismatch' | null>
 }

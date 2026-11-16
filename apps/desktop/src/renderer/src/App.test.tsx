@@ -61,6 +61,12 @@ function makeApi(): Api {
     restartToUpdate: vi.fn(),
     recentVideos: vi.fn(async () => []),
     openRecent: vi.fn(async () => null),
+    forgetRecent: vi.fn(async () => {}),
+    showRecentMenu: vi.fn(),
+    onRecentRemoved: vi.fn((callback: (path: string) => void) => {
+      recentRemoved = callback
+      return () => {}
+    }),
     checkSources: vi.fn(async (paths: string[]) => paths.map(() => true)),
     locateVideo: vi.fn(async () => null)
   }
@@ -73,6 +79,7 @@ let menuExportFrame: () => void
 let menuShortcuts: () => void
 let menuCommand: (command: 'undo' | 'redo') => void
 let updateReady: (version: string) => void
+let recentRemoved: (path: string) => void
 
 beforeEach(() => {
   localStorage.clear()
@@ -167,6 +174,72 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByTestId('recent-video-1')).toHaveTextContent('set.mov'))
     expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument()
     expect(screen.queryByTestId('video')).not.toBeInTheDocument()
+  })
+
+  describe('removing a recent', () => {
+    const twoRecents = () =>
+      vi.mocked(api.recentVideos).mockResolvedValue([
+        { path: '/Users/vicent/Movies/test.mov', name: 'test.mov', folder: 'Movies', openedAt: Date.now(), clips: 0, poster: null },
+        { path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2, poster: null }
+      ])
+    const swipe = (row: HTMLElement, ...deltas: number[]) => deltas.forEach((deltaX) => fireEvent.wheel(row, { deltaX, deltaY: 0 }))
+
+    it('removes a recent with a long two-finger swipe, like a message in Mail, so a test recording stops cluttering the list', async () => {
+      twoRecents()
+      render(<App />)
+      swipe(await screen.findByTestId('recent-video-1'), 80, 80, 80)
+      await waitFor(() => expect(api.forgetRecent).toHaveBeenCalledWith('/Users/vicent/Movies/test.mov'))
+      await waitFor(() => expect(screen.getByTestId('recent-video-1')).toHaveTextContent('set.mov'))
+      expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument()
+    })
+
+    it('stops on a Remove button after a short swipe, so a hesitant swipe never deletes on its own', async () => {
+      twoRecents()
+      render(<App />)
+      swipe(await screen.findByTestId('recent-video-1'), 30, 30)
+      const remove = screen.getByTestId('recent-remove-1')
+      await waitFor(() => expect(remove).toBeVisible())
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      expect(api.forgetRecent).not.toHaveBeenCalled()
+      expect(remove).toBeVisible()
+      expect(remove).toHaveTextContent(t.removeRecent)
+      await userEvent.click(remove)
+      expect(api.forgetRecent).toHaveBeenCalledWith('/Users/vicent/Movies/test.mov')
+      await waitFor(() => expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument())
+    })
+
+    it('closes the Remove button when the row is clicked instead of opening the video, so backing out is safe', async () => {
+      twoRecents()
+      render(<App />)
+      const row = await screen.findByTestId('recent-video-1')
+      swipe(row, 30, 30)
+      await waitFor(() => expect(screen.getByTestId('recent-remove-1')).toBeVisible())
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      await userEvent.click(row)
+      expect(api.openRecent).not.toHaveBeenCalled()
+      await waitFor(() => expect(screen.getByTestId('recent-remove-1')).not.toBeVisible())
+    })
+
+    it('ignores vertical scrolling and a tiny sideways nudge, so scrolling the list never arms a delete', async () => {
+      twoRecents()
+      render(<App />)
+      const row = await screen.findByTestId('recent-video-1')
+      fireEvent.wheel(row, { deltaX: 5, deltaY: 120 })
+      swipe(row, 10)
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      expect(screen.getByTestId('recent-remove-1')).not.toBeVisible()
+      expect(api.forgetRecent).not.toHaveBeenCalled()
+    })
+
+    it('offers Remove from Recents on right-click, for anyone who does not know the swipe', async () => {
+      twoRecents()
+      render(<App />)
+      fireEvent.contextMenu(await screen.findByTestId('recent-video-1'))
+      expect(api.showRecentMenu).toHaveBeenCalledWith('/Users/vicent/Movies/test.mov')
+      act(() => recentRemoved('/Users/vicent/Movies/test.mov'))
+      await waitFor(() => expect(screen.getByTestId('recent-video-1')).toHaveTextContent('set.mov'))
+      expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument()
+    })
   })
 
   it('greets with the app, its one action and its shortcut, and says the whole window takes a dropped video', async () => {
@@ -399,7 +472,7 @@ describe('App', () => {
     expect(vi.mocked(api.exportClips).mock.calls[0][0].clips[0]).toMatchObject({ start: 100.18, end: 130.4 })
   })
 
-  it('pulls a dragged edge onto the nearest kick, and leaves it free while Option is held', async () => {
+  it('trims a dragged edge exactly where it is dragged, even next to a kick, so a trim can always be fine-tuned', async () => {
     vi.mocked(api.waveform).mockResolvedValue(kicksEveryHalfSecond())
     render(<App />)
     const video = await loadVideo()
@@ -409,10 +482,23 @@ describe('App', () => {
     timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
     fireEvent.pointerDown(screen.getByTestId('clip-handle-end-1'), { clientX: 1100 })
     fireEvent.pointerMove(window, { clientX: 1059.3 })
-    expect(video.currentTime).toBe(1059.5)
-    fireEvent.pointerMove(window, { clientX: 1059.3, altKey: true })
     expect(video.currentTime).toBeCloseTo(1059.3)
     fireEvent.pointerUp(window, { clientX: 1059.3 })
+  })
+
+  it('shows how long the clip is while an edge is held or dragged, so a trim can aim for a length', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 1000, 1030)
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 4880, top: 0, height: 32, right: 4880, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    expect(screen.queryByTestId('clip-trim-duration-1')).not.toBeInTheDocument()
+    fireEvent.pointerDown(screen.getByTestId('clip-handle-start-1'), { clientX: 1000 })
+    expect(screen.getByTestId('clip-trim-duration-1')).toHaveTextContent('0:30')
+    fireEvent.pointerMove(window, { clientX: 1010 })
+    expect(screen.getByTestId('clip-trim-duration-1')).toHaveTextContent('0:20')
+    fireEvent.pointerUp(window, { clientX: 1010 })
+    expect(screen.queryByTestId('clip-trim-duration-1')).not.toBeInTheDocument()
   })
 
   it('marks with the I and O keys like in Final Cut', async () => {
@@ -703,6 +789,40 @@ describe('App', () => {
     fireEvent.wheel(timeline, { deltaX: 0, deltaY: 600 })
     expect(screen.getByTestId('view-start')).toHaveTextContent('00:15:10')
     expect(video.currentTime).toBe(1000)
+  })
+
+  it('keeps a panned timeline where it was put while the video plays, so another part can be looked at without stopping', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 1000)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 1200, top: 0, height: 32, right: 1200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent(video, new Event('play'))
+    fireEvent.wheel(timeline, { deltaX: 2400, deltaY: 0 })
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:19:40')
+    seek(video, 1001)
+    seek(video, 1002)
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:19:40')
+    fireEvent(video, new Event('pause'))
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:19:40')
+    seek(video, 1500)
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:24:00')
+  })
+
+  it('follows the playhead again once it plays into a panned view, so it never runs off screen unseen', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    seek(video, 1000)
+    await userEvent.click(screen.getByTestId('zoom-120'))
+    const timeline = screen.getByTestId('timeline')
+    timeline.getBoundingClientRect = () => ({ left: 0, width: 1200, top: 0, height: 32, right: 1200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent(video, new Event('play'))
+    fireEvent.wheel(timeline, { deltaX: 1200, deltaY: 0 })
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:17:40')
+    seek(video, 1070)
+    seek(video, 1190)
+    expect(screen.getByTestId('view-start')).toHaveTextContent('00:18:50')
   })
 
   it('zooms the timeline to 2 minutes around the playhead for second-accurate dragging', async () => {
@@ -2975,6 +3095,45 @@ describe('Several videos as one session', () => {
       render(<App />)
       await userEvent.click(screen.getByTestId('open-video'))
       expect(screen.queryByTestId('add-videos')).not.toBeInTheDocument()
+    })
+
+    it('moves a video to where its name is dragged on the timeline, taking its clips along, for files whose dates say nothing about the set order', async () => {
+      const video = await openJoined()
+      await markClip(video, 105, 110)
+      timelineOneSecondPerPixel()
+      vi.mocked(api.openVideos).mockClear()
+      const name = screen.getByTestId('video-name-2')
+      fireEvent.pointerDown(name, { clientX: 105 })
+      fireEvent.pointerMove(window, { clientX: 40 })
+      expect(screen.getByTestId('video-drop-line')).toBeInTheDocument()
+      fireEvent.pointerMove(window, { clientX: 5 })
+      fireEvent.pointerUp(window, { clientX: 5 })
+      expect(api.openVideos).toHaveBeenLastCalledWith(
+        [SOURCES[2].path, SOURCES[0].path, SOURCES[1].path],
+        JOINED,
+        expect.objectContaining({ sources: SOURCES, clips: [expect.objectContaining({ start: 105, end: 110 })] })
+      )
+      expect(screen.queryByTestId('video-drop-line')).not.toBeInTheDocument()
+    })
+
+    it('moves a video later in the set when its name is dragged past the next one', async () => {
+      await openJoined()
+      timelineOneSecondPerPixel()
+      vi.mocked(api.openVideos).mockClear()
+      fireEvent.pointerDown(screen.getByTestId('video-name-0'), { clientX: 10 })
+      fireEvent.pointerMove(window, { clientX: 90 })
+      fireEvent.pointerUp(window, { clientX: 90 })
+      expect(api.openVideos).toHaveBeenLastCalledWith([SOURCES[1].path, SOURCES[0].path, SOURCES[2].path], JOINED, expect.anything())
+    })
+
+    it('leaves the order alone when a name is dropped back where it was, so grabbing a label by mistake reopens nothing', async () => {
+      await openJoined()
+      timelineOneSecondPerPixel()
+      vi.mocked(api.openVideos).mockClear()
+      fireEvent.pointerDown(screen.getByTestId('video-name-1'), { clientX: 70 })
+      fireEvent.pointerMove(window, { clientX: 85 })
+      fireEvent.pointerUp(window, { clientX: 85 })
+      expect(api.openVideos).not.toHaveBeenCalled()
     })
 
     it('removes the middle video with its clips and keeps the other clips in their carousel order, settings and shifted times', async () => {

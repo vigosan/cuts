@@ -82,6 +82,15 @@ describe('openVideos', () => {
     expect(saved.get(result.path)?.clips).toEqual(placed)
   })
 
+  it('lays the videos out in the order they were dragged to, even against their dates, and moves each clip with its video', async () => {
+    const { deps, saved } = fakeDeps({ [A]: info(10), [B]: info(5) }, {}, { [A]: 1000, [B]: 2000 })
+    const session = { ...carry, clips: [{ id: 'a', start: 2, end: 4 }, { id: 'b', start: 11, end: 13 }], sources: [source(A, 10, { recordedAt: 1000 }), source(B, 5, { recordedAt: 2000 })] }
+    const result = await openVideos([B, A], id, deps, session)
+    expect(result.sources.map((video) => video.path)).toEqual([B, A])
+    expect(result.carried?.clips).toEqual([{ id: 'a', start: 7, end: 9 }, { id: 'b', start: 1, end: 3 }])
+    expect(saved.get(result.path)?.sources?.map((video) => video.path)).toEqual([B, A])
+  })
+
   it('moves the clips of a single video when + adds one recorded before it', async () => {
     const { deps } = fakeDeps({ [A]: info(10), [B]: info(5) }, {}, { [A]: 2000, [B]: 1000 })
     const result = await openVideos([A, B], A, deps, { ...carry, clips: [{ id: 'a', start: 2, end: 4 }] })

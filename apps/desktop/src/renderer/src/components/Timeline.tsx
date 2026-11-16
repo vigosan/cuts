@@ -36,7 +36,6 @@ type Props = {
   thumbnails: boolean
   peaks: Float32Array | null
   analysingAudio: boolean
-  onBeat: (time: number) => number
   duration: number
   viewStart: number
   viewSpan: number
@@ -55,6 +54,7 @@ type Props = {
   onPan: (viewStart: number) => void
   sources: Source[]
   onRemoveSource: (index: number) => void
+  onMoveSource: (index: number, gap: number) => void
   onLocateSource: (index: number) => void
   onAddVideos: (() => void) | null
 }
@@ -64,7 +64,6 @@ export function Timeline({
   thumbnails,
   peaks,
   analysingAudio,
-  onBeat,
   duration,
   viewStart,
   viewSpan,
@@ -83,6 +82,7 @@ export function Timeline({
   onPan,
   sources,
   onRemoveSource,
+  onMoveSource,
   onLocateSource,
   onAddVideos
 }: Props) {
@@ -91,6 +91,8 @@ export function Timeline({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [width, setWidth] = useState(0)
   const [hoveredSource, setHoveredSource] = useState<number | null>(null)
+  const [trimming, setTrimming] = useState<string | null>(null)
+  const [movingSource, setMovingSource] = useState<{ index: number; offset: number; gap: number } | null>(null)
   const tiles = thumbnails ? filmstripTiles(viewStart, duration > 0 ? viewSpan : 0, width, TILE_WIDTH_PX, duration) : []
   const tileFrames = tiles.map((tile) => {
     if (sources.length === 0) return { tile, request: { path: videoPath, time: tile.time } }
@@ -152,6 +154,7 @@ export function Timeline({
     e.preventDefault()
     if (e.shiftKey || e.metaKey || e.ctrlKey) return onSelect(clip, e.shiftKey ? 'range' : 'toggle')
     onSelect(clip)
+    if (mode !== 'move') setTrimming(clip.id)
     const bar = e.currentTarget.closest('[data-testid=timeline]')!.getBoundingClientRect()
     const originX = e.clientX
     const bounds = partBoundsAt(sources, clip.start, duration)
@@ -160,15 +163,14 @@ export function Timeline({
       if (!moved && Math.abs(move.clientX - originX) < DRAG_THRESHOLD_PX) return
       if (!moved) onDragStart()
       moved = true
-      const dragged = dragClip(clip, mode, ((move.clientX - originX) / bar.width) * viewSpan, bounds.end, bounds.start)
-      const next =
-        mode === 'move' || move.altKey ? dragged : dragClip(clip, mode, onBeat(dragged[mode]) - clip[mode], bounds.end, bounds.start)
+      const next = dragClip(clip, mode, ((move.clientX - originX) / bar.width) * viewSpan, bounds.end, bounds.start)
       onClipChange(next)
       onSeek(mode === 'end' ? next.end : next.start)
     }
     const onUp = (up: PointerEvent) => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      setTrimming(null)
       if (!moved) onSeek(viewStart + ((up.clientX - bar.left) / bar.width) * viewSpan)
       justDragged.current = true
       setTimeout(() => {
@@ -195,6 +197,36 @@ export function Timeline({
       setTimeout(() => {
         justDragged.current = false
       }, 0)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const startSourceDrag = (e: ReactPointerEvent<HTMLElement>, index: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+    const bar = e.currentTarget.closest('[data-testid=timeline]')!.getBoundingClientRect()
+    const originX = e.clientX
+    const middles = sources.map((source, i) => starts[i] + source.duration / 2)
+    let moved = false
+    let gap = index
+    const onMove = (move: PointerEvent) => {
+      if (!moved && Math.abs(move.clientX - originX) < DRAG_THRESHOLD_PX) return
+      moved = true
+      const at = viewStart + ((move.clientX - bar.left) / bar.width) * viewSpan
+      gap = middles.filter((middle) => middle < at).length
+      setMovingSource({ index, offset: move.clientX - originX, gap })
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      setMovingSource(null)
+      if (!moved) return
+      justDragged.current = true
+      setTimeout(() => {
+        justDragged.current = false
+      }, 0)
+      if (gap !== index && gap !== index + 1) onMoveSource(index, gap)
     }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
@@ -375,6 +407,14 @@ export function Timeline({
                   {index + 1}
                 </span>
               )}
+              {trimming === clip.id && (
+                <span
+                  data-testid={`clip-trim-duration-${index + 1}`}
+                  className={`pointer-events-none absolute right-1 rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${stretches.length > 0 ? 'top-6' : 'top-1'}`}
+                >
+                  {formatDuration(clip.end - clip.start)}
+                </span>
+              )}
               <div
                 data-testid={`clip-handle-start-${index + 1}`}
                 className={`${handle} -left-1.5 after:left-1`}
@@ -392,12 +432,18 @@ export function Timeline({
           <div
             key={source.path}
             data-testid={source.missing ? `missing-${index}` : undefined}
-            className={`pointer-events-none absolute inset-y-0 z-20 ${hoveredSource === index ? 'ring-2 ring-white/40 ring-inset' : ''}`}
-            style={{ left: pct(start - viewStart), width: pct(end - start) }}
+            className={`pointer-events-none absolute inset-y-0 ${movingSource?.index === index ? 'z-30 bg-white/10 ring-2 ring-white ring-inset' : hoveredSource === index ? 'z-20 ring-2 ring-white/40 ring-inset' : 'z-20'}`}
+            style={{
+              left: pct(start - viewStart),
+              width: pct(end - start),
+              transform: movingSource?.index === index ? `translateX(${movingSource.offset}px)` : undefined
+            }}
           >
             <span
               data-testid={`video-name-${index}`}
-              className="absolute top-1 left-1.5 max-w-[calc(100%-2.25rem)] truncate rounded bg-black/60 px-1.5 text-[11px] leading-4 text-white"
+              className={`pointer-events-auto absolute top-1 left-1.5 max-w-[calc(100%-2.25rem)] cursor-grab truncate rounded px-1.5 text-[11px] leading-4 text-white active:cursor-grabbing ${movingSource?.index === index ? 'bg-black/80 shadow-lg' : 'bg-black/60'}`}
+              onPointerDown={(e) => startSourceDrag(e, index)}
+              onClick={(e) => e.stopPropagation()}
             >
               {source.name}
             </span>
@@ -433,12 +479,20 @@ export function Timeline({
             )}
           </div>
         ))}
+        {movingSource && movingSource.gap !== movingSource.index && movingSource.gap !== movingSource.index + 1 && (
+          <div
+            data-testid="video-drop-line"
+            className={`pointer-events-none absolute inset-y-0 z-30 w-[3px] rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.4)] ${movingSource.gap === 0 ? '' : movingSource.gap === sources.length ? '-translate-x-full' : '-translate-x-1/2'}`}
+            style={{ left: pct((movingSource.gap < sources.length ? starts[movingSource.gap] : duration) - viewStart) }}
+          />
+        )}
         {pendingStart !== null && (
           <PendingClip
             elapsed={Math.max(0, time - pendingStart)}
             left={pct(pendingStart - viewStart)}
             width={pct(Math.max(0, time - pendingStart))}
             widthPx={viewSpan > 0 ? (Math.max(0, time - pendingStart) / viewSpan) * width : 0}
+            belowNames={stretches.length > 0}
           />
         )}
         <Playhead time={time} now={now} playing={playing} position={(at) => pct(at - viewStart)} />
@@ -458,7 +512,19 @@ export function Timeline({
   )
 }
 
-function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left: string; width: string; widthPx: number }) {
+function PendingClip({
+  elapsed,
+  left,
+  width,
+  widthPx,
+  belowNames
+}: {
+  elapsed: number
+  left: string
+  width: string
+  widthPx: number
+  belowNames: boolean
+}) {
   const over = elapsed > MAX_CLIP_SECONDS
   const outside = widthPx < PENDING_LABEL_PX
   return (
@@ -471,7 +537,7 @@ function PendingClip({ elapsed, left, width, widthPx }: { elapsed: number; left:
       <span
         data-testid="pending-clip-time"
         data-outside={outside}
-        className={`absolute top-1 rounded px-1 text-[11px] leading-4 font-semibold whitespace-nowrap text-white tabular-nums ${over ? 'bg-warn' : 'bg-accent'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
+        className={`absolute rounded bg-black/60 px-1 text-[11px] leading-4 font-semibold whitespace-nowrap tabular-nums ${over ? 'text-amber-300' : 'text-white'} ${belowNames ? 'top-6' : 'top-1'} ${outside ? 'left-[calc(100%+6px)]' : 'right-1'}`}
       >
         {formatDuration(elapsed)}
       </span>

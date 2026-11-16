@@ -67,7 +67,8 @@ async function openSession(paths: string[], deps: OpenDeps, carry?: Session): Pr
   const order = keepSaved ? saved.map((source) => source.path) : paths
   const known = (path: string) => saved?.find((source) => source.path === path) ?? carry?.sources?.find((source) => source.path === path)
   const probed = await Promise.all(order.map((path) => probe(path, known(path), deps)))
-  const sources = keepSaved ? probed : byRecording(probed)
+  const rearranged = carry?.sources !== undefined && sameSet(carry.sources.map((source) => source.path), paths)
+  const sources = keepSaved || rearranged ? probed : byRecording(probed)
   if (session || carry) return { ok: true, path: id, sources }
   const moved = (await deps.savedSessions()).find((old) => sameVideos(old.sources, sources))
   const previous = moved?.sources

@@ -386,6 +386,17 @@ app.whenReady().then(() => {
     return open([path], null)
   })
 
+  ipcMain.handle('forget-recent', (_event, path: string) => forgetRecent(recentsFile, path))
+  ipcMain.on('recent-menu', (event, path: string) => {
+    const remove = async () => {
+      await forgetRecent(recentsFile, path)
+      event.sender.send('recent-removed', path)
+    }
+    Menu.buildFromTemplate([{ label: t.menuRemoveRecent, click: () => void remove() }]).popup({
+      window: BrowserWindow.fromWebContents(event.sender) ?? undefined
+    })
+  })
+
   ipcMain.handle('movies-dir', () => realpath(app.getPath('videos')).catch(() => app.getPath('videos')))
 
   ipcMain.on('share', (event, files: string[]) => {

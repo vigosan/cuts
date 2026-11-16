@@ -65,6 +65,13 @@ const api: Api = {
   restartToUpdate: () => ipcRenderer.send('restart-to-update'),
   recentVideos: () => ipcRenderer.invoke('recent-videos'),
   openRecent: (path) => ipcRenderer.invoke('open-recent', path),
+  forgetRecent: (path) => ipcRenderer.invoke('forget-recent', path),
+  showRecentMenu: (path) => ipcRenderer.send('recent-menu', path),
+  onRecentRemoved: (callback) => {
+    const listener = (_event: IpcRendererEvent, path: string) => callback(path)
+    ipcRenderer.on('recent-removed', listener)
+    return () => ipcRenderer.removeListener('recent-removed', listener)
+  },
   checkSources: (paths) => ipcRenderer.invoke('check-sources', paths),
   locateVideo: (duration) => ipcRenderer.invoke('locate-video', duration)
 }

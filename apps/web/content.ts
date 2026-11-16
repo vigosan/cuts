@@ -86,7 +86,7 @@ export const content = {
           title: "Mark",
           items: [
             "Mark clips while you listen with [I] and [O]. Play or pause with [Space].",
-            "Every mark and dragged edge lands on the nearest kick. Hold [⌥] (Alt on Windows and Linux) to cut exactly where you are.",
+            "Every mark lands on the nearest kick. Hold [⌥] (Alt on Windows and Linux) to mark exactly where you are. A dragged edge stays exactly where you leave it.",
             "Split the clip under the playhead in two with [S].",
             "Step through the clips with [↑] and [↓], and move the start or end of the selected one to the playhead with [⇧I] and [⇧O].",
             "Clips up to 59 seconds are carousel-ready. Longer ones are allowed for regular posts.",
@@ -281,7 +281,7 @@ export const content = {
           title: "Marcar",
           items: [
             "Marca clips mientras escuchas con [I] y [O]. Reproduce o pausa con [Espacio].",
-            "Cada marca y cada borde que arrastras cae en el golpe más cercano. Mantén [⌥] (Alt en Windows y Linux) para cortar justo donde estás.",
+            "Cada marca cae en el golpe más cercano. Mantén [⌥] (Alt en Windows y Linux) para marcar justo donde estás. Un borde que arrastras se queda justo donde lo sueltas.",
             "Parte en dos el clip bajo el cursor con [S].",
             "Recorre los clips con [↑] y [↓], y lleva el inicio o el fin del seleccionado al cursor con [⇧I] y [⇧O].",
             "Los clips de hasta 59 segundos valen para carrusel. Los más largos, para publicaciones normales.",

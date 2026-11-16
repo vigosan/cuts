@@ -126,10 +126,13 @@ export function App() {
   const [suggesting, setSuggesting] = useState(false)
   const [panned, setPanned] = useState<{ time: number; zoom: Zoom } | null>(null)
 
-  const keepPanned = panned?.time === time && panned.zoom === zoom
+  const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
+  const playheadShown = time >= viewStart && time <= viewStart + viewSpan
+  const keepPanned = panned !== null && panned.zoom === zoom && (panned.time === time || (playing && !playheadShown))
+  if (keepPanned && panned.time !== time) setPanned({ time, zoom })
+  if (panned && !keepPanned) setPanned(null)
   const currentViewStart = keepPanned ? viewStart : nextViewStart(viewStart, time, duration, zoom)
   if (currentViewStart !== viewStart) setViewStart(currentViewStart)
-  const viewSpan = zoom === null ? duration : Math.min(zoom, duration)
 
   const parts = sources.length > 0 ? sources : [{ path: videoPath ?? '', duration }]
   const clock = useSessionClock(videoRef, parts)
@@ -549,6 +552,14 @@ export function App() {
     )
   }
 
+  const moveSource = (index: number, gap: number) => {
+    if (exporting || !videoPath) return
+    const paths = sources.map((source) => source.path)
+    const [moved] = paths.splice(index, 1)
+    paths.splice(gap > index ? gap - 1 : gap, 0, moved)
+    void openPaths(paths, videoPath, { clips, clipSettings, defaultSettings, format, baseName, sources })
+  }
+
   const addVideos = async () => {
     if (exporting || !videoPath) return
     const chosen = (await window.api.openVideo())?.filter((path) => mediaKind(path) !== 'audio')
@@ -598,8 +609,14 @@ export function App() {
   const openRecent = async (path: string) => {
     const result = await window.api.openRecent(path)
     if (result) load(result)
-    else setRecents((current) => current.filter((recent) => recent.path !== path))
+    else dropRecent(path)
   }
+  const dropRecent = (path: string) => setRecents((current) => current.filter((recent) => recent.path !== path))
+  const removeRecent = (path: string) => {
+    dropRecent(path)
+    void window.api.forgetRecent(path)
+  }
+  useEffect(() => window.api.onRecentRemoved(dropRecent), [])
 
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
@@ -708,7 +725,12 @@ export function App() {
           </section>
           {recents.length > 0 && (
             <aside className="flex w-[22rem] shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
-              <RecentVideos recents={recents} onOpen={(path) => void openRecent(path)} />
+              <RecentVideos
+                recents={recents}
+                onOpen={(path) => void openRecent(path)}
+                onRemove={removeRecent}
+                onMenu={window.api.showRecentMenu}
+              />
             </aside>
           )}
         </main>
@@ -925,7 +947,6 @@ export function App() {
                 thumbnails={!isAudio}
                 peaks={peaks}
                 analysingAudio={analysing}
-                onBeat={onBeat}
                 duration={duration}
                 viewStart={currentViewStart}
                 viewSpan={viewSpan}
@@ -947,6 +968,7 @@ export function App() {
                 }}
                 sources={sources}
                 onRemoveSource={removeSource}
+                onMoveSource={moveSource}
                 onLocateSource={(index) => void locateSource(index)}
                 onAddVideos={isAudio ? null : () => void addVideos()}
               />
