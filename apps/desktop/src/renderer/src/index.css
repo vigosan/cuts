@@ -19,6 +19,7 @@
   --warn: #8a6a1f;
   --warn-soft: rgb(138 106 31 / 0.14);
   --ok: #3d7a50;
+  --danger: #ff3b30;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,6 +38,7 @@
     --warn: #d4ad55;
     --warn-soft: rgb(212 173 85 / 0.16);
     --ok: #6fbf8a;
+    --danger: #ff453a;
   }
 }
 
@@ -55,6 +57,7 @@
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-ok: var(--ok);
+  --color-danger: var(--danger);
 }
 
 @keyframes countdown {

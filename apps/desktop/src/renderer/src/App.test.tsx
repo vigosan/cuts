@@ -61,6 +61,12 @@ function makeApi(): Api {
     restartToUpdate: vi.fn(),
     recentVideos: vi.fn(async () => []),
     openRecent: vi.fn(async () => null),
+    forgetRecent: vi.fn(async () => {}),
+    showRecentMenu: vi.fn(),
+    onRecentRemoved: vi.fn((callback: (path: string) => void) => {
+      recentRemoved = callback
+      return () => {}
+    }),
     checkSources: vi.fn(async (paths: string[]) => paths.map(() => true)),
     locateVideo: vi.fn(async () => null)
   }
@@ -73,6 +79,7 @@ let menuExportFrame: () => void
 let menuShortcuts: () => void
 let menuCommand: (command: 'undo' | 'redo') => void
 let updateReady: (version: string) => void
+let recentRemoved: (path: string) => void
 
 beforeEach(() => {
   localStorage.clear()
@@ -167,6 +174,72 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByTestId('recent-video-1')).toHaveTextContent('set.mov'))
     expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument()
     expect(screen.queryByTestId('video')).not.toBeInTheDocument()
+  })
+
+  describe('removing a recent', () => {
+    const twoRecents = () =>
+      vi.mocked(api.recentVideos).mockResolvedValue([
+        { path: '/Users/vicent/Movies/test.mov', name: 'test.mov', folder: 'Movies', openedAt: Date.now(), clips: 0, poster: null },
+        { path: VIDEO, name: 'set.mov', folder: 'Movies', openedAt: Date.now(), clips: 2, poster: null }
+      ])
+    const swipe = (row: HTMLElement, ...deltas: number[]) => deltas.forEach((deltaX) => fireEvent.wheel(row, { deltaX, deltaY: 0 }))
+
+    it('removes a recent with a long two-finger swipe, like a message in Mail, so a test recording stops cluttering the list', async () => {
+      twoRecents()
+      render(<App />)
+      swipe(await screen.findByTestId('recent-video-1'), 80, 80, 80)
+      await waitFor(() => expect(api.forgetRecent).toHaveBeenCalledWith('/Users/vicent/Movies/test.mov'))
+      await waitFor(() => expect(screen.getByTestId('recent-video-1')).toHaveTextContent('set.mov'))
+      expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument()
+    })
+
+    it('stops on a Remove button after a short swipe, so a hesitant swipe never deletes on its own', async () => {
+      twoRecents()
+      render(<App />)
+      swipe(await screen.findByTestId('recent-video-1'), 30, 30)
+      const remove = screen.getByTestId('recent-remove-1')
+      await waitFor(() => expect(remove).toBeVisible())
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      expect(api.forgetRecent).not.toHaveBeenCalled()
+      expect(remove).toBeVisible()
+      expect(remove).toHaveTextContent(t.removeRecent)
+      await userEvent.click(remove)
+      expect(api.forgetRecent).toHaveBeenCalledWith('/Users/vicent/Movies/test.mov')
+      await waitFor(() => expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument())
+    })
+
+    it('closes the Remove button when the row is clicked instead of opening the video, so backing out is safe', async () => {
+      twoRecents()
+      render(<App />)
+      const row = await screen.findByTestId('recent-video-1')
+      swipe(row, 30, 30)
+      await waitFor(() => expect(screen.getByTestId('recent-remove-1')).toBeVisible())
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      await userEvent.click(row)
+      expect(api.openRecent).not.toHaveBeenCalled()
+      await waitFor(() => expect(screen.getByTestId('recent-remove-1')).not.toBeVisible())
+    })
+
+    it('ignores vertical scrolling and a tiny sideways nudge, so scrolling the list never arms a delete', async () => {
+      twoRecents()
+      render(<App />)
+      const row = await screen.findByTestId('recent-video-1')
+      fireEvent.wheel(row, { deltaX: 5, deltaY: 120 })
+      swipe(row, 10)
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      expect(screen.getByTestId('recent-remove-1')).not.toBeVisible()
+      expect(api.forgetRecent).not.toHaveBeenCalled()
+    })
+
+    it('offers Remove from Recents on right-click, for anyone who does not know the swipe', async () => {
+      twoRecents()
+      render(<App />)
+      fireEvent.contextMenu(await screen.findByTestId('recent-video-1'))
+      expect(api.showRecentMenu).toHaveBeenCalledWith('/Users/vicent/Movies/test.mov')
+      act(() => recentRemoved('/Users/vicent/Movies/test.mov'))
+      await waitFor(() => expect(screen.getByTestId('recent-video-1')).toHaveTextContent('set.mov'))
+      expect(screen.queryByTestId('recent-video-2')).not.toBeInTheDocument()
+    })
   })
 
   it('greets with the app, its one action and its shortcut, and says the whole window takes a dropped video', async () => {

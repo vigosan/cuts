@@ -598,8 +598,14 @@ export function App() {
   const openRecent = async (path: string) => {
     const result = await window.api.openRecent(path)
     if (result) load(result)
-    else setRecents((current) => current.filter((recent) => recent.path !== path))
+    else dropRecent(path)
   }
+  const dropRecent = (path: string) => setRecents((current) => current.filter((recent) => recent.path !== path))
+  const removeRecent = (path: string) => {
+    dropRecent(path)
+    void window.api.forgetRecent(path)
+  }
+  useEffect(() => window.api.onRecentRemoved(dropRecent), [])
 
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
@@ -708,7 +714,12 @@ export function App() {
           </section>
           {recents.length > 0 && (
             <aside className="flex w-[22rem] shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
-              <RecentVideos recents={recents} onOpen={(path) => void openRecent(path)} />
+              <RecentVideos
+                recents={recents}
+                onOpen={(path) => void openRecent(path)}
+                onRemove={removeRecent}
+                onMenu={window.api.showRecentMenu}
+              />
             </aside>
           )}
         </main>
