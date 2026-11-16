@@ -43,7 +43,7 @@ type Props = {
 }
 
 const iconButton =
-  'grid size-7 place-items-center rounded-md text-ink-3 transition-colors hover:bg-sunken hover:text-ink'
+  'grid size-7 place-items-center rounded-md text-ink-3 transition-[background-color,color,opacity,transform] duration-150 ease-out hover:bg-sunken hover:text-ink active:scale-[0.97]'
 const rowAction = 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
 const key = 'rounded bg-sunken px-1.5 font-sans text-xs text-ink-2'
 const timeButton =
@@ -108,7 +108,7 @@ export function ClipList({
   }
 
   const startReorder = (e: ReactPointerEvent<HTMLLIElement>, clip: Clip, from: number) => {
-    if (e.button !== 0 || (e.target instanceof Element && e.target.closest('button'))) return
+    if (e.button !== 0) return
     const heights = Array.from(listRef.current!.children).map((row) => row.getBoundingClientRect().height + ROW_GAP_PX)
     const originY = e.clientY
     let current: Drag | null = null
@@ -159,8 +159,10 @@ export function ClipList({
             data-over-limit={over}
             data-past-carousel={past}
             aria-current={selected}
+            onClickCapture={(e) => {
+              if (justDragged.current) e.stopPropagation()
+            }}
             onClick={(e) => {
-              if (justDragged.current) return
               if (!(e.target instanceof Element && e.target.closest('button'))) onSelect(clip, selectMode(e))
             }}
             onPointerDown={(e) => startReorder(e, clip, index)}

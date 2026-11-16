@@ -913,6 +913,20 @@ describe('App', () => {
     expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:01:40')
   })
 
+  it('drags a clip from its times too, since they fill most of the row, without moving its start on release', async () => {
+    render(<App />)
+    const video = await loadVideo()
+    await markClip(video, 100, 150)
+    await markClip(video, 200, 250)
+    layOutRows(2)
+    fireEvent.pointerDown(screen.getByTestId('clip-set-start-2'), { clientY: 60 })
+    fireEvent.pointerMove(window, { clientY: 10 })
+    fireEvent.pointerUp(window, { clientY: 10 })
+    fireEvent.click(screen.getByTestId('clip-set-start-1'))
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:03:20')
+    expect(screen.getByTestId('clip-row-1')).toHaveTextContent('00:04:10')
+  })
+
   it('keeps a clip in place when the pointer barely moves, so a click on a row still just selects it', async () => {
     render(<App />)
     const video = await loadVideo()
