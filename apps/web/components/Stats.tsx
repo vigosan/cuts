@@ -1,5 +1,5 @@
 import type { Content, Lang } from "@/content";
-import { type Day, fetchStats, installsInLast, lastTwelveMonths, type Stats as StatsData, totalInstalls, weeklyMacInstalls } from "@/stats";
+import { fetchStats, installsInLast, type Stats as StatsData, totalInstalls, type Week, weeklyInstalls } from "@/stats";
 import { Page } from "./Page";
 
 const heading = "text-2xl font-semibold tracking-tight text-balance text-gray-900 dark:text-gray-50";
@@ -31,18 +31,6 @@ function formatter(lang: Lang) {
 
 type Format = ReturnType<typeof formatter>;
 
-function monthStarts(from: string, to: string): string[] {
-  const starts: string[] = [];
-  const d = new Date(from);
-  d.setUTCDate(1);
-  d.setUTCMonth(d.getUTCMonth() + 1);
-  while (d.toISOString().slice(0, 10) <= to) {
-    starts.push(d.toISOString().slice(0, 10));
-    d.setUTCMonth(d.getUTCMonth() + 1);
-  }
-  return starts;
-}
-
 function Grid({ max, y, format }: { max: number; y: (v: number) => number; format: Format }) {
   return ticks(max).map((v) => (
     <g key={v}>
@@ -54,47 +42,9 @@ function Grid({ max, y, format }: { max: number; y: (v: number) => number; forma
   ));
 }
 
-function CumulativeChart({ days, label, format }: { days: Day[]; label: string; format: Format }) {
-  const H = 260;
-  const first = Date.parse(days[0].date);
-  const span = Math.max(Date.parse(days[days.length - 1].date) - first, 1);
-  const max = niceMax(days[days.length - 1].mac);
-  const x = (date: string) => LEFT + ((Date.parse(date) - first) / span) * (W - LEFT - RIGHT);
-  const y = (v: number) => TOP + (1 - v / max) * (H - TOP - BOTTOM);
-  const points = (list: Day[]) => list.map((d) => `${x(d.date)},${y(d.mac)}`).join(" ");
-  const split = days.findIndex((d) => !d.estimated);
-  const estimated = split === -1 ? days : days.slice(0, split + 1);
-  const measured = split === -1 ? [] : days.slice(split);
-  const last = days[days.length - 1];
-  const slot = (W - LEFT - RIGHT) / Math.max(days.length - 1, 1);
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full overflow-visible" role="img" aria-label={label}>
-      <Grid max={max} y={y} format={format} />
-      {monthStarts(days[0].date, last.date).map((m) => (
-        <text key={m} x={x(m)} y={H - 6} textAnchor="middle" className={axis}>
-          {format.month(m)}
-        </text>
-      ))}
-      <polygon points={`${x(days[0].date)},${y(0)} ${points(days)} ${x(last.date)},${y(0)}`} className="fill-gray-800 opacity-10 dark:fill-gray-100" />
-      <polyline points={points(estimated)} fill="none" strokeWidth={2} strokeDasharray="5 4" strokeLinejoin="round" className="stroke-gray-800 dark:stroke-gray-100" />
-      {measured.length > 1 && (
-        <polyline points={points(measured)} fill="none" strokeWidth={2} strokeLinejoin="round" className="stroke-gray-800 dark:stroke-gray-100" />
-      )}
-      <circle cx={x(last.date)} cy={y(last.mac)} r={4} className="fill-accent" />
-      {days.map((d) => (
-        <rect key={d.date} x={x(d.date) - slot / 2} y={TOP} width={slot} height={H - TOP - BOTTOM} fill="transparent">
-          <title>{`${format.day(d.date)}: ${format.number(d.mac)}`}</title>
-        </rect>
-      ))}
-    </svg>
-  );
-}
-
-function WeeklyChart({ days, label, format }: { days: Day[]; label: string; format: Format }) {
+function WeeklyBars({ weeks, label, format }: { weeks: Week[]; label: string; format: Format }) {
   const H = 180;
-  const weeks = weeklyMacInstalls(days);
-  const max = niceMax(Math.max(...weeks.map((w) => w.count)));
+  const max = niceMax(Math.max(...weeks.map((w) => w.mac + w.windows)));
   const band = (W - LEFT - RIGHT) / weeks.length;
   const y = (v: number) => TOP + (1 - v / max) * (H - TOP - BOTTOM);
 
@@ -103,9 +53,11 @@ function WeeklyChart({ days, label, format }: { days: Day[]; label: string; form
       <Grid max={max} y={y} format={format} />
       {weeks.map((w, i) => (
         <g key={w.week}>
-          <rect x={LEFT + i * band + band * 0.15} y={y(w.count)} width={band * 0.7} height={y(0) - y(w.count)} rx={2} className="fill-gray-800 dark:fill-gray-100" />
-          <rect x={LEFT + i * band} y={TOP} width={band} height={H - TOP - BOTTOM} fill="transparent">
-            <title>{`${format.day(w.week)}: +${format.number(w.count)}`}</title>
+          <rect x={LEFT + i * band + band * 0.15} y={y(w.mac)} width={band * 0.7} height={y(0) - y(w.mac)} className="fill-gray-800 dark:fill-gray-100">
+            <title>{`${format.day(w.week)}: ${format.number(w.mac)}`}</title>
+          </rect>
+          <rect x={LEFT + i * band + band * 0.15} y={y(w.mac + w.windows)} width={band * 0.7} height={y(w.mac) - y(w.mac + w.windows)} className="fill-gray-800/45 dark:fill-gray-100/45">
+            <title>{`${format.day(w.week)}: ${format.number(w.windows)}`}</title>
           </rect>
           {(i === 0 || w.week.slice(0, 7) !== weeks[i - 1].week.slice(0, 7)) && (
             <text x={LEFT + i * band + band / 2} y={H - 6} textAnchor="middle" className={axis}>
@@ -115,6 +67,21 @@ function WeeklyChart({ days, label, format }: { days: Day[]; label: string; form
         </g>
       ))}
     </svg>
+  );
+}
+
+function Legend({ c }: { c: Content }) {
+  return (
+    <p className="flex gap-5 text-xs text-gray-500">
+      <span className="flex items-center gap-1.5">
+        <span className="size-2 rounded-full bg-gray-800 dark:bg-gray-100" />
+        {c.stats.mac}
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="size-2 rounded-full bg-gray-800/45 dark:bg-gray-100/45" />
+        {c.stats.windows}
+      </span>
+    </p>
   );
 }
 
@@ -134,8 +101,6 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
   const days = stats.days;
   const latest = days[days.length - 1];
   const measuredSince = days.find((d) => !d.estimated)?.date ?? latest.date;
-  const maxUpdates = Math.max(...stats.macUpdates.map((u) => u.count), 1);
-
   return (
     <>
       <section className="flex flex-col gap-3">
@@ -143,17 +108,11 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
           {format.number(totalInstalls(stats))}
         </p>
         <p>{c.stats.total.replace("{date}", format.day(days[0].date))}</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Figure value={format.number(latest.mac)} label={c.stats.mac} testid="stats-mac" />
           <Figure value={format.number(latest.windows)} label={c.stats.windows} testid="stats-windows" />
-          <Figure value={format.number(latest.linux)} label={c.stats.linux} testid="stats-linux" />
         </div>
-      </section>
-
-      <article className="flex flex-col gap-6">
-        <h2 className={heading}>{c.stats.macTitle}</h2>
-        <p className="max-w-2xl text-pretty">{c.stats.macText}</p>
-        <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+        <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-sm">
           <span>
             <b className="font-mono text-xl font-semibold tabular-nums text-gray-900 dark:text-gray-50">+{format.number(installsInLast(days, 7))}</b> {c.stats.lastWeek}
           </span>
@@ -161,29 +120,54 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
             <b className="font-mono text-xl font-semibold tabular-nums text-gray-900 dark:text-gray-50">+{format.number(installsInLast(days, 30))}</b> {c.stats.lastMonth}
           </span>
         </div>
-        <CumulativeChart days={lastTwelveMonths(days)} label={c.stats.chartLabel} format={format} />
-        <p className="text-xs text-gray-500">{c.stats.estimated}</p>
-      </article>
+      </section>
 
-      <article className="flex flex-col gap-6">
+      <article data-testid="stats-weekly" className="flex flex-col gap-6">
         <h2 className={heading}>{c.stats.weeklyTitle}</h2>
-        <WeeklyChart days={days} label={c.stats.weeklyTitle} format={format} />
+        <WeeklyBars weeks={weeklyInstalls(days)} label={c.stats.weeklyTitle} format={format} />
+        <Legend c={c} />
       </article>
 
-      <article className="flex flex-col gap-6">
-        <h2 className={heading}>{c.stats.updatesTitle}</h2>
-        <p className="max-w-2xl text-pretty">{c.stats.updatesText}</p>
-        <ul className="flex flex-col gap-2.5">
-          {stats.macUpdates.map((u) => (
-            <li key={u.version} className="grid grid-cols-[5rem_1fr_2.5rem] items-center gap-3 text-sm">
-              <span className="font-mono text-xs text-gray-800 dark:text-gray-100">{u.version}</span>
-              <span className="h-2.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
-                <span className="block h-full rounded-full bg-gray-800 dark:bg-gray-100" style={{ width: `${(u.count / maxUpdates) * 100}%` }} />
-              </span>
-              <span className="text-right font-mono tabular-nums">{format.number(u.count)}</span>
-            </li>
-          ))}
-        </ul>
+      <article data-testid="stats-usage" className="flex flex-col gap-6">
+        <h2 className={heading}>{c.stats.usageTitle}</h2>
+        <p className="max-w-2xl text-pretty">{c.stats.usageText}</p>
+        <WeeklyBars weeks={stats.usage} label={c.stats.usageTitle} format={format} />
+        <Legend c={c} />
+      </article>
+
+      <article data-testid="stats-versions" className="flex flex-col gap-6">
+        <h2 className={heading}>{c.stats.versionsTitle}</h2>
+        <p className="max-w-2xl text-pretty">{c.stats.versionsText}</p>
+        <table className="w-full text-sm tabular-nums">
+          <thead>
+            <tr className="text-xs text-gray-500">
+              <td />
+              <th className="pb-2 pl-3 text-right font-medium">{c.stats.versionsHours}</th>
+              <th className="pb-2 pl-3 text-right font-medium">{c.stats.mac}</th>
+              <th className="pb-2 pl-3 text-right font-medium">{c.stats.windows}</th>
+              <th className="pb-2 pl-3 text-right font-medium">{c.stats.versionsInstalls}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stats.versions.map((v) => (
+              <tr key={v.version} className="border-t border-gray-200 dark:border-gray-800">
+                <th className="py-2 text-left font-mono text-xs font-normal text-gray-800 dark:text-gray-100">{v.version}</th>
+                <td data-testid={`stats-version-hours-${v.version}`} className="py-2 pl-3 text-right font-mono">
+                  {format.number(v.hours)}
+                </td>
+                <td data-testid={`stats-version-mac-${v.version}`} className="py-2 pl-3 text-right font-mono">
+                  {format.number(v.mac)}
+                </td>
+                <td data-testid={`stats-version-windows-${v.version}`} className="py-2 pl-3 text-right font-mono">
+                  {format.number(v.windows)}
+                </td>
+                <td data-testid={`stats-version-installs-${v.version}`} className="py-2 pl-3 text-right font-mono">
+                  +{format.number(v.installs)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </article>
 
       <article className="flex flex-col gap-6">

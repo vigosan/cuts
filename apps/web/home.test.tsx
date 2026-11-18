@@ -16,10 +16,10 @@ describe("home", () => {
     expect(features).toBeLessThan(html.indexOf(content.es.home.privacyTitle));
   });
 
-  it("counts downloads like the stats page, so the home never shows a bigger number than the stats it links to", async () => {
-    const stats: Stats = { days: [{ date: "2026-11-04", mac: 21, windows: 12, linux: 11 }], macUpdates: [] };
+  it("counts installs like the stats page, so the home never shows a bigger number than the stats it links to", async () => {
+    const stats: Stats = { days: [{ date: "2026-11-04", mac: 21, windows: 12 }], versions: [], usage: [] };
     vi.stubGlobal("fetch", async () => Response.json(stats));
     const html = renderToStaticMarkup(await Home({ c: content.es }));
-    expect(html).toContain("44 descargas");
+    expect(html).toContain("33 instalaciones");
   });
 });
