@@ -7,14 +7,15 @@ import type { Stats } from "./stats";
 
 const stats: Stats = {
   days: [
-    { date: "2026-10-25", mac: 5, windows: 4, linux: 3, estimated: true },
-    { date: "2026-10-31", mac: 21, windows: 11, linux: 11, estimated: true },
-    { date: "2026-11-01", mac: 22, windows: 12, linux: 11 },
+    { date: "2026-10-25", mac: 5, windows: 4, estimated: true },
+    { date: "2026-10-31", mac: 21, windows: 11, estimated: true },
+    { date: "2026-11-01", mac: 22, windows: 12 },
   ],
-  macUpdates: [
-    { version: "v1.6.0", count: 1 },
-    { version: "v1.5.0", count: 3 },
+  versions: [
+    { version: "v1.6.0", hours: 5, mac: 1, windows: 2, installs: 4 },
+    { version: "v1.5.0", hours: 48, mac: 3, windows: 0, installs: 7 },
   ],
+  usage: [{ week: "2026-10-26", mac: 3, windows: 2 }],
 };
 
 const text = (html: string, testid: string) => {
@@ -26,12 +27,16 @@ const text = (html: string, testid: string) => {
 const view = (s: Stats, lang: "en" | "es" = "es") => renderToStaticMarkup(<StatsView c={content[lang]} stats={s} />);
 
 describe("stats page", () => {
-  it("heads with the three systems added up on the latest day", () => {
-    expect(text(view(stats), "stats-total")).toBe("45");
+  it("heads with the new installs of Mac and Windows on the latest day, the one figure that means new people", () => {
+    expect(text(view(stats), "stats-total")).toBe("34");
+  });
+
+  it("shows no Linux figure, which was mostly automatic fetches", () => {
+    expect(view(stats)).not.toContain("stats-linux");
   });
 
   it("groups thousands in every figure, since Spanish leaves four-digit numbers ungrouped and they read as a year", () => {
-    const big = { ...stats, days: [{ date: "2026-11-01", mac: 1200, windows: 0, linux: 0 }] };
+    const big = { ...stats, days: [{ date: "2026-11-01", mac: 1200, windows: 0 }] };
     expect(text(view(big), "stats-mac")).toBe("1.200");
   });
 
@@ -40,9 +45,19 @@ describe("stats page", () => {
     expect(text(view(stats, "en"), "stats-measured-since")).toContain("November 1");
   });
 
-  it("lists the Mac updates per version, newest first", () => {
+  it("lists each version with its hours as the newest, the computers that updated and the new installs, newest first", () => {
     const html = view(stats);
     expect(html.indexOf("v1.6.0")).toBeLessThan(html.indexOf("v1.5.0"));
+    expect(text(html, "stats-version-hours-v1.5.0")).toBe("48");
+    expect(text(html, "stats-version-mac-v1.5.0")).toBe("3");
+    expect(text(html, "stats-version-windows-v1.6.0")).toBe("2");
+    expect(text(html, "stats-version-installs-v1.6.0")).toBe("+4");
+  });
+
+  it("draws the computers that use Cuts each week apart from the new installs, so the two are never read as one", () => {
+    const html = view(stats);
+    expect(html).toContain('data-testid="stats-usage"');
+    expect(html).toContain('data-testid="stats-weekly"');
   });
 
   it("links the stats page from the footer of every page in both languages", () => {

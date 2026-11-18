@@ -30,5 +30,4 @@ async function fetchReleases(): Promise<StatsRelease[]> {
   }
 }
 
-const today = new Date().toISOString().slice(0, 10);
-await writeFile(path, `${JSON.stringify(recordSnapshot(await readPrevious(), await fetchReleases(), today))}\n`);
+await writeFile(path, `${JSON.stringify(recordSnapshot(await readPrevious(), await fetchReleases(), new Date().toISOString()))}\n`);
