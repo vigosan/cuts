@@ -291,6 +291,17 @@ describe('App', () => {
     expect(screen.queryByTestId('drop-highlight')).not.toBeInTheDocument()
   })
 
+  it('turns the window highlight off when the file lands on the overlay row, so the app does not stay tinted after the drop', async () => {
+    render(<App />)
+    await loadVideo()
+    fireEvent.dragEnter(screen.getByTestId('app'), { dataTransfer: { types: ['Files'] } })
+    expect(screen.getByTestId('drop-highlight')).toBeInTheDocument()
+    await act(async () => {
+      fireEvent.drop(screen.getByTestId('overlay-row'), { dataTransfer: { types: ['Files'], files: [] } })
+    })
+    expect(screen.queryByTestId('drop-highlight')).not.toBeInTheDocument()
+  })
+
   it('does not light up the window while a clip is dragged to reorder it, since that drop stays in the list', async () => {
     render(<App />)
     const video = await loadVideo()

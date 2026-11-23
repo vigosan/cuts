@@ -646,9 +646,9 @@ export function App() {
       onDragLeave={(e) => {
         if (Array.from(e.dataTransfer.types).includes('Files')) setDragDepth((depth) => Math.max(0, depth - 1))
       }}
+      onDropCapture={() => setDragDepth(0)}
       onDrop={(e) => {
         e.preventDefault()
-        setDragDepth(0)
         const files = Array.from(e.dataTransfer.files)
         if (files.length === 0 || exporting) return
         const items = Array.from(e.dataTransfer.items ?? [])
