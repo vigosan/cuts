@@ -101,6 +101,10 @@ Cuts remembers your work: open a video again and its clips and settings are righ
 - Exporta la grabación completa en un solo archivo, con fundido al principio y al final, desde el mismo botón de exportar.
 - Nuevo formato 16:9 a 1920×1080, para YouTube.
 - Si cambias la superposición, el fondo, la onda o la barra después de exportar, el botón vuelve a ofrecer "Exportar".
+- En Mac, abre todos los vídeos de una sesión a la vez: cada nombre aparece en la línea de tiempo y cortas de todos. También puedes soltar una carpeta sobre la ventana.
+- Reordena los clips arrastrándolos en el carrusel.
+- Amplía la línea de tiempo pellizcando en el trackpad y muévete por ella con dos dedos.
+- El borde de un clip se queda justo donde lo sueltas, y ves su duración mientras lo arrastras.
 
 ### English
 
@@ -109,6 +113,10 @@ Cuts remembers your work: open a video again and its clips and settings are righ
 - Export the full recording as one file, fading in and out, from the same export button.
 - New 16:9 format at 1920×1080, for YouTube.
 - If you change the overlay, background, waveform or progress bar after exporting, the button offers Export again.
+- On Mac, open all the videos of a session at once: each name shows on the timeline and you cut from all of them. You can also drop a folder on the window.
+- Reorder clips by dragging them in the carousel.
+- Zoom the timeline with a trackpad pinch and pan it with two fingers.
+- A clip edge stays exactly where you drop it, and you see its length while you drag.
 
 ## Novedades de la 1.8
 
