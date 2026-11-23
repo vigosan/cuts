@@ -82,14 +82,14 @@ public func poster(id: String, size: CGSize) async throws -> CGImage {
 
 public func saveToAlbum(files: [URL], album: String) async throws {
   let now = Date()
-  try await PHPhotoLibrary.shared().performChanges {
-    let collection = albumChangeRequest(named: album)
-    let placeholders = files.enumerated().compactMap { index, file in
+  for (index, file) in files.enumerated().reversed() {
+    try await PHPhotoLibrary.shared().performChanges {
       let request = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: file)
       request?.creationDate = now.addingTimeInterval(-Double(index))
-      return request?.placeholderForCreatedAsset
+      if let placeholder = request?.placeholderForCreatedAsset {
+        albumChangeRequest(named: album).addAssets([placeholder] as NSArray)
+      }
     }
-    collection.addAssets(placeholders as NSArray)
   }
 }
 
