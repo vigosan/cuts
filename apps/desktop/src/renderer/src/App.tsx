@@ -843,7 +843,7 @@ export function App() {
                   testId="wave"
                   onChange={(wave) => setExtras({ ...extras, wave })}
                 >
-                  <WavePreview color={extras.color} opacity={extras.opacity} />
+                  <WavePreview color={extras.color} opacity={extras.opacity} path={mediaPath} video={videoRef} />
                 </OverlayLayer>
               )}
               {isAudio && background && videoSize && videoSize.width > 0 && extras.progressBar && (

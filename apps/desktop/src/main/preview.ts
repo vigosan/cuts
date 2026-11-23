@@ -1,4 +1,5 @@
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
+import { LIVE_WAVE_CHUNK_SECONDS, LIVE_WAVE_RATE } from '../shared/live-wave'
 
 export const WAVEFORM_SAMPLE_RATE = 2000
 
@@ -25,6 +26,21 @@ export function waveformArgs(input: string): string[] {
     '-vn',
     '-ac', '1',
     '-ar', String(WAVEFORM_SAMPLE_RATE),
+    '-f', 's16le',
+    'pipe:1'
+  ]
+}
+
+export function waveChunkArgs(input: string, index: number): string[] {
+  return [
+    '-hide_banner',
+    '-loglevel', 'error',
+    '-ss', String(index * LIVE_WAVE_CHUNK_SECONDS),
+    '-t', String(LIVE_WAVE_CHUNK_SECONDS),
+    '-i', input,
+    '-vn',
+    '-ac', '1',
+    '-ar', String(LIVE_WAVE_RATE),
     '-f', 's16le',
     'pipe:1'
   ]

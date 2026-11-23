@@ -21,7 +21,7 @@ import { existingAncestor } from './paths'
 import { canRemember, forgetRecent, isListed, loadRecents, posterFile, posterFrame, readPoster, rememberRecent, toRecentVideo, type RecentEntry } from './recents'
 import { listSessions, loadSession, removeSession, saveSession } from './sessions'
 import { UPDATE_CHECK_INTERVAL_MS, updatesEnabled } from './updates'
-import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs } from './preview'
+import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveChunkArgs, waveformArgs } from './preview'
 
 registerMediaScheme()
 
@@ -313,6 +313,12 @@ app.whenReady().then(() => {
       waveforms.set(path, peaks)
     }
     return waveforms.get(path)
+  })
+
+  ipcMain.handle('wave-chunk', async (_event, path: string, index: number) => {
+    const raw = await captureFfmpeg(bundledFfmpeg()!, waveChunkArgs(opened(path), Math.max(0, Math.floor(Number(index)) || 0)))
+    const even = raw.byteLength - (raw.byteLength % 2)
+    return new Int16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + even))
   })
 
   ipcMain.handle('load-session', (_event, videoPath: string) => loadSession(sessionsDir, videoPath))

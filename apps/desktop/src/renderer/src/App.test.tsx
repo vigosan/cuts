@@ -33,6 +33,7 @@ function makeApi(): Api {
     saveSession: vi.fn(),
     thumbnail: vi.fn(async (_path: string, time: number) => `data:image/jpeg;base64,${time}`),
     waveform: vi.fn(async () => new Float32Array(4880 * 50).fill(0.5)),
+    waveChunk: vi.fn(async () => new Int16Array(0)),
     onMenuOpenVideo: vi.fn((callback: () => void) => {
       menuOpenVideo = callback
       return () => {}

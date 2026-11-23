@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PEAKS_PER_SECOND } from '@cuts/core/filmstrip'
-import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveformArgs, WAVEFORM_SAMPLE_RATE } from './preview'
+import { LIVE_WAVE_CHUNK_SECONDS, LIVE_WAVE_RATE } from '../shared/live-wave'
+import { parseFrameRate, peaksFromSamples, thumbnailArgs, waveChunkArgs, waveformArgs, WAVEFORM_SAMPLE_RATE } from './preview'
 
 const valueAfter = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
 
@@ -48,5 +49,17 @@ describe('parseFrameRate', () => {
 
   it('returns null when there is no video stream', () => {
     expect(parseFrameRate('Stream #0:0: Audio: aac, 48000 Hz, stereo')).toBeNull()
+  })
+})
+
+describe('waveChunkArgs', () => {
+  it('reads only the stretch around the playhead, seeking before the input, so a nine-hour set never loads whole into memory', () => {
+    const args = waveChunkArgs('/Users/vicent/Downloads/set.mp3', 3)
+    expect(args.indexOf('-ss')).toBeLessThan(args.indexOf('-i'))
+    expect(valueAfter(args, '-ss')).toBe(String(3 * LIVE_WAVE_CHUNK_SECONDS))
+    expect(valueAfter(args, '-t')).toBe(String(LIVE_WAVE_CHUNK_SECONDS))
+    expect(valueAfter(args, '-ar')).toBe(String(LIVE_WAVE_RATE))
+    expect(valueAfter(args, '-ac')).toBe('1')
+    expect(args.at(-1)).toBe('pipe:1')
   })
 })

@@ -29,6 +29,7 @@ const api: Api = {
   share: (files) => ipcRenderer.send('share', files),
   thumbnail: (path, time) => ipcRenderer.invoke('thumbnail', path, time),
   waveform: (path) => ipcRenderer.invoke('waveform', path),
+  waveChunk: (path, index) => ipcRenderer.invoke('wave-chunk', path, index),
   frameRate: (path) => ipcRenderer.invoke('frame-rate', path),
   loadSession: (videoPath) => ipcRenderer.invoke('load-session', videoPath),
   saveSession: (videoPath, session) => ipcRenderer.send('save-session', videoPath, session),
