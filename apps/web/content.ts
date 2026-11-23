@@ -5,7 +5,7 @@ export const SITE_URL = "https://cuts.vicent.io";
 export const CONTACT = "hello@vicent.io";
 export const REPO = "https://github.com/vigosan/cuts";
 export const UPDATED = "2026-11-03";
-export const VERSION = "1.9";
+export const VERSION = "1.9.1";
 export const AUDIO_VIDEO = {
   video: "audio.mp4",
   poster: "audio-poster.jpg",
