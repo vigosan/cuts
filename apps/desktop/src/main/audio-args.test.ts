@@ -88,6 +88,21 @@ describe('buildAudioArgs', () => {
     expect(g).toContain('s=1280x3')
   })
 
+  it('shrinks a huge background image to 1920 on its long side in Original, because the Windows encoder refuses frames that big', () => {
+    const args = buildAudioArgs({ ...audio, format: 'original', background: { path: '/data/backgrounds/background-1.jpg', kind: 'image' }, frame: { width: 6000, height: 4000 } })
+    expect(graph(args)).toContain('[0:v]scale=1920:1280,setsar=1,fps=30[c0]')
+  })
+
+  it('rounds an odd-sized background to even sides in Original, because H.264 encoders refuse odd frames', () => {
+    const args = buildAudioArgs({ ...audio, format: 'original', background: { path: '/data/backgrounds/background-1.jpg', kind: 'image' }, frame: { width: 1501, height: 1001 } })
+    expect(graph(args)).toContain('[0:v]scale=1502:1002,setsar=1,fps=30[c0]')
+  })
+
+  it('keeps a 4K background video at its own size in Original, so only stills are shrunk', () => {
+    const args = buildAudioArgs({ ...audio, format: 'original', frame: { width: 3840, height: 2160 } })
+    expect(graph(args)).toContain('[0:v]scale=3840:2160,setsar=1,fps=30[c0]')
+  })
+
   it('encodes at the requested bitrate so a long set stays a reasonable size', () => {
     expect(valueAfter(buildAudioArgs(audio), '-b:v')).toBe('4M')
   })

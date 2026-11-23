@@ -197,6 +197,15 @@ const placed = (wanted: OverlayPlacement | null, aspect: number, frame: Size, fa
 
 const waveColor = (color: string) => (/^#[0-9a-f]{6}$/i.test(color) ? `0x${color.slice(1).toLowerCase()}` : '0xffffff')
 
+const STILL_LONG_SIDE = 1920
+
+function encodable(frame: Size, kind: ExportBackground['kind']): Size {
+  const width = positive(frame.width, 1920)
+  const height = positive(frame.height, 1080)
+  const ratio = kind === 'image' ? Math.min(1, STILL_LONG_SIDE / Math.max(width, height)) : 1
+  return { width: Math.max(2, even(width * ratio)), height: Math.max(2, even(height * ratio)) }
+}
+
 function backgroundInput(background: ExportBackground): string[] {
   return background.kind === 'image'
     ? ['-loop', '1', '-framerate', '30', '-i', background.path]
@@ -205,10 +214,11 @@ function backgroundInput(background: ExportBackground): string[] {
 
 export function buildAudioArgs(o: AudioCutOptions, platform: NodeJS.Platform = process.platform): string[] {
   const duration = o.end - o.start
-  const size = formatSize(o.format) ?? o.frame
+  const fixed = formatSize(o.format)
+  const size = fixed ?? encodable(o.frame, o.background.kind)
   const width = positive(size.width, 1920)
   const height = positive(size.height, 1080)
-  const framing = framingFilters(o)
+  const framing = fixed ? framingFilters(o) : [`scale=${width}:${height}`, 'setsar=1']
   const videoFades =
     o.videoFade === 'none'
       ? []
