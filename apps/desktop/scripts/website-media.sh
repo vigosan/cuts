@@ -8,7 +8,7 @@ WORK=$(mktemp -d)
 PORT=9341
 SET="$HOME/Movies/2026-11-21 12-00-17.mov"
 AUDIO="$WORK/Live set.mp3"
-COVER="$ROOT/scripts/media/Sunset Sessions.jpg"
+COVER="$ROOT/scripts/media/XTV Remember.png"
 trap 'pkill -f "remote-debugging-port=$PORT" || true; rm -rf "$WORK"' EXIT
 
 cd "$ROOT"
