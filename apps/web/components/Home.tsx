@@ -1,4 +1,4 @@
-import { DARK_SCREENSHOTS, DROPS_VIDEO, type Content } from "@/content";
+import { AUDIO_VIDEO, DARK_SCREENSHOTS, DROPS_VIDEO, type Content } from "@/content";
 import { splitKeys } from "@/keys";
 import { fetchStats, totalInstalls } from "@/stats";
 import { Download } from "./Download";
@@ -56,6 +56,21 @@ export async function Home({ c }: { c: Content }) {
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.dropsTitle}</h2>
         <p className="max-w-2xl text-pretty">{c.home.dropsText}</p>
+      </article>
+      <article className="flex flex-col gap-6">
+        <h2 className={heading}>{c.home.audioTitle}</h2>
+        <p className="max-w-2xl text-pretty">{c.home.audioText}</p>
+        <div className={wide}>
+          <LoopVideo
+            src={`/screenshots/${c.lang}-${AUDIO_VIDEO.video}`}
+            poster={`/screenshots/${c.lang}-${AUDIO_VIDEO.poster}`}
+            dark={`/screenshots/${c.lang}-${AUDIO_VIDEO.darkVideo}`}
+            darkPoster={`/screenshots/${c.lang}-${AUDIO_VIDEO.darkPoster}`}
+            label={c.home.audioAlt}
+            width={1440}
+            height={900}
+          />
+        </div>
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.timelineTitle}</h2>

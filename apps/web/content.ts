@@ -6,6 +6,12 @@ export const CONTACT = "hello@vicent.io";
 export const REPO = "https://github.com/vigosan/cuts";
 export const UPDATED = "2026-11-03";
 export const VERSION = "1.9";
+export const AUDIO_VIDEO = {
+  video: "audio.mp4",
+  poster: "audio-poster.jpg",
+  darkVideo: "audio-dark.mp4",
+  darkPoster: "audio-dark-poster.jpg",
+} as const;
 export const SCREENSHOTS = ["timeline", "framing", "dark"] as const;
 export const IPHONE_SCREENSHOTS = ["home", "cut", "carousel"] as const;
 export const DARK_SCREENSHOTS = { timeline: "timeline-dark", framing: "framing-dark", dark: "light" } as const;
@@ -55,7 +61,7 @@ export const content = {
     home: {
       tagline: "Cut your best moments into clips",
       intro:
-        "Cuts listens to your session, finds the drops and turns them into clips ready for your Instagram carousel.",
+        "Cuts listens to your set, video or audio, finds the drops and turns them into clips for your Instagram carousel.",
       free: "Free",
       requirements: { mac: "macOS 13 or later", windows: "Windows 10 or later", linux: "AppImage x86_64" },
       download: { mac: "Download for Mac", windows: "Download for Windows", linux: "Download for Linux", also: "Also for" },
@@ -80,6 +86,10 @@ export const content = {
       dropsText:
         "Press Suggest moments and Cuts listens to the whole session. It spots every breakdown and the moment the track comes back in full, the drop, and picks the strongest ones, spread across the set. Each becomes a clip with the build-up before and the mix after, ready to fine-tune or remove like any other.",
       dropsAlt: "Pressing Suggest moments: Cuts adds ten clips spread across the whole session",
+      audioTitle: "Only have the audio? Cuts makes the video",
+      audioText:
+        "Open the recording of your set as MP3, WAV, M4A, AAC or FLAC and pick a background: a photo, your cover art or a looping video. Add the real waveform of the audio and a progress bar, each in its own colour, and place them on the picture. Cut clips for the carousel as usual, or export the full recording as one video, in 16:9 for YouTube.",
+      audioAlt: "Opening an MP3, adding a cover as the background and turning on the waveform and the progress bar",
       featuresTitle: "What it does",
       features: [
         {
@@ -250,7 +260,7 @@ export const content = {
     home: {
       tagline: "Corta tus mejores momentos en clips",
       intro:
-        "Cuts escucha tu sesión, encuentra los subidones y los convierte en clips listos para tu carrusel de Instagram.",
+        "Cuts escucha tu sesión, vídeo o audio, encuentra los subidones y los convierte en clips para tu carrusel de Instagram.",
       free: "Gratis",
       requirements: { mac: "macOS 13 o posterior", windows: "Windows 10 o posterior", linux: "AppImage x86_64" },
       download: { mac: "Descargar para Mac", windows: "Descargar para Windows", linux: "Descargar para Linux", also: "También para" },
@@ -275,6 +285,10 @@ export const content = {
       dropsText:
         "Pulsa Sugerir momentos y Cuts escucha la sesión entera. Detecta cada bajón y el momento en que la pista vuelve con toda su fuerza, el drop, y se queda con los más intensos, repartidos por todo el set. Cada uno se convierte en un clip con la subida antes y la mezcla después, listo para retocarlo o quitarlo como cualquier otro.",
       dropsAlt: "Al pulsar Sugerir momentos, Cuts añade diez clips repartidos por toda la sesión",
+      audioTitle: "¿Solo tienes el audio? Cuts hace el vídeo",
+      audioText:
+        "Abre la grabación de tu sesión en MP3, WAV, M4A, AAC o FLAC y elige un fondo: una foto, tu portada o un vídeo en bucle. Añade la onda real del audio y una barra de progreso, cada una con su color, y colócalas sobre la imagen. Corta clips para el carrusel como siempre, o exporta la grabación completa en un solo vídeo, en 16:9 para YouTube.",
+      audioAlt: "Al abrir un MP3, se añade una portada de fondo y se activan la onda y la barra de progreso",
       featuresTitle: "Qué hace",
       features: [
         {

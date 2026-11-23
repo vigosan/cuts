@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { APP_STORE, BREW, content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, IPHONE_SCREENSHOTS, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
+import { APP_STORE, AUDIO_VIDEO, BREW, content, DARK_SCREENSHOTS, DOWNLOADS, DROPS_VIDEO, FFMPEG_FILES, IPHONE_SCREENSHOTS, LANGS, REPO, SCREENSHOTS, VERSION } from "./content";
 
 const keys = (value: unknown): string[] =>
   value && typeof value === "object"
@@ -72,6 +72,22 @@ describe("site content", () => {
   it("opens with the drops video instead of a still screenshot of the same screen, so the app is not shown twice in a row", () => {
     expect(SCREENSHOTS).toEqual(["timeline", "framing", "dark"]);
     expect(Object.keys(DARK_SCREENSHOTS)).toEqual(SCREENSHOTS);
+  });
+
+  it("has the audio session video and its poster in both languages and themes, so the section is never empty or out of theme", () => {
+    for (const lang of LANGS) {
+      for (const file of Object.values(AUDIO_VIDEO)) expect(existsSync(`public/screenshots/${lang}-${file}`), `${lang}-${file}`).toBe(true);
+    }
+  });
+
+  it("tells someone who only has the audio that Cuts makes the video, naming the formats, the background, the waveform and the progress bar", () => {
+    expect(content.en.home.audioText).toMatch(/MP3.*background.*waveform.*progress bar/);
+    expect(content.es.home.audioText).toMatch(/MP3.*fondo.*onda.*barra de progreso/);
+  });
+
+  it("says in the first sentence that a set can be video or audio, so someone with an MP3 does not leave at the headline", () => {
+    expect(content.en.home.intro).toContain("video or audio");
+    expect(content.es.home.intro).toContain("vídeo o audio");
   });
 
   it("has the drop suggestion video and its poster in both languages and themes, so the section is never empty or out of theme", () => {
