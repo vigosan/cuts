@@ -4,6 +4,7 @@ set -eu
 FRAMES=$1
 LANG_CODE=$2
 SUFFIX=${3:-}
+NAME=${4:-drops}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="$ROOT/../web/public/screenshots"
 
@@ -17,5 +18,5 @@ with open(f"{sys.argv[1]}/list.txt", "w") as out:
 PY
 ffmpeg -hide_banner -loglevel error -y -f concat -safe 0 -i "$FRAMES/list.txt" \
   -vf "fps=30,scale=1440:-2:flags=lanczos,format=yuv420p" -c:v libx264 -preset slow -crf 26 -movflags +faststart -an \
-  "$OUT/$LANG_CODE-drops$SUFFIX.mp4"
-sips -z 900 1440 -s format jpeg -s formatOptions 82 "$(ls "$FRAMES"/f*.png | tail -1)" --out "$OUT/$LANG_CODE-drops$SUFFIX-poster.jpg" >/dev/null
+  "$OUT/$LANG_CODE-$NAME$SUFFIX.mp4"
+sips -z 900 1440 -s format jpeg -s formatOptions 82 "$(ls "$FRAMES"/f*.png | tail -1)" --out "$OUT/$LANG_CODE-$NAME$SUFFIX-poster.jpg" >/dev/null

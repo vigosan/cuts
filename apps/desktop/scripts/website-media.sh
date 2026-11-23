@@ -6,10 +6,14 @@ WEB="$ROOT/../web/public/screenshots"
 STORE="$ROOT/../../docs/release/screenshots"
 WORK=$(mktemp -d)
 PORT=9341
+SET="$HOME/Movies/2026-11-21 12-00-17.mov"
+AUDIO="$WORK/Live set.mp3"
+COVER="$ROOT/scripts/media/Sunset Sessions.jpg"
 trap 'pkill -f "remote-debugging-port=$PORT" || true; rm -rf "$WORK"' EXIT
 
 cd "$ROOT"
 npx electron-vite build >/dev/null
+ffmpeg -hide_banner -loglevel error -y -ss 300 -t 90 -i "$SET" -vn -c:a libmp3lame -b:a 192k "$AUDIO"
 
 with_app() {
   lang=$1
@@ -38,6 +42,19 @@ record_drops() {
   exit 1
 }
 
+record_audio() {
+  lang=$1
+  frames=$2
+  scheme=$3
+  for attempt in 1 2 3; do
+    rm -rf "$frames"
+    with_app "$lang" record-audio.mjs "$frames" "$scheme" "$AUDIO" "$COVER"
+    if [ "$(python3 -c 'import json, sys; print(len(json.load(open(sys.argv[1]))))' "$frames/frames.json")" -ge 30 ]; then return; fi
+  done
+  echo "The audio recording for $lang $scheme kept coming out empty" >&2
+  exit 1
+}
+
 for scheme in light dark; do
   suffix=$([ "$scheme" = dark ] && echo -dark || true)
   mkdir -p "$WORK/$scheme"
@@ -45,6 +62,8 @@ for scheme in light dark; do
     with_app "$lang" store-screenshots.mjs "$WORK/$scheme" "$lang" "$scheme"
     record_drops "$lang" "$WORK/drops-$lang$suffix" "$scheme"
     "$ROOT/scripts/encode-drops.sh" "$WORK/drops-$lang$suffix" "$lang" "$suffix"
+    record_audio "$lang" "$WORK/audio-$lang$suffix" "$scheme"
+    "$ROOT/scripts/encode-drops.sh" "$WORK/audio-$lang$suffix" "$lang" "$suffix" audio
   done
 done
 
