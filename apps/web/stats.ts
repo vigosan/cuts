@@ -13,14 +13,13 @@ export type Totals = { mac: number; windows: number };
 
 export type Day = Totals & { date: string; estimated?: true };
 
-export type Version = Totals & { version: string; hours: number; installs: number };
+export type Version = Totals & { version: string; installs: number };
 
 export type Week = Totals & { week: string };
 
 export type Stats = { days: Day[]; versions: Version[]; usage: Week[] };
 
 const DAY_MS = 86_400_000;
-const HOUR_MS = 3_600_000;
 
 const net = (count: number, bots: number) => Math.max(0, count - bots);
 
@@ -53,15 +52,12 @@ function updatesOf(release: StatsRelease): Totals {
   return { mac: sum(".zip"), windows: sum(".exe.blockmap") };
 }
 
-export function versions(releases: StatsRelease[], limit: number, now: string): Version[] {
-  const list = stable(releases);
-  return list
-    .map((r, i) => {
-      const until = Date.parse(list[i + 1]?.published_at ?? now);
+export function versions(releases: StatsRelease[], limit: number): Version[] {
+  return stable(releases)
+    .map((r) => {
       const totals = releaseTotals(r);
       return {
         version: r.tag_name,
-        hours: Math.ceil((until - Date.parse(r.published_at)) / HOUR_MS),
         ...updatesOf(r),
         installs: Math.round(totals.mac + totals.windows),
       };
@@ -129,7 +125,7 @@ export function recordSnapshot(previous: Stats | null, releases: StatsRelease[],
     .reduce((sum, t) => ({ mac: sum.mac + t.mac, windows: sum.windows + t.windows }), { mac: 0, windows: 0 });
   const comparable = previous?.days.every((d) => !("linux" in d));
   const history = previous && comparable ? previous.days.filter((d) => d.date < today) : rebuild(releases, today);
-  return { days: [...history, rounded(today, totals)], versions: versions(releases, 8, now), usage: usage(releases) };
+  return { days: [...history, rounded(today, totals)], versions: versions(releases, 8), usage: usage(releases) };
 }
 
 export function totalInstalls(stats: Stats): number {

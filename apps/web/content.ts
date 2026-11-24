@@ -224,8 +224,7 @@ export const content = {
       usageTitle: "Computers using Cuts",
       usageText: "The computers that updated to the same version, the most downloaded one of each week. It is a minimum, because anyone who does not open Cuts on those days is not counted.",
       versionsTitle: "Latest versions",
-      versionsText: "How many hours each version was the newest, how many Macs and PCs updated to it and how many new installs it brought.",
-      versionsHours: "Hours",
+      versionsText: "How many Macs and PCs updated to each version and how many new installs it brought.",
       versionsInstalls: "New",
       howTitle: "How it's counted",
       how: [
@@ -423,8 +422,7 @@ export const content = {
       usageTitle: "Equipos que usan Cuts",
       usageText: "Los equipos que se actualizaron a una misma versión, la más descargada de cada semana. Es un mínimo, porque quien no abre Cuts esos días no cuenta.",
       versionsTitle: "Últimas versiones",
-      versionsText: "Cuántas horas fue cada versión la última, cuántos Mac y PC se actualizaron a ella y cuántas instalaciones nuevas trajo.",
-      versionsHours: "Horas",
+      versionsText: "Cuántos Mac y PC se actualizaron a cada versión y cuántas instalaciones nuevas trajo.",
       versionsInstalls: "Nuevas",
       howTitle: "Cómo se cuenta",
       how: [

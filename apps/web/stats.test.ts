@@ -63,18 +63,14 @@ describe("versions", () => {
   ];
 
   it("gives each stable version the computers that updated to it and the new installs it brought, newest first, so updates and new people are never added together", () => {
-    expect(versions(releases, 8, "2026-10-30T05:00:00Z")).toEqual([
-      { version: "v1.6.0", hours: 5, mac: 8, windows: 6, installs: 7 },
-      { version: "v1.5.0", hours: 48, mac: 5, windows: 0, installs: 2 },
+    expect(versions(releases, 8)).toEqual([
+      { version: "v1.6.0", mac: 8, windows: 6, installs: 7 },
+      { version: "v1.5.0", mac: 5, windows: 0, installs: 2 },
     ]);
   });
 
-  it("says how long each version was the newest one, since a version replaced after two hours reaches fewer computers than one that lasts a week", () => {
-    expect(versions(releases, 8, "2026-10-31T00:30:00Z").map((v) => v.hours)).toEqual([25, 48]);
-  });
-
   it("keeps only as many versions as asked for", () => {
-    expect(versions(releases, 1, "2026-10-30T05:00:00Z").map((v) => v.version)).toEqual(["v1.6.0"]);
+    expect(versions(releases, 1).map((v) => v.version)).toEqual(["v1.6.0"]);
   });
 });
 

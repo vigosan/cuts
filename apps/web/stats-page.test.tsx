@@ -12,8 +12,8 @@ const stats: Stats = {
     { date: "2026-11-01", mac: 22, windows: 12 },
   ],
   versions: [
-    { version: "v1.6.0", hours: 5, mac: 1, windows: 2, installs: 4 },
-    { version: "v1.5.0", hours: 48, mac: 3, windows: 0, installs: 7 },
+    { version: "v1.6.0", mac: 1, windows: 2, installs: 4 },
+    { version: "v1.5.0", mac: 3, windows: 0, installs: 7 },
   ],
   usage: [{ week: "2026-10-26", mac: 3, windows: 2 }],
 };
@@ -45,13 +45,20 @@ describe("stats page", () => {
     expect(text(view(stats, "en"), "stats-measured-since")).toContain("November 1");
   });
 
-  it("lists each version with its hours as the newest, the computers that updated and the new installs, newest first", () => {
+  it("lists each version with the computers that updated and the new installs, newest first", () => {
     const html = view(stats);
     expect(html.indexOf("v1.6.0")).toBeLessThan(html.indexOf("v1.5.0"));
-    expect(text(html, "stats-version-hours-v1.5.0")).toBe("48");
     expect(text(html, "stats-version-mac-v1.5.0")).toBe("3");
     expect(text(html, "stats-version-windows-v1.6.0")).toBe("2");
     expect(text(html, "stats-version-installs-v1.6.0")).toBe("+4");
+  });
+
+  it("leaves out how many hours each version was the newest, a figure that told a visitor nothing", () => {
+    for (const lang of LANGS) {
+      const html = view(stats, lang);
+      expect(html, lang).not.toContain("stats-version-hours");
+      expect(html.toLowerCase(), lang).not.toMatch(lang === "es" ? /horas/ : /hours/);
+    }
   });
 
   it("draws the computers that use Cuts each week apart from the new installs, so the two are never read as one", () => {

@@ -142,7 +142,6 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
           <thead>
             <tr className="text-xs text-gray-500">
               <td />
-              <th className="pb-2 pl-3 text-right font-medium">{c.stats.versionsHours}</th>
               <th className="pb-2 pl-3 text-right font-medium">{c.stats.mac}</th>
               <th className="pb-2 pl-3 text-right font-medium">{c.stats.windows}</th>
               <th className="pb-2 pl-3 text-right font-medium">{c.stats.versionsInstalls}</th>
@@ -152,9 +151,6 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
             {stats.versions.map((v) => (
               <tr key={v.version} className="border-t border-gray-200 dark:border-gray-800">
                 <th className="py-2 text-left font-mono text-xs font-normal text-gray-800 dark:text-gray-100">{v.version}</th>
-                <td data-testid={`stats-version-hours-${v.version}`} className="py-2 pl-3 text-right font-mono">
-                  {format.number(v.hours)}
-                </td>
                 <td data-testid={`stats-version-mac-${v.version}`} className="py-2 pl-3 text-right font-mono">
                   {format.number(v.mac)}
                 </td>
