@@ -4,7 +4,7 @@ import { Download, PhoneDownload } from "./components/Download";
 import { IPhone } from "./components/IPhone";
 import { APP_STORE, content, IPHONE_SCREENSHOTS } from "./content";
 
-const render = (brew: boolean) => renderToStaticMarkup(<Download home={content.es.home} lang="es" downloads={null} brew={brew} />);
+const render = (brew: boolean) => renderToStaticMarkup(<Download home={content.es.home} brew={brew} />);
 
 describe("download", () => {
   it("offers the Mac App Store next to the hero download too, not only at the foot of the page", () => {

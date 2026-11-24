@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { APP_STORE, BREW, DOWNLOADS, type Content, type Lang } from "@/content";
-import { formatDownloads } from "@/downloads";
+import { APP_STORE, BREW, DOWNLOADS, type Content } from "@/content";
 import { detectOS, isIPhone, type OS } from "@/os";
 import { base, button, link } from "./Page";
 
@@ -40,7 +39,7 @@ export function PhoneDownload({ home }: { home: Content["home"] }) {
   );
 }
 
-export function Download({ home, lang, downloads, brew = false }: { home: Content["home"]; lang: Lang; downloads: number | null; brew?: boolean }) {
+export function Download({ home, brew = false }: { home: Content["home"]; brew?: boolean }) {
   const [detected, setDetected] = useState<OS | null | undefined>(undefined);
   const [iphone, setIPhone] = useState(false);
   useEffect(() => {
@@ -49,9 +48,7 @@ export function Download({ home, lang, downloads, brew = false }: { home: Conten
   }, []);
   const os = detected === undefined ? "mac" : detected;
 
-  const meta = [home.free, home.version, downloads !== null && formatDownloads(downloads, lang, home.downloads)].filter(
-    (item): item is string => Boolean(item),
-  );
+  const meta = [home.free, home.version];
 
   if (iphone) return <PhoneDownload home={home} />;
 

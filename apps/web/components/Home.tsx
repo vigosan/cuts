@@ -1,7 +1,8 @@
 import { AUDIO_VIDEO, DARK_SCREENSHOTS, DROPS_VIDEO, type Content } from "@/content";
 import { splitKeys } from "@/keys";
-import { fetchStats, totalInstalls } from "@/stats";
+import { fetchStats } from "@/stats";
 import { Download } from "./Download";
+import { HeroStats } from "./HeroStats";
 import { IPhone } from "./IPhone";
 import { LoopVideo } from "./LoopVideo";
 import { Page } from "./Page";
@@ -28,7 +29,6 @@ function Keys({ text }: { text: string }) {
 
 export async function Home({ c }: { c: Content }) {
   const stats = await fetchStats();
-  const downloads = stats && totalInstalls(stats);
 
   return (
     <Page c={c} current="home">
@@ -40,7 +40,8 @@ export async function Home({ c }: { c: Content }) {
           {c.home.tagline}
         </h1>
         <p className="max-w-xl text-lg text-pretty">{c.home.intro}</p>
-        <Download home={c.home} lang={c.lang} downloads={downloads} />
+        <Download home={c.home} />
+        {stats && <HeroStats c={c} stats={stats} />}
         <div className={`scroll-straighten mt-6 self-stretch ${wide}`}>
           <LoopVideo
             src={`/screenshots/${c.lang}-${DROPS_VIDEO.video}`}
@@ -161,7 +162,7 @@ export async function Home({ c }: { c: Content }) {
       </article>
       <section data-testid="closing" className="flex flex-col items-center gap-6 border-t border-gray-200 pt-16 text-center dark:border-gray-800">
         <h2 className={heading}>{c.home.closingTitle}</h2>
-        <Download home={c.home} lang={c.lang} downloads={downloads} brew />
+        <Download home={c.home} brew />
       </section>
     </Page>
   );

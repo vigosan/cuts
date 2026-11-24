@@ -20,7 +20,7 @@ function niceMax(value: number): number {
 
 const ticks = (max: number) => [0, 1, 2, 3, 4].map((i) => (max / 4) * i);
 
-function formatter(lang: Lang) {
+export function formatter(lang: Lang) {
   const number = new Intl.NumberFormat(lang, { useGrouping: "always" } as unknown as Intl.NumberFormatOptions);
   return {
     number: (n: number) => number.format(n),
