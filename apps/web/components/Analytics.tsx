@@ -8,7 +8,7 @@ import { analyticsCookieRemovals, consentCookie, consentRemoval, readConsent, ty
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 const button =
-  "cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 font-medium text-gray-900 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 dark:border-gray-700 dark:text-gray-50 dark:hover:bg-gray-800";
+  "link cursor-pointer border border-line px-3 py-1.5 font-medium text-ink";
 
 export function Analytics({ labels }: { labels: Content["consent"] }) {
   const [consent, setConsent] = useState<Consent | "ask" | null>(null);
@@ -28,7 +28,7 @@ export function Analytics({ labels }: { labels: Content["consent"] }) {
       data-testid="consent-banner"
       role="dialog"
       aria-label={labels.text}
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-xl flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-lg antialiased sm:flex-row sm:items-center dark:border-gray-800 dark:bg-neutral-950 dark:text-gray-400"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-xl flex-col gap-3 border border-line bg-canvas p-4 text-sm text-body antialiased sm:flex-row sm:items-center"
     >
       <p className="flex-1">{labels.text}</p>
       <div className="flex gap-2">

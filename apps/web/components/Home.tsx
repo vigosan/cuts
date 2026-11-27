@@ -33,9 +33,6 @@ export async function Home({ c }: { c: Content }) {
   return (
     <Page c={c} current="home">
       <section className="flex flex-col items-center gap-6 text-center lg:pt-4">
-        <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance text-gray-900 sm:text-5xl dark:text-gray-50">
-          {c.home.tagline}
-        </h1>
         <p className="max-w-xl text-lg text-pretty">{c.home.intro}</p>
         <Download home={c.home} />
         {stats && <HeroStats c={c} stats={stats} />}

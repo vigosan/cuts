@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { APP_STORE, BREW, DOWNLOADS, type Content } from "@/content";
 import { detectOS, isIPhone, type OS } from "@/os";
-import { base, button, link } from "./Page";
+import { link } from "./Page";
+
+const base =
+  "inline-flex items-center gap-3 rounded-lg px-5 py-2.5 font-medium transition-[background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950";
+const button = `${base} bg-gray-800 text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white`;
 
 const PLATFORMS: OS[] = ["mac", "windows", "linux"];
 

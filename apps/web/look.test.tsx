@@ -1,15 +1,27 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { Ffmpeg, Privacy, Support } from "./components/Legal";
 import { Page } from "./components/Page";
 import { Root } from "./components/Root";
-import { content } from "./content";
+import { content, LANGS } from "./content";
 
 vi.mock("geist/font/mono", () => ({ GeistMono: { variable: "geist-mono" } }));
 vi.mock("geist/font/sans", () => ({ GeistSans: { variable: "geist-sans" } }));
 
 const css = readFileSync("app/globals.css", "utf8");
 const TOKENS = ["canvas", "ink", "body", "muted", "faint", "line", "line-strong", "wash", "press", "ring"];
+const RESTYLED = ["Analytics", "LangSwitch", "Legal", "Page", "Root", "ThemeToggle"];
+
+const pressables = (html: string) => html.match(/<(a|button)\b[^>]*>/g) ?? [];
+
+const shell = (lang: (typeof LANGS)[number]) => [
+  renderToStaticMarkup(<Page c={content[lang]} current="home">{null}</Page>),
+  renderToStaticMarkup(<Privacy c={content[lang]} />),
+  renderToStaticMarkup(<Support c={content[lang]} />),
+  renderToStaticMarkup(<Ffmpeg c={content[lang]} />),
+];
+
 const darkBlock = css.slice(css.indexOf('[data-theme="dark"] {'));
 
 describe("look shared with vicent.io", () => {
@@ -37,5 +49,37 @@ describe("look shared with vicent.io", () => {
 
   it("keeps only the scroll motion that explains something: the light page wiping over the dark one, not decoration", () => {
     expect([...css.matchAll(/@keyframes ([\w-]+)/g)].map((m) => m[1])).toEqual(["wipe"]);
+  });
+
+  it("takes every gray from a role token, so switching to dark is one remap and no hard-coded gray is missed", () => {
+    for (const name of RESTYLED) {
+      const source = readFileSync(`components/${name}.tsx`, "utf8");
+      expect(source, name).not.toMatch(/-(gray|neutral)-\d/);
+      expect(source, name).not.toMatch(/\bshadow-/);
+    }
+  });
+
+  it("gives every link and button the shared link states, so hover, press and focus feel the same everywhere as on vicent.io", () => {
+    for (const lang of LANGS) {
+      for (const html of shell(lang)) {
+        for (const tag of pressables(html)) expect(tag, lang).toMatch(/class="[^"]*\blink\b/);
+      }
+    }
+  });
+
+  it("names the product and says what it does at the top of every page, as vicent.io does with its owner", () => {
+    for (const lang of LANGS) {
+      for (const html of shell(lang)) {
+        const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+        expect(header, lang).toContain(">Cuts<");
+        expect(header, lang).toContain(content[lang].home.tagline);
+      }
+    }
+  });
+
+  it("keeps the tagline as the home page's only main heading, so search engines read the same headline as before", () => {
+    const html = renderToStaticMarkup(<Page c={content.en} current="home">{null}</Page>);
+    expect(html.match(/<h1\b[^>]*>([^<]*)<\/h1>/g)).toEqual([expect.stringContaining(content.en.home.tagline)]);
+    expect(renderToStaticMarkup(<Privacy c={content.en} />).match(/<h1\b/g)).toHaveLength(1);
   });
 });

@@ -53,3 +53,28 @@
     clip-path: inset(0 0 0 0);
   }
 }
+
+::selection {
+  background-color: color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
+
+.link {
+  border-radius: 0.25rem;
+  outline: none;
+  transition: background-color 150ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    background-color: var(--color-wash);
+  }
+}
+
+.link:active {
+  background-color: var(--color-press);
+  transition-duration: 0ms;
+}
+
+.link:focus-visible {
+  box-shadow: 0 0 0 1px var(--color-ring);
+}
