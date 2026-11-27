@@ -34,4 +34,8 @@ describe("look shared with vicent.io", () => {
     expect(html).not.toContain("font-sans");
     expect(readFileSync("components/Analytics.tsx", "utf8")).not.toContain("font-sans");
   });
+
+  it("keeps only the scroll motion that explains something: the light page wiping over the dark one, not decoration", () => {
+    expect([...css.matchAll(/@keyframes ([\w-]+)/g)].map((m) => m[1])).toEqual(["wipe"]);
+  });
 });

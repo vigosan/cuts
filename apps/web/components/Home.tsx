@@ -32,9 +32,6 @@ export async function Home({ c }: { c: Content }) {
 
   return (
     <Page c={c} current="home">
-      <div aria-hidden className="scroll-playhead">
-        <div className="scroll-playhead-head" />
-      </div>
       <section className="flex flex-col items-center gap-6 text-center lg:pt-4">
         <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance text-gray-900 sm:text-5xl dark:text-gray-50">
           {c.home.tagline}
@@ -42,7 +39,7 @@ export async function Home({ c }: { c: Content }) {
         <p className="max-w-xl text-lg text-pretty">{c.home.intro}</p>
         <Download home={c.home} />
         {stats && <HeroStats c={c} stats={stats} />}
-        <div className={`scroll-straighten mt-6 self-stretch ${wide}`}>
+        <div className={`mt-6 self-stretch ${wide}`}>
           <LoopVideo
             src={`/screenshots/${c.lang}-${DROPS_VIDEO.video}`}
             poster={`/screenshots/${c.lang}-${DROPS_VIDEO.poster}`}
@@ -131,10 +128,10 @@ export async function Home({ c }: { c: Content }) {
             <li
               key={group.title}
               data-testid="feature-group"
-              className="scroll-track grid gap-4 border-t border-gray-200 py-6 sm:grid-cols-[11rem_1fr] sm:gap-8 dark:border-gray-800"
+              className="grid gap-4 border-t border-gray-200 py-6 sm:grid-cols-[11rem_1fr] sm:gap-8 dark:border-gray-800"
             >
               <h3 className="flex items-baseline gap-3 text-gray-800 dark:text-gray-100">
-                <span className="scroll-track-number font-mono text-xs tabular-nums text-gray-400 dark:text-gray-600">{String(groupIndex + 1).padStart(2, "0")}</span>
+                <span className="font-mono text-xs tabular-nums text-gray-400 dark:text-gray-600">{String(groupIndex + 1).padStart(2, "0")}</span>
                 <span className="font-medium">{group.title}</span>
               </h3>
               <ul className="flex flex-col gap-3 leading-relaxed">
