@@ -1,17 +1,22 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { Download, PhoneDownload } from "./components/Download";
+import { Home } from "./components/Home";
 import { Ffmpeg, Privacy, Support } from "./components/Legal";
 import { Page } from "./components/Page";
 import { Root } from "./components/Root";
 import { content, LANGS } from "./content";
+import type { Stats } from "./stats";
+
+afterEach(() => vi.unstubAllGlobals());
 
 vi.mock("geist/font/mono", () => ({ GeistMono: { variable: "geist-mono" } }));
 vi.mock("geist/font/sans", () => ({ GeistSans: { variable: "geist-sans" } }));
 
 const css = readFileSync("app/globals.css", "utf8");
 const TOKENS = ["canvas", "ink", "body", "muted", "faint", "line", "line-strong", "wash", "press", "ring"];
-const RESTYLED = ["Analytics", "LangSwitch", "Legal", "Page", "Root", "ThemeToggle"];
+const RESTYLED = ["Analytics", "Download", "HeroStats", "Home", "IPhone", "LangSwitch", "Legal", "LoopVideo", "Page", "Root", "Screenshot", "ThemeToggle"];
 
 const pressables = (html: string) => html.match(/<(a|button)\b[^>]*>/g) ?? [];
 
@@ -62,6 +67,22 @@ describe("look shared with vicent.io", () => {
   it("gives every link and button the shared link states, so hover, press and focus feel the same everywhere as on vicent.io", () => {
     for (const lang of LANGS) {
       for (const html of shell(lang)) {
+        for (const tag of pressables(html)) expect(tag, lang).toMatch(/class="[^"]*\blink\b/);
+      }
+    }
+  });
+
+  it("gives the home page's downloads, stats link and App Store badge the same link states as the rest of the site", async () => {
+    const stats: Stats = { days: [{ date: "2026-11-04", mac: 21, windows: 12 }], versions: [], usage: [] };
+    vi.stubGlobal("fetch", async () => Response.json(stats));
+    for (const lang of LANGS) {
+      const pages = [
+        renderToStaticMarkup(await Home({ c: content[lang] })),
+        renderToStaticMarkup(<Download home={content[lang].home} brew />),
+        renderToStaticMarkup(<PhoneDownload home={content[lang].home} />),
+      ];
+      expect(pages[0], lang).toContain('data-testid="hero-stats-link"');
+      for (const html of pages) {
         for (const tag of pressables(html)) expect(tag, lang).toMatch(/class="[^"]*\blink\b/);
       }
     }
