@@ -2,9 +2,9 @@ import type { Content, Lang } from "@/content";
 import { fetchStats, installsInLast, type Stats as StatsData, totalInstalls, type Week, weeklyInstalls } from "@/stats";
 import { Page } from "./Page";
 
-const heading = "text-2xl font-semibold tracking-tight text-balance text-gray-900 dark:text-gray-50";
-const axis = "fill-gray-400 font-mono text-[22px] sm:text-[11px] dark:fill-gray-500";
-const grid = "stroke-gray-200 dark:stroke-gray-800";
+const heading = "text-lg font-medium text-ink";
+const axis = "fill-faint text-[22px] sm:text-[11px]";
+const grid = "stroke-line";
 
 const W = 720;
 const LEFT = 52;
@@ -53,10 +53,10 @@ function WeeklyBars({ weeks, label, format }: { weeks: Week[]; label: string; fo
       <Grid max={max} y={y} format={format} />
       {weeks.map((w, i) => (
         <g key={w.week}>
-          <rect x={LEFT + i * band + band * 0.15} y={y(w.mac)} width={band * 0.7} height={y(0) - y(w.mac)} className="fill-gray-800 dark:fill-gray-100">
+          <rect x={LEFT + i * band + band * 0.15} y={y(w.mac)} width={band * 0.7} height={y(0) - y(w.mac)} className="fill-ink">
             <title>{`${format.day(w.week)}: ${format.number(w.mac)}`}</title>
           </rect>
-          <rect x={LEFT + i * band + band * 0.15} y={y(w.mac + w.windows)} width={band * 0.7} height={y(w.mac) - y(w.mac + w.windows)} className="fill-gray-800/45 dark:fill-gray-100/45">
+          <rect x={LEFT + i * band + band * 0.15} y={y(w.mac + w.windows)} width={band * 0.7} height={y(w.mac) - y(w.mac + w.windows)} className="fill-ink/45">
             <title>{`${format.day(w.week)}: ${format.number(w.windows)}`}</title>
           </rect>
           {(i === 0 || w.week.slice(0, 7) !== weeks[i - 1].week.slice(0, 7)) && (
@@ -72,13 +72,13 @@ function WeeklyBars({ weeks, label, format }: { weeks: Week[]; label: string; fo
 
 function Legend({ c }: { c: Content }) {
   return (
-    <p className="flex gap-5 text-xs text-gray-500">
+    <p className="flex gap-5 text-xs text-muted">
       <span className="flex items-center gap-1.5">
-        <span className="size-2 rounded-full bg-gray-800 dark:bg-gray-100" />
+        <span className="size-2 rounded-full bg-ink" />
         {c.stats.mac}
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="size-2 rounded-full bg-gray-800/45 dark:bg-gray-100/45" />
+        <span className="size-2 rounded-full bg-ink/45" />
         {c.stats.windows}
       </span>
     </p>
@@ -87,8 +87,8 @@ function Legend({ c }: { c: Content }) {
 
 function Figure({ value, label, testid }: { value: string; label: string; testid: string }) {
   return (
-    <div className="flex flex-col gap-0.5 border-t border-gray-200 pt-3 dark:border-gray-800">
-      <span data-testid={testid} className="text-2xl font-semibold tabular-nums text-gray-900 dark:text-gray-50">
+    <div className="flex flex-col gap-0.5 border-t border-line pt-3">
+      <span data-testid={testid} className="text-xl font-medium tabular-nums text-ink">
         {value}
       </span>
       <span className="text-sm">{label}</span>
@@ -104,20 +104,20 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
   return (
     <>
       <section className="flex flex-col gap-3">
-        <p data-testid="stats-total" className="text-6xl font-semibold tracking-tight tabular-nums text-gray-900 sm:text-7xl dark:text-gray-50">
+        <p data-testid="stats-total" className="text-4xl font-medium tabular-nums text-ink sm:text-5xl">
           {format.number(totalInstalls(stats))}
         </p>
-        <p>{c.stats.total.replace("{date}", format.day(days[0].date))}</p>
+        <p className="text-body">{c.stats.total.replace("{date}", format.day(days[0].date))}</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Figure value={format.number(latest.mac)} label={c.stats.mac} testid="stats-mac" />
           <Figure value={format.number(latest.windows)} label={c.stats.windows} testid="stats-windows" />
         </div>
         <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-sm">
           <span>
-            <b className="font-mono text-xl font-semibold tabular-nums text-gray-900 dark:text-gray-50">+{format.number(installsInLast(days, 7))}</b> {c.stats.lastWeek}
+            <b className="text-xl font-medium tabular-nums text-ink">+{format.number(installsInLast(days, 7))}</b> {c.stats.lastWeek}
           </span>
           <span>
-            <b className="font-mono text-xl font-semibold tabular-nums text-gray-900 dark:text-gray-50">+{format.number(installsInLast(days, 30))}</b> {c.stats.lastMonth}
+            <b className="text-xl font-medium tabular-nums text-ink">+{format.number(installsInLast(days, 30))}</b> {c.stats.lastMonth}
           </span>
         </div>
       </section>
@@ -130,17 +130,17 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
 
       <article data-testid="stats-usage" className="flex flex-col gap-6">
         <h2 className={heading}>{c.stats.usageTitle}</h2>
-        <p className="max-w-2xl text-pretty">{c.stats.usageText}</p>
+        <p className="text-body text-pretty">{c.stats.usageText}</p>
         <WeeklyBars weeks={stats.usage} label={c.stats.usageTitle} format={format} />
         <Legend c={c} />
       </article>
 
       <article data-testid="stats-versions" className="flex flex-col gap-6">
         <h2 className={heading}>{c.stats.versionsTitle}</h2>
-        <p className="max-w-2xl text-pretty">{c.stats.versionsText}</p>
+        <p className="text-body text-pretty">{c.stats.versionsText}</p>
         <table className="w-full text-sm tabular-nums">
           <thead>
-            <tr className="text-xs text-gray-500">
+            <tr className="text-xs text-muted">
               <td />
               <th className="pb-2 pl-3 text-right font-medium">{c.stats.mac}</th>
               <th className="pb-2 pl-3 text-right font-medium">{c.stats.windows}</th>
@@ -149,15 +149,15 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
           </thead>
           <tbody>
             {stats.versions.map((v) => (
-              <tr key={v.version} className="border-t border-gray-200 dark:border-gray-800">
-                <th className="py-2 text-left font-mono text-xs font-normal text-gray-800 dark:text-gray-100">{v.version}</th>
-                <td data-testid={`stats-version-mac-${v.version}`} className="py-2 pl-3 text-right font-mono">
+              <tr key={v.version} className="border-t border-line">
+                <th className="py-2 text-left text-xs font-normal text-ink">{v.version}</th>
+                <td data-testid={`stats-version-mac-${v.version}`} className="py-2 pl-3 text-right">
                   {format.number(v.mac)}
                 </td>
-                <td data-testid={`stats-version-windows-${v.version}`} className="py-2 pl-3 text-right font-mono">
+                <td data-testid={`stats-version-windows-${v.version}`} className="py-2 pl-3 text-right">
                   {format.number(v.windows)}
                 </td>
-                <td data-testid={`stats-version-installs-${v.version}`} className="py-2 pl-3 text-right font-mono">
+                <td data-testid={`stats-version-installs-${v.version}`} className="py-2 pl-3 text-right">
                   +{format.number(v.installs)}
                 </td>
               </tr>
@@ -171,7 +171,7 @@ export function StatsView({ c, stats }: { c: Content; stats: StatsData }) {
         <ul className="flex flex-col gap-3 leading-relaxed">
           {[...c.stats.how, c.stats.measuredSince.replace("{date}", format.day(measuredSince))].map((item, index) => (
             <li key={item} className="sm:grid sm:grid-cols-[2.5rem_1fr]">
-              <span className="hidden font-mono text-xs leading-7 tabular-nums text-gray-400 sm:inline dark:text-gray-600">{String(index + 1).padStart(2, "0")}</span>
+              <span className="hidden text-xs leading-7 tabular-nums text-faint sm:inline">{String(index + 1).padStart(2, "0")}</span>
               <span data-testid={index === c.stats.how.length ? "stats-measured-since" : undefined}>{item}</span>
             </li>
           ))}
@@ -187,8 +187,8 @@ export async function Stats({ c }: { c: Content }) {
   return (
     <Page c={c} current="stats">
       <section className="flex flex-col gap-5">
-        <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance text-gray-900 sm:text-5xl dark:text-gray-50">{c.stats.title}</h1>
-        <p className="max-w-xl text-lg text-pretty">{c.stats.lede}</p>
+        <h1 className="text-lg font-medium text-ink">{c.stats.title}</h1>
+        <p className="text-body text-pretty">{c.stats.lede}</p>
       </section>
       {stats ? <StatsView c={c} stats={stats} /> : <p data-testid="stats-error">{c.stats.error}</p>}
     </Page>

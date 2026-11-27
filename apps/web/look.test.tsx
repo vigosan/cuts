@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Download, PhoneDownload } from "./components/Download";
@@ -16,7 +16,7 @@ vi.mock("geist/font/sans", () => ({ GeistSans: { variable: "geist-sans" } }));
 
 const css = readFileSync("app/globals.css", "utf8");
 const TOKENS = ["canvas", "ink", "body", "muted", "faint", "line", "line-strong", "wash", "press", "ring"];
-const RESTYLED = ["Analytics", "Download", "HeroStats", "Home", "IPhone", "LangSwitch", "Legal", "LoopVideo", "Page", "Root", "Screenshot", "ThemeToggle"];
+const COMPONENTS = readdirSync("components").filter((name) => name.endsWith(".tsx"));
 
 const pressables = (html: string) => html.match(/<(a|button)\b[^>]*>/g) ?? [];
 
@@ -57,8 +57,8 @@ describe("look shared with vicent.io", () => {
   });
 
   it("takes every gray from a role token, so switching to dark is one remap and no hard-coded gray is missed", () => {
-    for (const name of RESTYLED) {
-      const source = readFileSync(`components/${name}.tsx`, "utf8");
+    for (const name of COMPONENTS) {
+      const source = readFileSync(`components/${name}`, "utf8");
       expect(source, name).not.toMatch(/-(gray|neutral)-\d/);
       expect(source, name).not.toMatch(/\bshadow-/);
     }
