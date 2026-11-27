@@ -19,7 +19,7 @@ type Route = keyof Content["routes"];
 export function Page({ c, current, children }: { c: Content; current: Route; children: React.ReactNode }) {
   return (
     <div
-      className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-10 px-6 py-12 font-sans text-gray-600 dark:text-gray-400 antialiased lg:gap-16 lg:py-16"
+      className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-10 px-6 py-12 text-gray-600 dark:text-gray-400 antialiased lg:gap-16 lg:py-16"
     >
       <header className="flex items-center justify-between">
         <Link

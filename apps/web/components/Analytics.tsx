@@ -28,7 +28,7 @@ export function Analytics({ labels }: { labels: Content["consent"] }) {
       data-testid="consent-banner"
       role="dialog"
       aria-label={labels.text}
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-xl flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 font-sans text-sm text-gray-600 shadow-lg antialiased sm:flex-row sm:items-center dark:border-gray-800 dark:bg-neutral-950 dark:text-gray-400"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-xl flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-lg antialiased sm:flex-row sm:items-center dark:border-gray-800 dark:bg-neutral-950 dark:text-gray-400"
     >
       <p className="flex-1">{labels.text}</p>
       <div className="flex gap-2">
