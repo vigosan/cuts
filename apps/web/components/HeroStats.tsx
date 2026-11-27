@@ -16,7 +16,7 @@ function Sparkline({ stats }: { stats: Stats }) {
   const last = installs.length - 1;
 
   return (
-    <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width={SPARK_W} height={SPARK_H} aria-hidden className="flex-none overflow-visible text-ink">
+    <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width={SPARK_W} height={SPARK_H} aria-hidden className="flex-none overflow-visible text-gray-800 dark:text-gray-100">
       <polyline points={installs.map((count, i) => `${x(i)},${y(count)}`).join(" ")} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
       <circle cx={x(last)} cy={y(installs[last])} r={2} fill="currentColor" />
     </svg>
@@ -32,25 +32,25 @@ export function HeroStats({ c, stats }: { c: Content; stats: Stats }) {
   return (
     <p
       data-testid="hero-stats"
-      className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted"
+      className="inline-flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-full border border-gray-200 px-3.5 py-1.5 text-[0.8125rem] text-gray-500 dark:border-gray-800 dark:text-gray-400"
     >
       <Sparkline stats={stats} />
       <span>
-        <b data-testid="hero-stats-total" className="font-medium tabular-nums text-ink">
+        <b data-testid="hero-stats-total" className="font-semibold tabular-nums text-gray-900 dark:text-gray-50">
           {format.number(total)}
         </b>{" "}
         {label}
         {week > 0 && (
           <>
             {" · "}
-            <span data-testid="hero-stats-week" className="tabular-nums text-ink">
+            <span data-testid="hero-stats-week" className="tabular-nums text-gray-900 dark:text-gray-50">
               +{format.number(week)}
             </span>{" "}
             {c.stats.lastWeek}
           </>
         )}
       </span>
-      <a data-testid="hero-stats-link" href={c.routes.stats} className={link}>
+      <a data-testid="hero-stats-link" href={c.routes.stats} className={`${link} -my-1.5 inline-block py-1.5`}>
         {c.footer.stats} →
       </a>
     </p>

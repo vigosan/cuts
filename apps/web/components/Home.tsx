@@ -8,16 +8,16 @@ import { LoopVideo } from "./LoopVideo";
 import { Page } from "./Page";
 import { frame, Screenshot } from "./Screenshot";
 
-const heading = "text-lg font-medium text-ink";
+const wide = "lg:-mx-24 xl:-mx-40";
 
-const prose = "text-body text-pretty";
+const heading = "text-2xl font-semibold tracking-tight text-balance text-gray-900 dark:text-gray-50";
 
 function Keys({ text }: { text: string }) {
   return splitKeys(text).map((part, index) =>
     "key" in part ? (
       <kbd
         key={index}
-        className="mx-0.5 rounded border border-line px-1.5 py-0.5 text-xs font-medium text-ink"
+        className="mx-0.5 rounded-md border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-xs font-medium text-gray-800 shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
       >
         {part.key}
       </kbd>
@@ -32,11 +32,17 @@ export async function Home({ c }: { c: Content }) {
 
   return (
     <Page c={c} current="home">
-      <section className="flex flex-col gap-6">
-        <p className={prose}>{c.home.intro}</p>
+      <div aria-hidden className="scroll-playhead">
+        <div className="scroll-playhead-head" />
+      </div>
+      <section className="flex flex-col items-center gap-6 text-center lg:pt-4">
+        <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance text-gray-900 sm:text-5xl dark:text-gray-50">
+          {c.home.tagline}
+        </h1>
+        <p className="max-w-xl text-lg text-pretty">{c.home.intro}</p>
         <Download home={c.home} />
         {stats && <HeroStats c={c} stats={stats} />}
-        <div>
+        <div className={`scroll-straighten mt-6 self-stretch ${wide}`}>
           <LoopVideo
             src={`/screenshots/${c.lang}-${DROPS_VIDEO.video}`}
             poster={`/screenshots/${c.lang}-${DROPS_VIDEO.poster}`}
@@ -50,12 +56,12 @@ export async function Home({ c }: { c: Content }) {
       </section>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.dropsTitle}</h2>
-        <p className={prose}>{c.home.dropsText}</p>
+        <p className="max-w-2xl text-pretty">{c.home.dropsText}</p>
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.audioTitle}</h2>
-        <p className={prose}>{c.home.audioText}</p>
-        <div>
+        <p className="max-w-2xl text-pretty">{c.home.audioText}</p>
+        <div className={wide}>
           <LoopVideo
             src={`/screenshots/${c.lang}-${AUDIO_VIDEO.video}`}
             poster={`/screenshots/${c.lang}-${AUDIO_VIDEO.poster}`}
@@ -69,8 +75,8 @@ export async function Home({ c }: { c: Content }) {
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.timelineTitle}</h2>
-        <p className={prose}>{c.home.timelineText}</p>
-        <div>
+        <p className="max-w-2xl text-pretty">{c.home.timelineText}</p>
+        <div className={wide}>
           <Screenshot
             src={`/screenshots/${c.lang}-timeline.png`}
             dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.timeline}.png`}
@@ -82,8 +88,8 @@ export async function Home({ c }: { c: Content }) {
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.framingTitle}</h2>
-        <p className={prose}>{c.home.framingText}</p>
-        <div>
+        <p className="max-w-2xl text-pretty">{c.home.framingText}</p>
+        <div className={wide}>
           <Screenshot
             src={`/screenshots/${c.lang}-framing.png`}
             dark={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.framing}.png`}
@@ -93,9 +99,11 @@ export async function Home({ c }: { c: Content }) {
           />
         </div>
       </article>
-      <article className="flex flex-col gap-6">
-        <h2 className={heading}>{c.home.darkTitle}</h2>
-        <p className={prose}>{c.home.darkText}</p>
+      <article className={`grid items-center gap-6 lg:grid-cols-[1fr_2fr] lg:gap-12 ${wide}`}>
+        <div className="flex flex-col gap-6">
+          <h2 className={heading}>{c.home.darkTitle}</h2>
+          <p className="text-pretty">{c.home.darkText}</p>
+        </div>
         <div className="relative">
           <img
             src={`/screenshots/${c.lang}-${DARK_SCREENSHOTS.dark}.png`}
@@ -111,39 +119,48 @@ export async function Home({ c }: { c: Content }) {
             width={1600}
             height={1000}
             loading="lazy"
-            className={`scroll-wipe absolute inset-0 ${frame}`}
+            className="scroll-wipe absolute inset-0 w-full rounded-xl"
           />
         </div>
       </article>
       <IPhone c={c} />
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.featuresTitle}</h2>
-        <ol className="flex flex-col gap-6">
+        <ol className="border-b border-gray-200 dark:border-gray-800">
           {c.home.features.map((group, groupIndex) => (
-            <li key={group.title} data-testid="feature-group" className="border-l-2 border-line pl-4 hover:border-line-strong sm:pl-6">
-              <h3 className="mb-2 flex items-baseline gap-3">
-                <span className="text-sm tabular-nums text-faint">{String(groupIndex + 1).padStart(2, "0")}</span>
-                <span className="font-medium text-ink">{group.title}</span>
+            <li
+              key={group.title}
+              data-testid="feature-group"
+              className="scroll-track grid gap-4 border-t border-gray-200 py-6 sm:grid-cols-[11rem_1fr] sm:gap-8 dark:border-gray-800"
+            >
+              <h3 className="flex items-baseline gap-3 text-gray-800 dark:text-gray-100">
+                <span className="scroll-track-number font-mono text-xs tabular-nums text-gray-400 dark:text-gray-600">{String(groupIndex + 1).padStart(2, "0")}</span>
+                <span className="font-medium">{group.title}</span>
               </h3>
-              <ul className="flex flex-col gap-2 text-body">
-                {group.items.map((item) => (
-                  <li key={item}>
-                    <Keys text={item} />
+              <ul className="flex flex-col gap-3 leading-relaxed">
+                {group.items.map((item, itemIndex) => (
+                  <li key={item} className="sm:grid sm:grid-cols-[2.5rem_1fr]">
+                    <span className="hidden font-mono text-xs leading-7 tabular-nums text-gray-400 sm:inline dark:text-gray-600">
+                      {groupIndex + 1}.{itemIndex + 1}
+                    </span>
+                    <span>
+                      <Keys text={item} />
+                    </span>
                   </li>
                 ))}
               </ul>
             </li>
           ))}
         </ol>
-        <p className="text-sm text-muted">
+        <p className="text-sm text-gray-500">
           <Keys text={c.home.shortcuts} />
         </p>
       </article>
       <article className="flex flex-col gap-6">
         <h2 className={heading}>{c.home.privacyTitle}</h2>
-        <p className="font-medium text-pretty text-ink">{c.home.privacy}</p>
+        <p className="text-xl font-medium tracking-tight text-balance text-gray-900 sm:text-3xl dark:text-gray-50">{c.home.privacy}</p>
       </article>
-      <section data-testid="closing" className="flex flex-col gap-6">
+      <section data-testid="closing" className="flex flex-col items-center gap-6 border-t border-gray-200 pt-16 text-center dark:border-gray-800">
         <h2 className={heading}>{c.home.closingTitle}</h2>
         <Download home={c.home} brew />
       </section>

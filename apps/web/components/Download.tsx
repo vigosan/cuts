@@ -3,25 +3,23 @@
 import { useEffect, useState } from "react";
 import { APP_STORE, BREW, DOWNLOADS, type Content } from "@/content";
 import { detectOS, isIPhone, type OS } from "@/os";
-import { link } from "./Page";
+import { base, button, link } from "./Page";
 
 const PLATFORMS: OS[] = ["mac", "windows", "linux"];
 
-const highlight = "flex flex-col gap-2 border-l-2 border-accent pl-4 sm:pl-6";
+const outline = `${base} border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:border-gray-500 dark:hover:border-gray-400`;
 
-const primary = `${link} text-ink`;
-
-function Arrow() {
+function ArrowDown() {
   return (
-    <span aria-hidden className="mr-3 text-accent">
-      →
-    </span>
+    <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14" />
+    </svg>
   );
 }
 
 export function Meta({ items }: { items: string[] }) {
   return (
-    <p className="flex flex-wrap gap-x-4 text-sm text-faint">
+    <p className="flex flex-wrap justify-center gap-x-4 font-mono text-xs text-gray-500 dark:text-gray-400">
       {items.map((item) => (
         <span key={item}>{item}</span>
       ))}
@@ -31,13 +29,11 @@ export function Meta({ items }: { items: string[] }) {
 
 export function PhoneDownload({ home }: { home: Content["home"] }) {
   return (
-    <div className={highlight}>
-      <p>
-        <Arrow />
-        <a data-testid="download" href={APP_STORE} className={primary}>
-          {home.iphone.download}
-        </a>
-      </p>
+    <div className="flex flex-col items-center gap-3">
+      <a data-testid="download" href={APP_STORE} className={button}>
+        <ArrowDown />
+        {home.iphone.download}
+      </a>
       <Meta items={[home.free, home.version, home.iphone.requirements]} />
     </div>
   );
@@ -58,30 +54,26 @@ export function Download({ home, brew = false }: { home: Content["home"]; brew?:
 
   if (!os) {
     return (
-      <div className={highlight}>
-        <ul className="flex flex-col gap-1">
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           {PLATFORMS.map((platform) => (
-            <li key={platform}>
-              <Arrow />
-              <a href={DOWNLOADS[platform]} className={primary}>
-                {home.platforms[platform]}
-              </a>
-            </li>
+            <a key={platform} href={DOWNLOADS[platform]} className={outline}>
+              <ArrowDown />
+              {home.platforms[platform]}
+            </a>
           ))}
-        </ul>
+        </div>
         <Meta items={meta} />
       </div>
     );
   }
 
   return (
-    <div className={`${highlight} transition-opacity duration-200 ease-out ${detected === undefined ? "opacity-0" : ""}`}>
-      <p>
-        <Arrow />
-        <a data-testid="download" href={DOWNLOADS[os]} className={primary}>
-          {home.download[os]}
-        </a>
-      </p>
+    <div className={`flex flex-col items-center gap-3 transition-opacity duration-200 ease-out ${detected === undefined ? "opacity-0" : ""}`}>
+      <a data-testid="download" href={DOWNLOADS[os]} className={button}>
+        <ArrowDown />
+        {home.download[os]}
+      </a>
       <Meta items={[...meta, home.requirements[os]]} />
       <p className="text-sm">
         {home.download.also}{" "}
@@ -108,7 +100,7 @@ export function Download({ home, brew = false }: { home: Content["home"]; brew?:
       {brew && os === "mac" && (
         <p className="text-sm">
           {home.brew}{" "}
-          <code data-testid="brew" className="select-all rounded bg-wash px-1.5 py-0.5 text-xs text-ink">
+          <code data-testid="brew" className="select-all rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-800 dark:bg-neutral-800 dark:text-gray-200">
             {BREW}
           </code>
         </p>
